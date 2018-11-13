@@ -7,3 +7,6 @@ url: "https://ngoulart.github.io" # the base hostname & protocol for your site
 
 # Build settings
 markdown: kramdown
+
+header.title: Neimar Goulart
+header.subtitle: Advocacia & Assessoria Empresarial
