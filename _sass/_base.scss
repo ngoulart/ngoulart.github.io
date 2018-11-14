@@ -159,7 +159,7 @@ header {
     min-height: auto;
     @include background-cover;
     background-position: center;
-    background-image: url('../img/header3.jpg');
+    background-image: url('../img/header.jpg');
     text-align: center;
     color: white;
     .header-content {
@@ -213,6 +213,7 @@ header {
 
 .section-heading {
     margin-top: 0;
+    font-weight: bold;
 }
 
 .service-box {
