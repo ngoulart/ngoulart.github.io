@@ -112,30 +112,43 @@ main {
   line-height: 1.5;
 }
 
-.hero-links {
-  display: flex; flex-wrap: wrap; gap: 0.5rem;
+.hero-contact {
+  display: flex; flex-direction: column; gap: 0.3rem;
 }
 
-.hero-links a {
-  font-size: 0.78rem; font-weight: 600;
-  color: var(--gray-dark);
-  text-decoration: none;
-  padding: 0.3rem 0.65rem;
-  border: 1px solid var(--gray-light);
-  border-radius: 4px;
-  transition: all 0.2s ease;
-  letter-spacing: 0.02em;
-}
-
-.hero-links a:hover {
-  border-color: var(--red);
-  color: var(--red);
-  background: rgba(204,0,0,0.03);
-}
-
-.hero-links a i {
-  margin-right: 0.25rem;
+.hero-contact div {
   font-size: 0.85rem;
+  color: var(--gray-mid);
+  display: flex; align-items: center; gap: 0.45rem;
+}
+
+.hero-contact div i {
+  width: 1rem;
+  text-align: center;
+  color: var(--gray-mid);
+  font-size: 0.9rem;
+}
+
+.hero-contact div a {
+  color: var(--red);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.hero-contact div a:hover {
+  color: var(--red-dark);
+}
+
+/* ── CV PAGE LINKS ── */
+.cv-item .detail a {
+  color: var(--red);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.cv-item .detail a:hover {
+  color: var(--red-dark);
+  text-decoration: underline;
 }
 
 /* ── SECTIONS ── */
@@ -330,7 +343,7 @@ footer {
 @media (max-width: 640px) {
   .hero { grid-template-columns: 1fr; justify-items: center; text-align: center; }
   .hero-photo { width: 120px; height: 120px; }
-  .hero-links { justify-content: center; }
+  .hero-contact { align-items: center; }
   .cv-item { grid-template-columns: 1fr; }
   .cv-item .date { text-align: left; }
   nav .nav-name { font-size: 0.9rem; }
