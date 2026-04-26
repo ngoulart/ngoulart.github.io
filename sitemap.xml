@@ -6,6 +6,11 @@
     <priority>1.0</priority>
   </url>
   <url>
+    <loc>https://ngoulart.github.io/files/cv.html</loc>
+    <lastmod>2026-04-22</lastmod>
+    <priority>0.9</priority>
+  </url>
+  <url>
     <loc>https://ngoulart.github.io/files/research.html</loc>
     <lastmod>2026-04-22</lastmod>
     <priority>0.8</priority>

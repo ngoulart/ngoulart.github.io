@@ -125,7 +125,7 @@ main {
 .hero-contact div i {
   width: 1rem;
   text-align: center;
-  color: var(--gray-mid);
+  color: var(--red);
   font-size: 0.9rem;
 }
 
