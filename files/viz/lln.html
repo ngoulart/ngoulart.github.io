@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lei dos Grandes Números — Nícolas Goulart</title>
+<meta name="description" content="Visualização interativa da Lei dos Grandes Números.">
+<link rel="icon" href="../../favicon.ico" type="image/x-icon">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style.css">
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+<style>
+  .viz-wrap { max-width: var(--max-width); margin: 0 auto; }
+  .viz-intro { font-size: 0.92rem; color: var(--gray-dark); margin-bottom: 1.25rem; line-height: 1.7; }
+  .viz-intro code { font-family: 'JetBrains Mono', monospace; font-size: 0.85em; background: var(--gray-bg); padding: 0.05em 0.35em; border-radius: 3px; }
+
+  .controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.9rem 1.1rem;
+    background: var(--gray-bg);
+    padding: 1rem 1.2rem;
+    border-radius: 6px;
+    border-left: 3px solid var(--red);
+    margin-bottom: 1.25rem;
+  }
+  .control { display: flex; flex-direction: column; gap: 0.3rem; }
+  .control label {
+    font-size: 0.72rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--red);
+  }
+  .control select, .control input[type="number"] {
+    font-family: var(--font-body);
+    font-size: 0.88rem;
+    padding: 0.4rem 0.55rem;
+    border: 1px solid rgba(0,0,0,0.12);
+    border-radius: 4px;
+    background: var(--white);
+    color: var(--black);
+  }
+  .control input[type="range"] { width: 100%; accent-color: var(--red); }
+  .control .val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--gray-mid);
+  }
+
+  .actions { display: flex; gap: 0.6rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .btn {
+    font-family: var(--font-body);
+    font-size: 0.78rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--red);
+    border-radius: 4px;
+    background: var(--red); color: var(--white);
+    cursor: pointer; transition: all 0.15s ease;
+  }
+  .btn:hover { background: var(--red-dark); border-color: var(--red-dark); }
+  .btn.secondary { background: var(--white); color: var(--red); }
+  .btn.secondary:hover { background: rgba(204,0,0,0.06); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .plot { width: 100%; height: 420px; margin-bottom: 1rem; }
+  .stats {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    color: var(--gray-dark);
+    background: var(--gray-bg);
+    padding: 0.7rem 1rem;
+    border-radius: 4px;
+    margin-bottom: 1.5rem;
+    line-height: 1.7;
+  }
+  .stats .lbl { color: var(--gray-mid); }
+  .stats .v   { color: var(--black); font-weight: 500; }
+
+  .formula {
+    font-family: 'Source Serif 4', serif;
+    font-style: italic;
+    font-size: 0.95rem;
+    text-align: center;
+    margin: 0.5rem 0 1rem;
+    color: var(--gray-dark);
+  }
+
+  details.code-block {
+    margin-top: 1.5rem;
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 4px;
+    background: var(--gray-bg);
+  }
+  details.code-block summary {
+    cursor: pointer;
+    padding: 0.6rem 1rem;
+    font-size: 0.78rem; font-weight: 600;
+    color: var(--gray-dark);
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  details.code-block pre {
+    margin: 0;
+    padding: 0.8rem 1rem 1rem;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    line-height: 1.55;
+    color: var(--black);
+    border-top: 1px solid rgba(0,0,0,0.06);
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="../index.html" class="nav-name">Nícolas Goulart</a>
+    <div class="nav-links">
+      <a href="../index.html">About</a>
+      <a href="../cv.html">CV</a>
+      <a href="../research.html">Research</a>
+      <a href="../teaching.html" class="active">Teaching</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+  <div class="viz-wrap">
+
+    <div class="section">
+      <h2>Lei dos Grandes Números</h2>
+      <p class="viz-intro">
+        À medida que o tamanho da amostra <code>n</code> cresce, a média amostral
+        <code>Ȳₙ</code> converge em probabilidade para a média populacional <code>μ</code>.
+        Os intervalos abaixo mostram o quantil 2.5%–97.5% de <code>R</code> repetições
+        para cada <code>n</code> — note como a faixa colapsa em torno de <code>μ</code>.
+      </p>
+      <div class="formula">Ȳ<sub>n</sub> = (1/n) Σᵢ Yᵢ &nbsp;⟶<sub>p</sub>&nbsp; μ &nbsp;quando&nbsp; n → ∞</div>
+    </div>
+
+    <div class="controls">
+      <div class="control">
+        <label for="dist">Distribuição populacional</label>
+        <select id="dist">
+          <option value="lognormal" selected>Log-normal (renda)</option>
+          <option value="normal">Normal</option>
+          <option value="uniform">Uniforme</option>
+          <option value="exponential">Exponencial</option>
+          <option value="bernoulli">Bernoulli (p=0.3)</option>
+        </select>
+      </div>
+      <div class="control">
+        <label for="reps">Repetições por <i>n</i></label>
+        <input type="range" id="reps" min="100" max="2000" step="100" value="500">
+        <span class="val" id="reps-val">500</span>
+      </div>
+      <div class="control">
+        <label for="nmax">n máximo (log10)</label>
+        <input type="range" id="nmax" min="2" max="5" step="1" value="4">
+        <span class="val" id="nmax-val">10⁴</span>
+      </div>
+      <div class="control">
+        <label for="seed">Seed</label>
+        <input type="number" id="seed" value="20260211" step="1">
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn" id="run">Simular</button>
+      <button class="btn secondary" id="reset">Reset</button>
+    </div>
+
+    <div id="plot" class="plot"></div>
+    <div class="stats" id="stats">Pronto.</div>
+
+    <details class="code-block">
+      <summary>R equivalente</summary>
+<pre>sample_sizes &lt;- c(10, 50, 100, 500, 1000, 10000)
+n_reps       &lt;- 500
+results      &lt;- data.frame()
+
+for (n in sample_sizes) {
+  mu_reps &lt;- replicate(n_reps, mean(rlnorm(n, 0, 1)))
+  results &lt;- rbind(results, data.frame(
+    n     = n,
+    lower = quantile(mu_reps, 0.025),
+    upper = quantile(mu_reps, 0.975),
+    mean  = mean(mu_reps)
+  ))
+}
+
+ggplot(results, aes(x = n)) +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.5) +
+  geom_hline(yintercept = exp(0.5), linetype = "dotted") +
+  scale_x_log10()</pre>
+    </details>
+
+  </div>
+</main>
+
+<footer>
+  © 2026 Nícolas Goulart · Built with HTML & CSS
+</footer>
+
+<script>
+/* ── tiny PRNG (mulberry32) for reproducible seeds ── */
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = a;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+/* Box–Muller using the seeded uniform */
+function makeNormal(rand) {
+  let spare = null;
+  return function () {
+    if (spare !== null) { const v = spare; spare = null; return v; }
+    let u1, u2;
+    do { u1 = rand(); } while (u1 === 0);
+    u2 = rand();
+    const mag = Math.sqrt(-2.0 * Math.log(u1));
+    spare = mag * Math.sin(2 * Math.PI * u2);
+    return mag * Math.cos(2 * Math.PI * u2);
+  };
+}
+
+/* ── distribution registry: returns sampler + theoretical mean ── */
+function distFromConfig(name, rand) {
+  const norm = makeNormal(rand);
+  switch (name) {
+    case 'normal':       return { draw: () => 100 + 15 * norm(),         mu: 100,        label: 'N(100, 15²)' };
+    case 'lognormal':    return { draw: () => Math.exp(7.5 + 0.7 * norm()), mu: Math.exp(7.5 + 0.5 * 0.49), label: 'LogNormal(7.5, 0.7²)' };
+    case 'uniform':      return { draw: () => rand() * 100,                mu: 50,         label: 'U(0, 100)' };
+    case 'exponential':  return { draw: () => -Math.log(1 - rand()) / 0.5, mu: 2,          label: 'Exp(λ=0.5)' };
+    case 'bernoulli':    return { draw: () => (rand() < 0.3 ? 1 : 0),      mu: 0.3,        label: 'Bernoulli(0.3)' };
+  }
+}
+
+/* ── core simulation: for each n in grid, repeat sampling and summarise ── */
+function simulateLLN(distName, seed, nReps, nMaxExp) {
+  const rand = mulberry32(seed | 0);
+  const dist = distFromConfig(distName, rand);
+
+  // sample size grid (log-spaced), ending at 10^nMaxExp
+  const grid = [];
+  for (let e = 1; e <= nMaxExp; e++) {
+    grid.push(Math.round(10 ** e));
+    if (e < nMaxExp) grid.push(Math.round(10 ** (e + 0.5))); // half-decade points
+  }
+
+  const lower = [], upper = [], mean = [];
+  for (const n of grid) {
+    const means = new Float64Array(nReps);
+    for (let r = 0; r < nReps; r++) {
+      let s = 0;
+      for (let i = 0; i < n; i++) s += dist.draw();
+      means[r] = s / n;
+    }
+    means.sort();
+    lower.push(means[Math.floor(0.025 * nReps)]);
+    upper.push(means[Math.floor(0.975 * nReps)]);
+    let total = 0;
+    for (let i = 0; i < nReps; i++) total += means[i];
+    mean.push(total / nReps);
+  }
+  return { grid, lower, upper, mean, mu: dist.mu, label: dist.label };
+}
+
+/* ── plotting ── */
+const RED  = '#CC0000';
+const BLUE = '#2D6FC6';
+
+function render(res) {
+  const traces = [
+    {
+      x: [...res.grid, ...res.grid.slice().reverse()],
+      y: [...res.upper, ...res.lower.slice().reverse()],
+      fill: 'toself',
+      fillcolor: 'rgba(45,111,198,0.25)',
+      line: { color: 'rgba(0,0,0,0)' },
+      hoverinfo: 'skip',
+      name: 'IC 2.5%–97.5%',
+      showlegend: true
+    },
+    {
+      x: res.grid, y: res.mean,
+      mode: 'lines+markers',
+      line: { color: BLUE, width: 2 },
+      marker: { size: 6, color: BLUE },
+      name: 'média de Ȳₙ',
+      hovertemplate: 'n=%{x}<br>Ȳₙ=%{y:.3f}<extra></extra>'
+    },
+    {
+      x: res.grid, y: res.grid.map(() => res.mu),
+      mode: 'lines',
+      line: { color: RED, width: 2, dash: 'dot' },
+      name: `μ = ${res.mu.toFixed(3)}`
+    }
+  ];
+
+  const layout = {
+    margin: { l: 60, r: 20, t: 36, b: 50 },
+    xaxis: {
+      title: 'tamanho da amostra n (escala log)',
+      type: 'log',
+      gridcolor: 'rgba(0,0,0,0.06)',
+      zerolinecolor: 'rgba(0,0,0,0.15)'
+    },
+    yaxis: {
+      title: 'Ȳₙ',
+      gridcolor: 'rgba(0,0,0,0.06)',
+      zerolinecolor: 'rgba(0,0,0,0.15)'
+    },
+    paper_bgcolor: 'white',
+    plot_bgcolor: 'white',
+    font: { family: 'DM Sans, sans-serif', size: 12, color: '#1A1A1A' },
+    legend: { orientation: 'h', y: -0.2, x: 0.5, xanchor: 'center' },
+    title: { text: `LGN — ${res.label}`, font: { family: 'Source Serif 4, serif', size: 15 } },
+    hovermode: 'x unified'
+  };
+
+  Plotly.react('plot', traces, layout, { displaylogo: false, responsive: true });
+
+  const last = res.grid.length - 1;
+  document.getElementById('stats').innerHTML =
+    `<span class="lbl">μ teórico:</span> <span class="v">${res.mu.toFixed(4)}</span> &nbsp;·&nbsp; ` +
+    `<span class="lbl">Ȳ em n=${res.grid[last]}:</span> <span class="v">${res.mean[last].toFixed(4)}</span> &nbsp;·&nbsp; ` +
+    `<span class="lbl">amplitude do IC em n=${res.grid[last]}:</span> <span class="v">${(res.upper[last] - res.lower[last]).toFixed(4)}</span> &nbsp;·&nbsp; ` +
+    `<span class="lbl">amplitude em n=${res.grid[0]}:</span> <span class="v">${(res.upper[0] - res.lower[0]).toFixed(4)}</span>`;
+}
+
+/* ── wiring ── */
+const $ = (id) => document.getElementById(id);
+
+function readControls() {
+  return {
+    distName: $('dist').value,
+    seed:     parseInt($('seed').value, 10) || 1,
+    nReps:    parseInt($('reps').value, 10),
+    nMaxExp:  parseInt($('nmax').value, 10)
+  };
+}
+
+function run() {
+  $('run').disabled = true;
+  $('stats').textContent = 'Simulando…';
+  // yield to the browser so the button visibly disables
+  setTimeout(() => {
+    const c = readControls();
+    const t0 = performance.now();
+    const res = simulateLLN(c.distName, c.seed, c.nReps, c.nMaxExp);
+    const dt = (performance.now() - t0).toFixed(0);
+    render(res);
+    $('stats').innerHTML += ` &nbsp;·&nbsp; <span class="lbl">tempo:</span> <span class="v">${dt} ms</span>`;
+    $('run').disabled = false;
+  }, 10);
+}
+
+$('reps').addEventListener('input', e => $('reps-val').textContent = e.target.value);
+$('nmax').addEventListener('input', e => $('nmax-val').textContent = '10' + ['','¹','²','³','⁴','⁵'][e.target.value]);
+$('run').addEventListener('click', run);
+$('reset').addEventListener('click', () => {
+  $('dist').value = 'lognormal';
+  $('reps').value = 500;       $('reps-val').textContent = '500';
+  $('nmax').value = 4;          $('nmax-val').textContent = '10⁴';
+  $('seed').value = 20260211;
+  run();
+});
+
+// initial run
+run();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aula 1 — Revisão de Probabilidade · Microeconometria Aplicada</title>
+<meta name="description" content="Aula 1: parâmetros populacionais, inferência, Monte Carlo, Lei dos Grandes Números e Teorema Central do Limite — código em R e visualizações interativas.">
+<link rel="icon" href="../../../favicon.ico" type="image/x-icon">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+<style>
+  /* widen the page so code + viz fits comfortably */
+  :root { --max-width: 1100px; }
+
+  .lecture-header { margin-bottom: 1.5rem; }
+  .lecture-kicker {
+    font-size: 0.72rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--red);
+    margin-bottom: 0.3rem;
+  }
+  .lecture-h1 {
+    font-family: var(--font-display);
+    font-size: 1.8rem; font-weight: 700;
+    line-height: 1.2;
+    color: var(--black);
+    margin-bottom: 0.5rem;
+  }
+  .lecture-intro {
+    font-size: 0.93rem; color: var(--gray-dark);
+    line-height: 1.7; margin-bottom: 1rem;
+  }
+  .lecture-intro code { font-family: 'JetBrains Mono', monospace; font-size: 0.85em; background: var(--gray-bg); padding: 0.05em 0.35em; border-radius: 3px; }
+
+  /* Global population controls */
+  .global-controls {
+    display: flex; flex-wrap: wrap; gap: 0.9rem 1.2rem; align-items: end;
+    background: var(--gray-bg);
+    padding: 0.9rem 1.2rem;
+    border-radius: 6px;
+    border-left: 3px solid var(--red);
+    margin-bottom: 2rem;
+  }
+  .global-controls .control { display: flex; flex-direction: column; gap: 0.3rem; min-width: 140px; }
+  .global-controls label {
+    font-size: 0.7rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--red);
+  }
+  .global-controls input[type="number"] {
+    font-family: var(--font-body);
+    font-size: 0.88rem; padding: 0.4rem 0.55rem;
+    border: 1px solid rgba(0,0,0,0.12); border-radius: 4px;
+    background: var(--white); color: var(--black); width: 7rem;
+  }
+
+  /* Panels */
+  .panel { margin-bottom: 2.5rem; }
+  .panel-head {
+    display: flex; align-items: baseline; gap: 0.7rem;
+    margin-bottom: 0.5rem;
+  }
+  .panel-num {
+    font-family: var(--font-display);
+    font-size: 1.5rem; font-weight: 700;
+    color: var(--red);
+    line-height: 1;
+  }
+  .panel-title {
+    font-family: var(--font-display);
+    font-size: 1.15rem; font-weight: 700;
+    color: var(--black);
+  }
+  .panel-q {
+    font-size: 0.88rem; color: var(--gray-dark);
+    line-height: 1.65; margin-bottom: 1rem;
+  }
+  .panel-q ul, .panel-q ol { margin-left: 1.25rem; margin-top: 0.25rem; }
+  .panel-q code { font-family: 'JetBrains Mono', monospace; font-size: 0.85em; background: var(--gray-bg); padding: 0.05em 0.3em; border-radius: 3px; }
+
+  .panel-grid {
+    display: grid;
+    grid-template-columns: minmax(280px, 1fr) minmax(380px, 1.4fr);
+    gap: 1.25rem;
+    align-items: start;
+  }
+  @media (max-width: 820px) {
+    .panel-grid { grid-template-columns: 1fr; }
+  }
+
+  .panel-code {
+    background: #1A1A1A;
+    border-radius: 6px;
+    overflow: hidden;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .panel-code-header {
+    background: #2A2A2A;
+    color: #BDBDBD;
+    font-size: 0.7rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    padding: 0.45rem 0.85rem;
+    border-bottom: 1px solid #333;
+  }
+  .panel-code pre {
+    margin: 0; padding: 0.85rem 1rem;
+    color: #E8E8E8;
+    font-size: 0.78rem;
+    line-height: 1.6;
+    overflow-x: auto;
+  }
+  .panel-code .kw { color: #FF6B6B; }       /* keywords / funcs */
+  .panel-code .num { color: #82AAFF; }      /* numbers */
+  .panel-code .str { color: #C3E88D; }      /* strings */
+  .panel-code .com { color: #6B7280; font-style: italic; } /* comments */
+
+  .panel-viz { display: flex; flex-direction: column; gap: 0.6rem; }
+  .panel-viz .controls-row {
+    display: flex; flex-wrap: wrap; gap: 0.6rem 0.9rem; align-items: center;
+    padding: 0.55rem 0.8rem;
+    background: var(--gray-bg);
+    border-radius: 4px;
+    font-size: 0.82rem;
+  }
+  .panel-viz .controls-row label {
+    font-size: 0.7rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em; color: var(--red);
+    margin-right: 0.3rem;
+  }
+  .panel-viz input[type="range"] { accent-color: var(--red); width: 100px; vertical-align: middle; }
+  .panel-viz input[type="number"] {
+    font-family: var(--font-body); font-size: 0.82rem;
+    padding: 0.25rem 0.4rem; width: 5.5rem;
+    border: 1px solid rgba(0,0,0,0.12); border-radius: 3px;
+  }
+  .panel-viz select {
+    font-family: var(--font-body); font-size: 0.82rem;
+    padding: 0.25rem 0.4rem;
+    border: 1px solid rgba(0,0,0,0.12); border-radius: 3px;
+    background: var(--white);
+  }
+  .panel-viz .val { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: var(--gray-mid); }
+
+  .btn {
+    font-family: var(--font-body);
+    font-size: 0.74rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    padding: 0.4rem 0.9rem;
+    border: 1px solid var(--red);
+    border-radius: 3px;
+    background: var(--red); color: var(--white);
+    cursor: pointer; transition: all 0.15s ease;
+  }
+  .btn:hover { background: var(--red-dark); border-color: var(--red-dark); }
+  .btn.secondary { background: var(--white); color: var(--red); }
+  .btn.secondary:hover { background: rgba(204,0,0,0.06); }
+
+  .plot { width: 100%; height: 320px; }
+  .plot.tall { height: 360px; }
+
+  .stats {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--gray-dark);
+    background: var(--gray-bg);
+    padding: 0.55rem 0.8rem;
+    border-radius: 4px;
+    line-height: 1.7;
+  }
+  .stats .lbl { color: var(--gray-mid); }
+  .stats .v   { color: var(--black); font-weight: 500; }
+  .stats .ok  { color: #2D8C3C; font-weight: 600; }
+  .stats .no  { color: var(--red);  font-weight: 600; }
+
+  /* Static "in this class" bar at the top — doesn't overlap content at any width */
+  .lecture-toc {
+    display: flex; flex-wrap: wrap; align-items: center;
+    gap: 0.3rem 0.6rem;
+    padding: 0.55rem 0.95rem;
+    background: var(--gray-bg);
+    border-radius: 6px;
+    border-left: 3px solid var(--red);
+    margin-bottom: 1.5rem;
+    font-size: 0.78rem;
+  }
+  .lecture-toc-label {
+    font-size: 0.65rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--red);
+    margin-right: 0.3rem;
+  }
+  .lecture-toc a {
+    color: var(--gray-dark);
+    text-decoration: none;
+    padding: 0.2rem 0.55rem;
+    border-radius: 3px;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+  .lecture-toc a:hover { color: var(--red); background: var(--white); }
+
+  /* short plot variant — used when stacking multiple plots in one panel */
+  .plot.short { height: 240px; }
+
+  .breadcrumb {
+    font-size: 0.78rem;
+    color: var(--gray-mid);
+    margin-bottom: 1rem;
+  }
+  .breadcrumb a { color: var(--red); text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="../../index.html" class="nav-name">Nícolas Goulart</a>
+    <div class="nav-links">
+      <a href="../../index.html">About</a>
+      <a href="../../cv.html">CV</a>
+      <a href="../../research.html">Research</a>
+      <a href="../../teaching.html" class="active">Teaching</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+
+  <div class="breadcrumb">
+    <a href="../../teaching.html">Teaching</a> ·
+    <a href="index.html">Applied Microeconometrics</a> · Aula 1
+  </div>
+
+  <div class="lecture-toc">
+    <span class="lecture-toc-label">Nesta aula</span>
+    <a href="#p1">1 · Parâmetros</a>
+    <a href="#p2">2 · Inferência amostral</a>
+    <a href="#p3">3 · Monte Carlo</a>
+    <a href="#p4">4 · LGN</a>
+    <a href="#p5">5 · TCL</a>
+  </div>
+
+  <div class="lecture-header">
+    <div class="lecture-kicker">Aula 01</div>
+    <h1 class="lecture-h1">Revisão de Probabilidade: Simulação e Inferência Estatística</h1>
+    <p class="lecture-intro">
+      Antes de qualquer técnica de inferência causal, é fundamental separar três conceitos
+      distintos: <strong>parâmetro populacional</strong> (um valor fixo e desconhecido na
+      população, como <code>μ<sub>Y</sub></code>), <strong>estimador</strong> (uma fórmula
+      aplicada a uma amostra, como <code>Ȳ = (1/n)Σ Y<sub>i</sub></code>) e
+      <strong>estimativa</strong> (o número concreto que sai da fórmula numa amostra
+      específica). Os cinco painéis abaixo constroem essa distinção <em>visualmente</em>,
+      mostrando como o comportamento de <code>Ȳ</code> muda conforme cresce o tamanho da amostra.
+    </p>
+    <p class="lecture-intro">
+      Para que a visualização não "responda" diretamente a sua lista, a população sintética
+      desta página é <em>diferente</em> da do enunciado:
+      <code>N=100.000</code> indivíduos, com <code>Y</code> = horas mensais de leitura
+      (mistura bimodal: leitores leves <code>N(5, 2²)</code> e leitores ávidos <code>N(25, 5²)</code>)
+      e tratamento binário <code>D</code> = ensino superior completo. Use a página para
+      construir intuição — depois reproduza o pipeline na base <code>data_01.RData</code>
+      da disciplina.
+    </p>
+    <p class="lecture-intro">
+      Cada painel mostra o <strong>código R</strong> à esquerda e a <strong>simulação
+      interativa</strong> à direita. Toda computação roda no seu navegador, então
+      sinta-se à vontade para mexer nos sliders e re-rodar. A <em>seed</em> padrão é a
+      data de hoje (formato <code>YYYYMMDD</code>), de modo que cada visita à página
+      produz uma nova realização da população.
+    </p>
+  </div>
+
+  <div class="global-controls">
+    <div class="control">
+      <label for="pop-seed">Seed da população</label>
+      <input type="number" id="pop-seed" value="20260211" step="1">
+    </div>
+    <div class="control">
+      <label for="pop-N">N (tamanho da população)</label>
+      <input type="number" id="pop-N" value="100000" step="10000" min="10000" max="500000">
+    </div>
+    <button class="btn" id="regenerate">Regenerar população</button>
+    <span class="val" id="pop-status" style="margin-left:auto"></span>
+  </div>
+
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <!-- PANEL 1 — Population parameters                              -->
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <section class="panel" id="p1">
+    <div class="panel-head">
+      <div class="panel-num">1</div>
+      <div class="panel-title">Parâmetros populacionais</div>
+    </div>
+    <p class="panel-q">
+      Como <code>D</code> é binário, o coeficiente <code>τ</code> da regressão de
+      <code>Y</code> em <code>D</code> tem leitura simples: é exatamente a diferença
+      de médias condicionais <code>E[Y|D=1] − E[Y|D=0]</code> — equivalente a comparar
+      o grupo com ensino superior completo ao grupo sem. O <strong>primeiro gráfico</strong>
+      mostra a distribuição de <code>Y</code> com <code>μ<sub>Y</sub></code> (linha vermelha)
+      e a faixa <code>μ ± σ<sub>Y</sub></code>. O <strong>segundo gráfico</strong>
+      mostra <code>Y</code> vs <code>D</code>, com os pontos vermelhos em
+      <code>E[Y|D=0]</code> e <code>E[Y|D=1]</code>: a inclinação da reta entre eles é <code>τ</code>.
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre><span class="com"># Três parâmetros populacionais</span>
+mu_Y    &lt;- <span class="kw">mean</span>(data$leitura)
+sigma_Y &lt;- <span class="kw">sd</span>(data$leitura)
+
+<span class="com"># Como D é binário, τ é exatamente</span>
+<span class="com"># a diferença de médias condicionais:</span>
+tau &lt;- <span class="kw">coef</span>(<span class="kw">lm</span>(leitura ~ superior,
+              data = data))[<span class="num">2</span>]
+<span class="com"># equivalente a:</span>
+m1  &lt;- <span class="kw">mean</span>(data$leitura[data$superior == <span class="num">1</span>])
+m0  &lt;- <span class="kw">mean</span>(data$leitura[data$superior == <span class="num">0</span>])
+<span class="kw">stopifnot</span>(<span class="kw">all.equal</span>(tau, m1 - m0))</pre>
+      </div>
+      <div class="panel-viz">
+        <div id="plot-1a" class="plot short"></div>
+        <div id="plot-1b" class="plot short"></div>
+        <div class="stats" id="stats-1">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <!-- PANEL 2 — Sample inference (n=100)                           -->
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <section class="panel" id="p2">
+    <div class="panel-head">
+      <div class="panel-num">2</div>
+      <div class="panel-title">Inferência a partir de uma amostra</div>
+    </div>
+    <p class="panel-q">
+      Sorteie uma amostra aleatória de tamanho <code>n=100</code>. Calcule
+      <code>Ȳ</code>, <code>SE(Ȳ)</code> e o intervalo de confiança de 95%.
+      Re-amostre algumas vezes — note que ocasionalmente o IC <em>não</em> contém
+      <code>μ<sub>Y</sub></code> (≈ 5% das vezes, no longo prazo).
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre>n      &lt;- <span class="num">100</span>
+samp   &lt;- data[<span class="kw">sample</span>(<span class="kw">nrow</span>(data), n), ]
+mu_hat &lt;- <span class="kw">mean</span>(samp$leitura)
+se_hat &lt;- <span class="kw">sd</span>(samp$leitura) / <span class="kw">sqrt</span>(n)
+ci     &lt;- mu_hat + <span class="kw">c</span>(-<span class="num">1.96</span>, <span class="num">1.96</span>) * se_hat
+
+contains_mu &lt;- ci[<span class="num">1</span>] &lt;= mu_Y &amp; ci[<span class="num">2</span>] &gt;= mu_Y</pre>
+      </div>
+      <div class="panel-viz">
+        <div class="controls-row">
+          <label for="p2-n">n</label>
+          <input type="range" id="p2-n" min="20" max="2000" step="20" value="100">
+          <span class="val" id="p2-n-val">100</span>
+          <button class="btn secondary" id="p2-resample">Re-amostrar</button>
+        </div>
+        <div id="plot-2" class="plot"></div>
+        <div class="stats" id="stats-2">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <!-- PANEL 3 — Monte Carlo                                        -->
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <section class="panel" id="p3">
+    <div class="panel-head">
+      <div class="panel-num">3</div>
+      <div class="panel-title">Simulação de Monte Carlo</div>
+    </div>
+    <p class="panel-q">
+      Repita o sorteio <code>R</code> vezes (default 1000), guardando cada
+      <code>Ȳ</code>. Compare a média e o desvio-padrão da distribuição amostral
+      com os valores teóricos <code>μ<sub>Y</sub></code> e <code>σ<sub>Y</sub>/√n</code>,
+      e meça a cobertura empírica do IC 95%.
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre>n_sims  &lt;- <span class="num">1000</span>
+n       &lt;- <span class="num">100</span>
+mu_hats &lt;- <span class="kw">numeric</span>(n_sims)
+covers  &lt;- <span class="kw">logical</span>(n_sims)
+
+<span class="kw">for</span>(i <span class="kw">in</span> <span class="num">1</span>:n_sims) {
+  s &lt;- data[<span class="kw">sample</span>(<span class="kw">nrow</span>(data), n), ]
+  mu_hats[i] &lt;- <span class="kw">mean</span>(s$leitura)
+  se   &lt;- <span class="kw">sd</span>(s$leitura) / <span class="kw">sqrt</span>(n)
+  ci   &lt;- mu_hats[i] + <span class="kw">c</span>(-<span class="num">1.96</span>, <span class="num">1.96</span>) * se
+  covers[i] &lt;- ci[<span class="num">1</span>] &lt;= mu_Y &amp; ci[<span class="num">2</span>] &gt;= mu_Y
+}</pre>
+      </div>
+      <div class="panel-viz">
+        <div class="controls-row">
+          <label for="p3-nsims">repetições</label>
+          <input type="range" id="p3-nsims" min="100" max="5000" step="100" value="1000">
+          <span class="val" id="p3-nsims-val">1000</span>
+          <label for="p3-n" style="margin-left: 0.5rem">n</label>
+          <input type="number" id="p3-n" value="100" min="20" max="2000" step="20">
+          <button class="btn secondary" id="p3-run">Rodar</button>
+        </div>
+        <div id="plot-3" class="plot"></div>
+        <div class="stats" id="stats-3">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <!-- PANEL 4 — Law of Large Numbers                               -->
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <section class="panel" id="p4">
+    <div class="panel-head">
+      <div class="panel-num">4</div>
+      <div class="panel-title">Lei dos Grandes Números</div>
+    </div>
+    <p class="panel-q">
+      Para tamanhos amostrais <code>n ∈ {10, 50, 100, 500, 1000, 10000}</code>,
+      simule 1000 estimativas de <code>Ȳ</code> e plote o intervalo entre os
+      quantis 2,5% e 97,5%. A faixa <em>colapsa</em> em torno de
+      <code>μ<sub>Y</sub></code> — convergência em probabilidade.
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre>sizes &lt;- <span class="kw">c</span>(<span class="num">10</span>, <span class="num">50</span>, <span class="num">100</span>, <span class="num">500</span>, <span class="num">1000</span>, <span class="num">10000</span>)
+n_reps &lt;- <span class="num">1000</span>
+
+res &lt;- <span class="kw">do.call</span>(<span class="kw">rbind</span>, <span class="kw">lapply</span>(sizes, <span class="kw">function</span>(n) {
+  m &lt;- <span class="kw">replicate</span>(n_reps,
+         <span class="kw">mean</span>(data$leitura[<span class="kw">sample</span>(<span class="kw">nrow</span>(data), n)]))
+  <span class="kw">data.frame</span>(n  = n,
+             lo = <span class="kw">quantile</span>(m, <span class="num">0.025</span>),
+             hi = <span class="kw">quantile</span>(m, <span class="num">0.975</span>))
+}))
+
+<span class="kw">ggplot</span>(res, <span class="kw">aes</span>(x = n)) +
+  <span class="kw">geom_ribbon</span>(<span class="kw">aes</span>(ymin = lo, ymax = hi)) +
+  <span class="kw">scale_x_log10</span>()</pre>
+      </div>
+      <div class="panel-viz">
+        <div class="controls-row">
+          <label for="p4-reps">reps por n</label>
+          <input type="range" id="p4-reps" min="100" max="2000" step="100" value="500">
+          <span class="val" id="p4-reps-val">500</span>
+          <button class="btn secondary" id="p4-run">Rodar</button>
+        </div>
+        <div id="plot-4" class="plot tall"></div>
+        <div class="stats" id="stats-4">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <!-- PANEL 5 — Central Limit Theorem                              -->
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <section class="panel" id="p5">
+    <div class="panel-head">
+      <div class="panel-num">5</div>
+      <div class="panel-title">Teorema Central do Limite</div>
+    </div>
+    <p class="panel-q">
+      Padronize <code>Z = (Ȳ − μ<sub>Y</sub>) / (σ<sub>Y</sub>/√n)</code> e plote
+      a densidade de <code>Z</code> para diferentes <code>n</code>. Mesmo partindo
+      de uma população <strong>bimodal</strong> (dois grupos de leitores), a
+      distribuição converge para a normal padrão.
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre>sizes  &lt;- <span class="kw">c</span>(<span class="num">10</span>, <span class="num">100</span>, <span class="num">1000</span>)
+n_reps &lt;- <span class="num">1000</span>
+
+z_df &lt;- <span class="kw">do.call</span>(<span class="kw">rbind</span>, <span class="kw">lapply</span>(sizes, <span class="kw">function</span>(n) {
+  z &lt;- <span class="kw">replicate</span>(n_reps, {
+    s &lt;- data$leitura[<span class="kw">sample</span>(<span class="kw">nrow</span>(data), n)]
+    (<span class="kw">mean</span>(s) - mu_Y) / (<span class="kw">sd</span>(s) / <span class="kw">sqrt</span>(n))
+  })
+  <span class="kw">data.frame</span>(n = n, z = z)
+}))
+
+<span class="kw">ggplot</span>(z_df, <span class="kw">aes</span>(z, color = <span class="kw">factor</span>(n))) +
+  <span class="kw">geom_density</span>() +
+  <span class="kw">stat_function</span>(fun = dnorm)</pre>
+      </div>
+      <div class="panel-viz">
+        <div class="controls-row">
+          <label for="p5-reps">reps</label>
+          <input type="range" id="p5-reps" min="200" max="3000" step="100" value="1000">
+          <span class="val" id="p5-reps-val">1000</span>
+          <button class="btn secondary" id="p5-run">Rodar</button>
+        </div>
+        <div id="plot-5" class="plot tall"></div>
+        <div class="stats" id="stats-5">…</div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  © 2026 Nícolas Goulart · Built with HTML & CSS
+</footer>
+
+<script>
+/* ════════════════════════════════════════════════════════════════
+   Utilities — seeded PRNG, stats helpers, formatting, KDE
+   ════════════════════════════════════════════════════════════════ */
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = a;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function makeNormal(rand) {
+  let spare = null;
+  return function () {
+    if (spare !== null) { const v = spare; spare = null; return v; }
+    let u1, u2;
+    do { u1 = rand(); } while (u1 === 0);
+    u2 = rand();
+    const m = Math.sqrt(-2 * Math.log(u1));
+    spare = m * Math.sin(2 * Math.PI * u2);
+    return m * Math.cos(2 * Math.PI * u2);
+  };
+}
+const fmt = (x, d=2) => x.toLocaleString('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d });
+/* Brand red kept; secondary palette: slate / sage / plum */
+const RED='#CC0000', SLATE='#46647B', SAGE='#507867', PLUM='#973B74', GRAY='#6B6B6B';
+/* RGBA helpers for translucent fills */
+const RGBA_SLATE = a => `rgba(70,100,123,${a})`;
+const RGBA_SAGE  = a => `rgba(80,120,103,${a})`;
+const RGBA_PLUM  = a => `rgba(151,59,116,${a})`;
+/* Fixed axis ranges — invariant across regenerations */
+const AX = {
+  Y:    { min: 0,   max: 45  },   // population horas de leitura
+  YBar: { min: 4,   max: 22  },   // sample mean Ȳ
+  N:    { logMin: 0.95, logMax: 4.05 }, // n axis on LLN (log10)
+  Z:    { min: -4,  max: 4   },   // standardized Z
+  D:    { min: -0.45, max: 1.45 } // binary regressor with jitter
+};
+
+/* ════════════════════════════════════════════════════════════════
+   Build synthetic population — DELIBERATELY DIFFERENT FROM WORKBOOK
+   Y = horas mensais de leitura, mistura bimodal:
+       leitor leve  (cluster 1):  N(5,  2²)
+       leitor ávido (cluster 2):  N(25, 5²)
+   D = ensino superior completo, P(D=1) = 0.40
+   P(ávido | D=0) = 0.25,  P(ávido | D=1) = 0.60   →  τ ≈ 7 horas
+   ════════════════════════════════════════════════════════════════ */
+let POP = null;
+function buildPopulation(seed, N) {
+  const r = mulberry32(seed);
+  const norm = makeNormal(r);
+  const Y = new Float64Array(N);
+  const D = new Uint8Array(N);
+  for (let i = 0; i < N; i++) {
+    D[i] = r() < 0.40 ? 1 : 0;
+    const pHeavy = D[i] ? 0.60 : 0.25;
+    let y = (r() < pHeavy)
+      ? 25 + 5 * norm()    // leitor ávido
+      : 5  + 2 * norm();   // leitor leve
+    if (y < 0) y = 0;       // truncar em zero (raro)
+    Y[i] = y;
+  }
+  // Pop parameters
+  let s = 0; for (let i = 0; i < N; i++) s += Y[i];
+  const muY = s / N;
+  let v = 0; for (let i = 0; i < N; i++) { const d = Y[i] - muY; v += d * d; }
+  const sigmaY = Math.sqrt(v / N);
+  let n0 = 0, n1 = 0, s0 = 0, s1 = 0;
+  for (let i = 0; i < N; i++) {
+    if (D[i]) { n1++; s1 += Y[i]; } else { n0++; s0 += Y[i]; }
+  }
+  const tau = s1 / n1 - s0 / n0;
+  return { Y, D, N, muY, sigmaY, tau };
+}
+
+/* sample mean + sd (with replacement — N is huge) */
+function sampleMS(rand, n) {
+  const Y = POP.Y, N = POP.N;
+  const s = new Float64Array(n);
+  let sum = 0;
+  for (let i = 0; i < n; i++) { const x = Y[Math.floor(rand() * N)]; s[i] = x; sum += x; }
+  const m = sum / n;
+  let v = 0; for (let i = 0; i < n; i++) { const d = s[i] - m; v += d * d; }
+  return { mean: m, sd: Math.sqrt(v / (n - 1)), sample: s };
+}
+
+/* binning helper for histograms */
+function histogram(values, bins, lo, hi) {
+  if (lo === undefined) { lo = Infinity; hi = -Infinity; for (const v of values) { if (v < lo) lo = v; if (v > hi) hi = v; } }
+  const w = (hi - lo) / bins;
+  const counts = new Float64Array(bins);
+  const centers = new Float64Array(bins);
+  for (let i = 0; i < bins; i++) centers[i] = lo + (i + 0.5) * w;
+  for (const v of values) {
+    let idx = Math.floor((v - lo) / w);
+    if (idx < 0) idx = 0; else if (idx >= bins) idx = bins - 1;
+    counts[idx]++;
+  }
+  return { centers, counts: Array.from(counts), w, lo, hi };
+}
+
+/* Gaussian KDE on a fixed grid */
+function kde(values, gridX) {
+  const n = values.length;
+  let m = 0; for (let i = 0; i < n; i++) m += values[i]; m /= n;
+  let v = 0; for (let i = 0; i < n; i++) { const d = values[i] - m; v += d * d; }
+  const std = Math.sqrt(v / (n - 1));
+  const h = 1.06 * std * Math.pow(n, -0.2);
+  const out = new Float64Array(gridX.length);
+  const inv = 1 / (n * h * Math.sqrt(2 * Math.PI));
+  for (let i = 0; i < gridX.length; i++) {
+    let s = 0;
+    for (let j = 0; j < n; j++) {
+      const u = (gridX[i] - values[j]) / h;
+      s += Math.exp(-0.5 * u * u);
+    }
+    out[i] = s * inv;
+  }
+  return out;
+}
+
+/* shared Plotly layout */
+function baseLayout(title, xlab, ylab) {
+  return {
+    margin: { l: 55, r: 15, t: 10, b: 45 },
+    xaxis: { title: xlab, gridcolor: 'rgba(0,0,0,0.06)', zerolinecolor: 'rgba(0,0,0,0.15)' },
+    yaxis: { title: ylab, gridcolor: 'rgba(0,0,0,0.06)', zerolinecolor: 'rgba(0,0,0,0.15)' },
+    paper_bgcolor: 'white', plot_bgcolor: 'white',
+    font: { family: 'DM Sans, sans-serif', size: 11, color: '#1A1A1A' },
+    legend: { orientation: 'h', y: -0.22, x: 0.5, xanchor: 'center' },
+    hovermode: 'closest'
+  };
+}
+const PLOT_CFG = { displaylogo: false, responsive: true, modeBarButtonsToRemove: ['lasso2d', 'select2d', 'autoScale2d'] };
+
+/* ════════════════════════════════════════════════════════════════
+   Panel 1 — Population
+   ════════════════════════════════════════════════════════════════ */
+function renderPanel1() {
+  renderPanel1a();
+  renderPanel1b();
+  document.getElementById('stats-1').innerHTML =
+    `<span class="lbl">μ_Y =</span> <span class="v">${fmt(POP.muY)} h</span> · ` +
+    `<span class="lbl">σ_Y =</span> <span class="v">${fmt(POP.sigmaY)} h</span> · ` +
+    `<span class="lbl">τ =</span> <span class="v">${fmt(POP.tau)} h</span> ` +
+    `<span class="lbl">(diferença de médias entre com e sem ensino superior)</span>`;
+}
+
+function renderPanel1a() {
+  // Fixed binning over the global Y range (so bins are stable across regenerations)
+  const BINS = 60;
+  const h = histogram(POP.Y, BINS, AX.Y.min, AX.Y.max);
+  // Convert counts → density so y-axis is fixed
+  const dens = h.counts.map(c => c / (POP.N * h.w));
+  const traces = [
+    {
+      type: 'bar', x: h.centers, y: dens,
+      marker: { color: SLATE, line: { width: 0 } },
+      hovertemplate: 'Y≈%{x:.1f}h<br>densidade %{y:.4f}<extra></extra>',
+      name: 'população', showlegend: false
+    }
+  ];
+  const lay = baseLayout(null, 'Y — horas de leitura por mês', 'densidade');
+  lay.shapes = [
+    // μ ± σ band (plum)
+    { type: 'rect', xref: 'x', yref: 'paper',
+      x0: POP.muY - POP.sigmaY, x1: POP.muY + POP.sigmaY,
+      y0: 0, y1: 1,
+      fillcolor: RGBA_PLUM(0.14), line: { width: 0 } },
+    // μ_Y (red dashed)
+    { type: 'line', xref: 'x', yref: 'paper',
+      x0: POP.muY, x1: POP.muY, y0: 0, y1: 1,
+      line: { color: RED, width: 2, dash: 'dash' } },
+    // μ - σ and μ + σ (plum dotted)
+    { type: 'line', xref: 'x', yref: 'paper',
+      x0: POP.muY - POP.sigmaY, x1: POP.muY - POP.sigmaY, y0: 0, y1: 1,
+      line: { color: PLUM, width: 1, dash: 'dot' } },
+    { type: 'line', xref: 'x', yref: 'paper',
+      x0: POP.muY + POP.sigmaY, x1: POP.muY + POP.sigmaY, y0: 0, y1: 1,
+      line: { color: PLUM, width: 1, dash: 'dot' } }
+  ];
+  lay.annotations = [
+    { x: POP.muY, y: 1.04, xref: 'x', yref: 'paper',
+      text: `μ_Y = ${fmt(POP.muY, 1)}`, showarrow: false,
+      font: { color: RED, size: 11, family: 'DM Sans' } },
+    { x: POP.muY + POP.sigmaY, y: 0.92, xref: 'x', yref: 'paper',
+      text: `+σ`, showarrow: false, xanchor: 'left',
+      font: { color: PLUM, size: 11, family: 'DM Sans' } },
+    { x: POP.muY - POP.sigmaY, y: 0.92, xref: 'x', yref: 'paper',
+      text: `−σ`, showarrow: false, xanchor: 'right',
+      font: { color: PLUM, size: 11, family: 'DM Sans' } }
+  ];
+  lay.xaxis.range = [AX.Y.min, AX.Y.max];
+  lay.yaxis.range = [0, 0.16];
+  lay.margin = { l: 55, r: 15, t: 25, b: 40 };
+  Plotly.react('plot-1a', traces, lay, PLOT_CFG);
+}
+
+function renderPanel1b() {
+  // Subsample for visualization (full 100k would over-saturate)
+  const M = 800;
+  const rand = mulberry32(919191);
+  const x0 = [], y0 = [], x1 = [], y1 = [];
+  for (let i = 0; i < M; i++) {
+    const idx = Math.floor(rand() * POP.N);
+    const jx = (rand() - 0.5) * 0.32;
+    if (POP.D[idx]) { x1.push(1 + jx); y1.push(POP.Y[idx]); }
+    else            { x0.push(0 + jx); y0.push(POP.Y[idx]); }
+  }
+  // Conditional means from full population
+  let n0 = 0, n1 = 0, s0 = 0, s1 = 0;
+  for (let i = 0; i < POP.N; i++) {
+    if (POP.D[i]) { n1++; s1 += POP.Y[i]; }
+    else          { n0++; s0 += POP.Y[i]; }
+  }
+  const m0 = s0 / n0, m1 = s1 / n1;
+
+  const traces = [
+    { type: 'scatter', mode: 'markers', x: x0, y: y0,
+      marker: { color: SLATE, size: 4, opacity: 0.28 },
+      name: 'D = 0', hoverinfo: 'skip', showlegend: false },
+    { type: 'scatter', mode: 'markers', x: x1, y: y1,
+      marker: { color: SAGE, size: 4, opacity: 0.28 },
+      name: 'D = 1', hoverinfo: 'skip', showlegend: false },
+    { type: 'scatter', mode: 'lines+markers', x: [0, 1], y: [m0, m1],
+      line: { color: RED, width: 2.5 },
+      marker: { color: RED, size: 11, symbol: 'circle', line: { color: 'white', width: 1.5 } },
+      name: 'reta de regressão',
+      hovertemplate: 'E[Y|D=%{x}] = %{y:.2f}<extra></extra>',
+      showlegend: false }
+  ];
+  const lay = baseLayout(null, 'D — ensino superior completo', 'Y (horas)');
+  lay.xaxis.tickvals = [0, 1];
+  lay.xaxis.ticktext = ['Não (D=0)', 'Sim (D=1)'];
+  lay.xaxis.range = [AX.D.min, AX.D.max];
+  lay.yaxis.range = [AX.Y.min, AX.Y.max];
+  // extra top margin so the τ box has padding above the line
+  lay.margin = { l: 55, r: 25, t: 35, b: 40 };
+  lay.annotations = [
+    // Conditional means — placed OUTSIDE the cluster of dots, with white pill background
+    { x: 0, y: m0, ax: -55, ay: 0,
+      text: `<b>E[Y|D=0] = ${fmt(m0, 1)}</b>`,
+      showarrow: false,
+      xanchor: 'left', yanchor: 'middle',
+      xshift: 14, yshift: 0,
+      font: { color: RED, size: 11, family: 'DM Sans' },
+      bgcolor: 'rgba(255,255,255,0.95)',
+      bordercolor: 'rgba(204,0,0,0.35)', borderwidth: 1, borderpad: 4 },
+    { x: 1, y: m1, text: `<b>E[Y|D=1] = ${fmt(m1, 1)}</b>`,
+      showarrow: false,
+      xanchor: 'right', yanchor: 'middle',
+      xshift: -14, yshift: 0,
+      font: { color: RED, size: 11, family: 'DM Sans' },
+      bgcolor: 'rgba(255,255,255,0.95)',
+      bordercolor: 'rgba(204,0,0,0.35)', borderwidth: 1, borderpad: 4 },
+    // τ box — larger padding, opaque background, sits above the regression line midpoint
+    { x: 0.5, y: Math.min((m0 + m1) / 2 + 6, AX.Y.max - 4),
+      text: `<b>τ = ${fmt(POP.tau, 2)}</b>`,
+      showarrow: false, xanchor: 'center', yanchor: 'middle',
+      font: { color: RED, size: 14, family: 'Source Serif 4' },
+      bgcolor: 'rgba(255,255,255,0.97)',
+      bordercolor: RED, borderwidth: 1.2, borderpad: 8 }
+  ];
+  Plotly.react('plot-1b', traces, lay, PLOT_CFG);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Panel 2 — Single sample
+   ════════════════════════════════════════════════════════════════ */
+let p2_seed = 1;
+function renderPanel2() {
+  const n = parseInt(document.getElementById('p2-n').value, 10);
+  const rand = mulberry32(p2_seed++);
+  const { mean: mu, sd } = sampleMS(rand, n);
+  const se = sd / Math.sqrt(n);
+  const lo = mu - 1.96 * se, hi = mu + 1.96 * se;
+  const contains = lo <= POP.muY && POP.muY <= hi;
+
+  // Number-line plot. Use direct annotations instead of a legend
+  // (the legend was visually cluttered for so few elements).
+  const traces = [
+    // CI bar
+    { type: 'scatter', mode: 'lines', x: [lo, hi], y: [1, 1],
+      line: { color: SLATE, width: 8 },
+      hovertemplate: '%{x:.2f}<extra></extra>',
+      showlegend: false },
+    // sample mean (diamond)
+    { type: 'scatter', mode: 'markers', x: [mu], y: [1],
+      marker: { color: SLATE, size: 13, symbol: 'diamond',
+                line: { color: 'white', width: 1.5 } },
+      hovertemplate: 'Ȳ = %{x:.2f}<extra></extra>',
+      showlegend: false },
+    // population mean (red dashed vertical)
+    { type: 'scatter', mode: 'lines', x: [POP.muY, POP.muY], y: [0.4, 1.6],
+      line: { color: RED, width: 2, dash: 'dash' },
+      hovertemplate: 'μ_Y = %{x:.2f}<extra></extra>',
+      showlegend: false }
+  ];
+
+  // Fixed x-range so re-amostragem always lands on the same number-line
+  const lay = baseLayout(null, 'Horas de leitura por mês', '');
+  lay.yaxis = { showticklabels: false, range: [0.4, 1.6],
+                gridcolor: 'rgba(0,0,0,0)', zerolinecolor: 'rgba(0,0,0,0)' };
+  lay.xaxis.range = [AX.YBar.min, AX.YBar.max];
+  lay.height = 200;
+  lay.margin = { l: 25, r: 25, t: 35, b: 45 };
+  lay.showlegend = false;
+  lay.annotations = [
+    // Ȳ label above the diamond
+    { x: mu, y: 1.32, text: `<b>Ȳ = ${fmt(mu, 2)}</b>`,
+      showarrow: false, xanchor: 'center', yanchor: 'bottom',
+      font: { color: SLATE, size: 11, family: 'DM Sans' } },
+    // bracket [
+    { x: lo, y: 1, text: '[', showarrow: false,
+      xanchor: 'right', yanchor: 'middle',
+      font: { color: SLATE, size: 22, family: 'Source Serif 4' } },
+    // bracket ]
+    { x: hi, y: 1, text: ']', showarrow: false,
+      xanchor: 'left', yanchor: 'middle',
+      font: { color: SLATE, size: 22, family: 'Source Serif 4' } },
+    // IC 95% label below the bar
+    { x: (lo + hi) / 2, y: 0.7, text: `IC 95% = [${fmt(lo, 1)}, ${fmt(hi, 1)}]`,
+      showarrow: false, xanchor: 'center',
+      font: { color: SLATE, size: 10, family: 'DM Sans' } },
+    // μ_Y label
+    { x: POP.muY, y: 1.55, text: `μ_Y = ${fmt(POP.muY, 2)}`,
+      showarrow: false, xanchor: 'center',
+      font: { color: RED, size: 11, family: 'DM Sans' } }
+  ];
+  Plotly.react('plot-2', traces, lay, PLOT_CFG);
+  document.getElementById('plot-2').style.height = '200px';
+
+  document.getElementById('stats-2').innerHTML =
+    `<span class="lbl">Ȳ =</span> <span class="v">${fmt(mu)}</span> · ` +
+    `<span class="lbl">SE =</span> <span class="v">${fmt(se)}</span> · ` +
+    `<span class="lbl">IC 95% =</span> <span class="v">[${fmt(lo)}, ${fmt(hi)}]</span> · ` +
+    `<span class="lbl">contém μ_Y?</span> ` +
+    (contains ? '<span class="ok">Sim</span>' : '<span class="no">Não</span>');
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Panel 3 — Monte Carlo
+   ════════════════════════════════════════════════════════════════ */
+function renderPanel3() {
+  const nSims = parseInt(document.getElementById('p3-nsims').value, 10);
+  const n     = parseInt(document.getElementById('p3-n').value, 10);
+  const rand  = mulberry32(7919 + nSims * 13 + n);
+  const muHats = new Float64Array(nSims);
+  let covers = 0;
+  for (let i = 0; i < nSims; i++) {
+    const { mean: m, sd } = sampleMS(rand, n);
+    muHats[i] = m;
+    const se = sd / Math.sqrt(n);
+    if (m - 1.96 * se <= POP.muY && POP.muY <= m + 1.96 * se) covers++;
+  }
+  // stats
+  let s = 0; for (let i = 0; i < nSims; i++) s += muHats[i];
+  const mean_mh = s / nSims;
+  let v = 0; for (let i = 0; i < nSims; i++) { const d = muHats[i] - mean_mh; v += d * d; }
+  const sd_mh = Math.sqrt(v / (nSims - 1));
+  const theo_se = POP.sigmaY / Math.sqrt(n);
+
+  // histogram on a fixed grid — covers all plausible Ȳ for n ≥ 20
+  const h = histogram(muHats, 50, AX.YBar.min, AX.YBar.max);
+  const dens = h.counts.map(c => c / (nSims * h.w));
+  const traces = [
+    { type: 'bar', x: h.centers, y: dens,
+      marker: { color: SLATE, opacity: 0.75, line: { width: 0 } },
+      name: `dist. de Ȳ (R=${nSims})`,
+      hovertemplate: 'Ȳ≈%{x:.0f}<br>densidade %{y:.4f}<extra></extra>' },
+    { type: 'scatter', mode: 'lines',
+      x: [POP.muY, POP.muY], y: [0, 1.5],
+      line: { color: RED, width: 2, dash: 'dash' },
+      name: `μ_Y=${fmt(POP.muY, 1)} h` }
+  ];
+  const lay3 = baseLayout(null, 'Ȳ — média amostral (horas)', 'Densidade');
+  lay3.xaxis.range = [AX.YBar.min, AX.YBar.max];
+  lay3.yaxis.range = [0, 1.5];
+  Plotly.react('plot-3', traces, lay3, PLOT_CFG);
+
+  document.getElementById('stats-3').innerHTML =
+    `<span class="lbl">média de Ȳ:</span> <span class="v">${fmt(mean_mh)}</span> ` +
+    `<span class="lbl">vs μ_Y:</span> <span class="v">${fmt(POP.muY)}</span> · ` +
+    `<span class="lbl">SD de Ȳ:</span> <span class="v">${fmt(sd_mh)}</span> ` +
+    `<span class="lbl">vs σ/√n:</span> <span class="v">${fmt(theo_se)}</span> · ` +
+    `<span class="lbl">cobertura IC 95%:</span> <span class="v">${fmt(100 * covers / nSims, 1)}%</span>`;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Panel 4 — Law of Large Numbers
+   ════════════════════════════════════════════════════════════════ */
+function renderPanel4() {
+  const sizes = [10, 50, 100, 500, 1000, 10000];
+  const reps  = parseInt(document.getElementById('p4-reps').value, 10);
+  const rand  = mulberry32(31337 + reps);
+  const lo = [], hi = [], mn = [];
+  for (const n of sizes) {
+    const arr = new Float64Array(reps);
+    for (let r = 0; r < reps; r++) arr[r] = sampleMS(rand, n).mean;
+    arr.sort();
+    lo.push(arr[Math.floor(0.025 * reps)]);
+    hi.push(arr[Math.floor(0.975 * reps)]);
+    let s = 0; for (let i = 0; i < reps; i++) s += arr[i]; mn.push(s / reps);
+  }
+  const traces = [
+    { x: [...sizes, ...sizes.slice().reverse()],
+      y: [...hi,    ...lo.slice().reverse()],
+      fill: 'toself', fillcolor: RGBA_SLATE(0.22),
+      line: { color: 'rgba(0,0,0,0)' }, hoverinfo: 'skip',
+      name: 'IC 2.5%–97.5%' },
+    { x: sizes, y: mn, mode: 'lines+markers',
+      line: { color: SLATE, width: 2 },
+      marker: { size: 6, color: SLATE },
+      name: 'média de Ȳ',
+      hovertemplate: 'n=%{x}<br>Ȳ=%{y:.2f}<extra></extra>' },
+    { x: sizes, y: sizes.map(() => POP.muY), mode: 'lines',
+      line: { color: RED, width: 2, dash: 'dot' }, name: `μ_Y=${fmt(POP.muY, 1)} h` }
+  ];
+  const lay = baseLayout(null, 'tamanho da amostra n (log)', 'Ȳ (horas)');
+  lay.xaxis.type = 'log';
+  lay.xaxis.range = [AX.N.logMin, AX.N.logMax];
+  lay.yaxis.range = [AX.YBar.min, AX.YBar.max];
+  Plotly.react('plot-4', traces, lay, PLOT_CFG);
+
+  document.getElementById('stats-4').innerHTML =
+    `<span class="lbl">amplitude IC em n=10:</span> <span class="v">${fmt(hi[0] - lo[0])}</span> · ` +
+    `<span class="lbl">em n=10000:</span> <span class="v">${fmt(hi[5] - lo[5])}</span> · ` +
+    `<span class="lbl">razão:</span> <span class="v">${fmt((hi[0] - lo[0]) / (hi[5] - lo[5]), 1)}×</span> ` +
+    `<span class="lbl">(esperado √(10000/10) ≈ 31.6)</span>`;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Panel 5 — Central Limit Theorem
+   ════════════════════════════════════════════════════════════════ */
+function renderPanel5() {
+  const sizes = [10, 100, 1000];
+  const reps  = parseInt(document.getElementById('p5-reps').value, 10);
+  const rand  = mulberry32(424242 + reps);
+  const colors = [SLATE, PLUM, SAGE];
+  const grid = []; for (let x = -4; x <= 4.001; x += 0.05) grid.push(x);
+
+  const traces = [];
+  for (let k = 0; k < sizes.length; k++) {
+    const n = sizes[k];
+    const z = new Float64Array(reps);
+    for (let r = 0; r < reps; r++) {
+      const { mean: m, sd } = sampleMS(rand, n);
+      z[r] = (m - POP.muY) / (sd / Math.sqrt(n));
+    }
+    const d = kde(z, grid);
+    traces.push({
+      type: 'scatter', mode: 'lines',
+      x: grid, y: Array.from(d),
+      line: { color: colors[k], width: 2 },
+      name: `n = ${n}`,
+      hovertemplate: 'z=%{x:.2f}<br>density=%{y:.3f}<extra>n=' + n + '</extra>'
+    });
+  }
+  // standard normal overlay
+  const phi = grid.map(x => Math.exp(-0.5 * x * x) / Math.sqrt(2 * Math.PI));
+  traces.push({
+    type: 'scatter', mode: 'lines', x: grid, y: phi,
+    line: { color: RED, width: 2, dash: 'dash' }, name: 'N(0,1)'
+  });
+
+  const lay = baseLayout(null, 'Z padronizado', 'densidade');
+  lay.xaxis.range = [AX.Z.min, AX.Z.max];
+  lay.yaxis.range = [0, 0.55];
+  Plotly.react('plot-5', traces, lay, PLOT_CFG);
+
+  document.getElementById('stats-5').innerHTML =
+    `<span class="lbl">Z = (Ȳ − μ_Y) / (σ̂/√n) →</span> <span class="v">N(0, 1)</span> ` +
+    `<span class="lbl">conforme n cresce, mesmo partindo de uma população bimodal.</span>`;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Wiring
+   ════════════════════════════════════════════════════════════════ */
+const $ = id => document.getElementById(id);
+
+function regenerateAll() {
+  const seed = parseInt($('pop-seed').value, 10) || 1;
+  const N    = Math.min(500000, Math.max(10000, parseInt($('pop-N').value, 10) || 100000));
+  const t0 = performance.now();
+  POP = buildPopulation(seed, N);
+  $('pop-status').textContent =
+    `N=${N.toLocaleString('pt-BR')} · gerado em ${(performance.now() - t0).toFixed(0)} ms`;
+  renderAll();
+}
+
+function renderAll() {
+  renderPanel1();
+  renderPanel2();
+  renderPanel3();
+  renderPanel4();
+  renderPanel5();
+}
+
+$('regenerate').addEventListener('click', regenerateAll);
+
+// Panel 2
+$('p2-n').addEventListener('input', e => $('p2-n-val').textContent = e.target.value);
+$('p2-n').addEventListener('change', renderPanel2);
+$('p2-resample').addEventListener('click', renderPanel2);
+
+// Panel 3
+$('p3-nsims').addEventListener('input', e => $('p3-nsims-val').textContent = e.target.value);
+$('p3-run').addEventListener('click', renderPanel3);
+
+// Panel 4
+$('p4-reps').addEventListener('input', e => $('p4-reps-val').textContent = e.target.value);
+$('p4-run').addEventListener('click', renderPanel4);
+
+// Panel 5
+$('p5-reps').addEventListener('input', e => $('p5-reps-val').textContent = e.target.value);
+$('p5-run').addEventListener('click', renderPanel5);
+
+// Default seed = today's date as YYYYMMDD (so the population
+// is freshly drawn on every visit, but reproducible within a day)
+function todaySeed() {
+  const t = new Date();
+  return t.getFullYear() * 10000 + (t.getMonth() + 1) * 100 + t.getDate();
+}
+$('pop-seed').value = todaySeed();
+
+// Initial run
+regenerateAll();
+</script>
+
+</body>
+</html>
