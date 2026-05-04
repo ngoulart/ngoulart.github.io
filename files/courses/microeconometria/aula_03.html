@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aula 3 — Experimentos Aleatorizados · Microeconometria Aplicada</title>
+<meta name="description" content="Aula 3: aleatorização individual vs cluster, ICC, MDE, e tamanho do teste quando se ignora correlação intraclasse.">
+<link rel="icon" href="../../../favicon.ico" type="image/x-icon">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<link rel="stylesheet" href="aula_shared.css">
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="../../index.html" class="nav-name">Nícolas Goulart</a>
+    <div class="nav-links">
+      <a href="../../index.html">About</a>
+      <a href="../../cv.html">CV</a>
+      <a href="../../research.html">Research</a>
+      <a href="../../teaching.html" class="active">Teaching</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+
+  <div class="breadcrumb">
+    <a href="../../teaching.html">Teaching</a> ·
+    <a href="index.html">Applied Microeconometrics</a> · Aula 3
+  </div>
+
+  <div class="lecture-toc">
+    <span class="lecture-toc-label">Nesta aula</span>
+    <a href="#p1">1 · ICC</a>
+    <a href="#p2">2 · RCT individual</a>
+    <a href="#p3">3 · RCT cluster</a>
+    <a href="#p4">4 · MDE</a>
+    <a href="#snippets">Snippets R</a>
+  </div>
+
+  <div class="lecture-header">
+    <div class="lecture-kicker">Aula 03</div>
+    <h1 class="lecture-h1">Experimentos Aleatorizados: Individual vs Cluster</h1>
+    <p class="lecture-intro">
+      Em um RCT, a aleatorização garante <code>E[Y(0)|D=1] = E[Y(0)|D=0]</code>: comparar
+      tratados e controles recupera o ATE. Mas <em>como</em> sorteamos importa. Quando o tratamento
+      é atribuído por <strong>cluster</strong> (escolas, hospitais, municípios), observações dentro
+      do mesmo grupo são correlacionadas — e ignorar isso na inferência <em>infla</em> a taxa de
+      rejeição do teste sob <code>H<sub>0</sub>: τ = 0</code>.
+    </p>
+    <p class="lecture-intro">
+      A população desta página difere do workbook: imagine uma intervenção de <em>nudge digital</em>
+      em <strong>clínicas de atenção primária</strong>, com <code>Y</code> = pressão arterial sistólica
+      (mmHg) dos pacientes. Cada clínica tem um efeito latente (qualidade do atendimento) que cria
+      <strong>correlação intraclasse</strong>. Mantemos a hipótese nula <em>nítida</em> (<code>Y(1) = Y(0)</code>)
+      para que toda rejeição seja erro tipo I.
+    </p>
+  </div>
+
+  <div class="global-controls">
+    <div class="control">
+      <label for="pop-seed">Seed da população</label>
+      <input type="number" id="pop-seed" value="20260428" step="1">
+    </div>
+    <div class="control">
+      <label for="pop-G">G (clínicas)</label>
+      <input type="number" id="pop-G" value="100" step="10" min="20" max="400">
+    </div>
+    <div class="control">
+      <label for="pop-n">n (pacientes/clínica)</label>
+      <input type="number" id="pop-n" value="60" step="10" min="10" max="200">
+    </div>
+    <div class="control">
+      <label for="pop-icc">ICC alvo (ρ)</label>
+      <input type="number" id="pop-icc" value="0.15" step="0.05" min="0" max="0.6">
+    </div>
+    <button class="btn" id="regenerate">Regenerar população</button>
+    <span class="val" id="pop-status" style="margin-left:auto"></span>
+  </div>
+
+  <!-- PANEL 1 — ICC -->
+  <section class="panel" id="p1">
+    <div class="panel-head">
+      <div class="panel-num">1</div>
+      <div class="panel-title">Correlação intraclasse (ICC)</div>
+    </div>
+    <p class="panel-q">
+      Pacientes na mesma clínica compartilham um efeito latente <code>γ<sub>g</sub></code>.
+      Decompondo <code>Y<sub>ig</sub> = μ + γ<sub>g</sub> + ε<sub>ig</sub></code>, a
+      <strong>ICC</strong> é <code>ρ = σ²<sub>γ</sub> / (σ²<sub>γ</sub> + σ²<sub>ε</sub>)</code>.
+      O gráfico esquerdo mostra a média por clínica; o direito mostra o histograma agregado:
+      a variância <em>between</em> e a variância <em>within</em> coexistem.
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre><span class="com"># Modelo de variância: Y = μ + γ_g + ε</span>
+library(dplyr)
+
+mod <- data %&gt;%
+  group_by(clinic) %&gt;%
+  summarise(ybar = mean(Y), n = n())
+
+var_between <- var(mod$ybar)
+var_within  <- mean(
+  (data$Y - mod$ybar[match(data$clinic, mod$clinic)])^2
+)
+
+icc_hat <- var_between /
+           (var_between + var_within)</pre>
+      </div>
+      <div class="panel-viz">
+        <div id="plot-1a" class="plot short"></div>
+        <div id="plot-1b" class="plot short"></div>
+        <div class="stats" id="stats-1">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANEL 2 — Individual RCT -->
+  <section class="panel" id="p2">
+    <div class="panel-head">
+      <div class="panel-num">2</div>
+      <div class="panel-title">Aleatorização individual: a referência válida</div>
+    </div>
+    <p class="panel-q">
+      Sorteamos <code>D<sub>i</sub> ~ Bernoulli(0.5)</code> independente <em>por paciente</em>.
+      Como <code>τ = 0</code>, a distribuição de <code>τ̂</code> deve estar centrada em zero
+      e o teste em <code>α = 0.05</code> deve rejeitar exatamente 5% das vezes. Aqui o
+      <code>vcovHC</code> é apropriado — não há clustering na atribuição.
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre><span class="com"># Aleatorização individual</span>
+library(sandwich); library(lmtest)
+
+mc_individual <- function(reps = 1000) {
+  rej <- numeric(reps); est <- numeric(reps)
+  for (b in 1:reps) {
+    D <- rbinom(nrow(data), 1, 0.5)
+    fit <- lm(Y ~ D, data = data)
+    ct  <- coeftest(fit, vcov = vcovHC(fit, "HC1"))
+    est[b] <- ct["D", 1]
+    rej[b] <- ct["D", 4] &lt; 0.05
+  }
+  list(mean_est = mean(est),
+       sd_est   = sd(est),
+       size     = mean(rej))
+}</pre>
+      </div>
+      <div class="panel-viz">
+        <div class="controls-row">
+          <label>Reps:</label>
+          <input type="range" id="r2-reps" min="200" max="2000" step="100" value="500">
+          <span class="val" id="r2-reps-v">500</span>
+          <button class="btn" id="run-2">Rodar Monte Carlo</button>
+        </div>
+        <div id="plot-2" class="plot"></div>
+        <div class="stats" id="stats-2">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANEL 3 — Cluster RCT -->
+  <section class="panel" id="p3">
+    <div class="panel-head">
+      <div class="panel-num">3</div>
+      <div class="panel-title">Aleatorização por cluster: o que <code>vcovHC</code> esconde</div>
+    </div>
+    <p class="panel-q">
+      Agora sorteamos <code>D<sub>g</sub> ~ Bernoulli(0.5)</code> <em>por clínica</em> e propagamos
+      para todos os pacientes. A distribuição verdadeira de <code>τ̂</code> fica mais larga
+      (efeitos de clínica entram em bloco). Comparamos três SEs:
+      <strong>HC1</strong> (incorreto, ignora clusters), <strong>CR1 cluster</strong> (correto),
+      e o <strong>SD entre simulações</strong> (referência verdadeira).
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre><span class="com"># Aleatorização por cluster</span>
+library(sandwich); library(lmtest)
+
+mc_cluster <- function(reps = 1000) {
+  G  <- length(unique(data$clinic))
+  ids <- sort(unique(data$clinic))
+  est <- numeric(reps)
+  rej_HC <- numeric(reps); rej_CL <- numeric(reps)
+  for (b in 1:reps) {
+    Dg <- rbinom(G, 1, 0.5)
+    data$D <- Dg[match(data$clinic, ids)]
+    fit <- lm(Y ~ D, data = data)
+    seHC <- vcovHC(fit, "HC1")
+    seCL <- vcovCL(fit, cluster = data$clinic)
+    est[b]   <- coef(fit)["D"]
+    rej_HC[b] <- coeftest(fit, vcov = seHC)["D", 4] &lt; 0.05
+    rej_CL[b] <- coeftest(fit, vcov = seCL)["D", 4] &lt; 0.05
+  }
+  list(sd_true = sd(est),
+       size_HC = mean(rej_HC),
+       size_CL = mean(rej_CL))
+}</pre>
+      </div>
+      <div class="panel-viz">
+        <div class="controls-row">
+          <label>Reps:</label>
+          <input type="range" id="r3-reps" min="200" max="2000" step="100" value="500">
+          <span class="val" id="r3-reps-v">500</span>
+          <button class="btn" id="run-3">Rodar comparação</button>
+        </div>
+        <div id="plot-3" class="plot"></div>
+        <div class="stats" id="stats-3">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANEL 4 — MDE -->
+  <section class="panel" id="p4">
+    <div class="panel-head">
+      <div class="panel-num">4</div>
+      <div class="panel-title">Efeito Mínimo Detectável</div>
+    </div>
+    <p class="panel-q">
+      Com <code>α = 0.05</code>, poder <code>1 − κ = 0.80</code>:
+      <code>MDE = (z<sub>1−α/2</sub> + z<sub>1−κ</sub>) · SD(τ̂)</code>.
+      O <em>design effect</em> sob clustering é <code>DE = 1 + (n̄ − 1)·ρ</code>: ele multiplica
+      a variância do estimador. Um RCT por cluster com <em>mesma N</em> tem MDE muito maior.
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre><span class="com"># MDE individual vs cluster (mesmo N)</span>
+sd_ind <- res_individual$sd_est
+sd_clu <- res_cluster$sd_true
+
+z_a <- qnorm(<span class="num">0.975</span>); z_p <- qnorm(<span class="num">0.80</span>)
+
+MDE_ind <- (z_a + z_p) * sd_ind
+MDE_clu <- (z_a + z_p) * sd_clu
+
+DE_hat  <- (sd_clu / sd_ind)^<span class="num">2</span>
+<span class="com"># Aproximação: DE ≈ 1 + (n_bar − 1) ρ</span></pre>
+      </div>
+      <div class="panel-viz">
+        <div id="plot-4" class="plot"></div>
+        <div class="stats" id="stats-4">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SNIPPETS -->
+  <section class="panel" id="snippets">
+    <div class="panel-head">
+      <div class="panel-num">★</div>
+      <div class="panel-title">Snippets úteis em R</div>
+    </div>
+    <p class="panel-q">
+      Pedaços de código prontos para colar no seu script. Substitua nomes de variáveis pelos seus.
+    </p>
+    <div class="snippet-grid">
+      <div class="snippet">
+        <div class="snippet-title">Setup do script</div>
+<pre><span class="com"># Pacotes necessários</span>
+pacotes <- c(<span class="str">"dplyr"</span>, <span class="str">"sandwich"</span>, <span class="str">"lmtest"</span>, <span class="str">"ggplot2"</span>)
+faltam  <- pacotes[!pacotes %in% installed.packages()]
+if(length(faltam)) install.packages(faltam)
+invisible(lapply(pacotes, library, character.only = TRUE))
+
+set.seed(<span class="num">20260428</span>)
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+load(<span class="str">"data_04.RData"</span>)</pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-title">SE robustos: HC1 vs Cluster</div>
+<pre><span class="com"># HC1 (heterocedasticidade)</span>
+fit  <- lm(Y ~ D, data = df)
+seHC <- vcovHC(fit, type = <span class="str">"HC1"</span>)
+coeftest(fit, vcov = seHC)
+
+<span class="com"># Cluster por escola</span>
+seCL <- vcovCL(fit, cluster = df$school_id)
+coeftest(fit, vcov = seCL)
+
+<span class="com"># IC 95% manual</span>
+b  <- coef(fit)[<span class="str">"D"</span>]
+se <- sqrt(diag(seCL))[<span class="str">"D"</span>]
+b + c(-<span class="num">1</span>, <span class="num">1</span>) * qnorm(<span class="num">0.975</span>) * se</pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-title">Aleatorização por cluster</div>
+<pre><span class="com"># Sorteia 50% das escolas para tratamento</span>
+schools <- unique(df$school_id)
+G       <- length(schools)
+
+trt_g   <- rbinom(G, <span class="num">1</span>, <span class="num">0.5</span>)
+df$D    <- trt_g[match(df$school_id, schools)]
+
+<span class="com"># Verifica balanceamento de baseline X</span>
+df %&gt;% group_by(D) %&gt;% summarise(across(c(X), mean))</pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-title">Salvar gráfico com ggsave</div>
+<pre><span class="com"># Gráfico</span>
+p <- ggplot(df, aes(x = Y, fill = factor(D))) +
+  geom_density(alpha = <span class="num">0.5</span>) +
+  labs(x = <span class="str">"Outcome"</span>, fill = <span class="str">"Tratamento"</span>) +
+  theme_minimal(base_size = <span class="num">12</span>)
+
+<span class="com"># Salvar em PDF/PNG</span>
+ggsave(<span class="str">"figs/densidade.pdf"</span>, p,
+       width = <span class="num">6</span>, height = <span class="num">4</span>, units = <span class="str">"in"</span>)
+ggsave(<span class="str">"figs/densidade.png"</span>, p,
+       width = <span class="num">6</span>, height = <span class="num">4</span>, dpi = <span class="num">300</span>)</pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-title">Monte Carlo com replicate()</div>
+<pre><span class="com"># Versão vetorial e limpa</span>
+sim_one <- function() {
+  D   <- rbinom(nrow(df), <span class="num">1</span>, <span class="num">0.5</span>)
+  fit <- lm(Y ~ D, data = df)
+  coef(fit)[<span class="str">"D"</span>]
+}
+
+taus <- replicate(<span class="num">1000</span>, sim_one())
+c(media = mean(taus), sd = sd(taus))</pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-title">MDE — fórmula exata</div>
+<pre><span class="com"># Após estimar SD(τ̂) via Monte Carlo</span>
+alpha <- <span class="num">0.05</span>; power <- <span class="num">0.80</span>
+z_a   <- qnorm(<span class="num">1</span> - alpha/<span class="num">2</span>)   <span class="com"># 1.959964</span>
+z_p   <- qnorm(power)            <span class="com"># 0.841621</span>
+
+MDE   <- (z_a + z_p) * sd_tau_hat
+
+<span class="com"># Comparar com efeito esperado da política</span>
+cat(<span class="str">"MDE ="</span>, round(MDE, <span class="num">3</span>),
+    <span class="str">" | ATE esperado ="</span>, ate_esp, <span class="str">"\n"</span>)</pre>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  © 2026 Nícolas Goulart · Built with HTML & CSS · Aula 03
+</footer>
+
+<script>
+'use strict';
+
+// ───── PRNG / Normal ──────────────────────────────────────────────
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function makeNormal(rng){let s=null;return function(){if(s!==null){const v=s;s=null;return v}let u,v,r;do{u=rng()*2-1;v=rng()*2-1;r=u*u+v*v}while(r===0||r>=1);const c=Math.sqrt(-2*Math.log(r)/r);s=v*c;return u*c}}
+
+// Brand colours
+const C = { red:'#973B74', blue:'#46647B', green:'#507867', gray:'#8A8A8A', light:'#E6E6E6', dark:'#1A1A1A' };
+
+const PLOT_CFG = { displayModeBar:false, responsive:true };
+const FONT     = { family:'DM Sans, sans-serif', size:11, color:'#3A3A3A' };
+
+// Axes
+const AX_Y    = [80, 180];
+const AX_TAU  = [-12, 12];
+
+// ───── Population ────────────────────────────────────────────────
+let POP = null;
+
+function buildPop() {
+  const seed = +document.getElementById('pop-seed').value || 20260428;
+  const G    = Math.max(20, Math.min(400, +document.getElementById('pop-G').value || 100));
+  const n    = Math.max(10, Math.min(200, +document.getElementById('pop-n').value || 60));
+  const icc  = Math.max(0,  Math.min(0.6, +document.getElementById('pop-icc').value || 0.15));
+
+  const r    = mulberry32(seed);
+  const norm = makeNormal(r);
+
+  // total variance fixed at 100 (so sigma=10 mmHg)
+  const sigmaTot = 10;
+  const sigmaG   = sigmaTot * Math.sqrt(icc);
+  const sigmaE   = sigmaTot * Math.sqrt(1 - icc);
+
+  const N      = G * n;
+  const clinic = new Int32Array(N);
+  const Y      = new Float64Array(N);  // Y(0) = Y(1) under sharp null
+  const gammaG = new Float64Array(G);
+
+  for (let g = 0; g < G; g++) gammaG[g] = sigmaG * norm();
+
+  let i = 0;
+  for (let g = 0; g < G; g++) {
+    for (let k = 0; k < n; k++) {
+      clinic[i] = g;
+      Y[i] = 130 + gammaG[g] + sigmaE * norm();
+      i++;
+    }
+  }
+
+  POP = { seed, G, n, N, icc, sigmaG, sigmaE, clinic, Y, gammaG };
+  document.getElementById('pop-status').textContent =
+    `população: G=${G}, n=${n}, N=${N}, ρ alvo=${icc.toFixed(2)}`;
+}
+
+// ───── Helpers ───────────────────────────────────────────────────
+function mean(a){let s=0;for(let i=0;i<a.length;i++)s+=a[i];return s/a.length}
+function variance(a){const m=mean(a);let s=0;for(let i=0;i<a.length;i++){const d=a[i]-m;s+=d*d}return s/(a.length-1)}
+function sd(a){return Math.sqrt(variance(a))}
+
+function clusterMeans(Y, clinic, G) {
+  const sums = new Float64Array(G);
+  const cnt  = new Int32Array(G);
+  for (let i = 0; i < Y.length; i++) { sums[clinic[i]] += Y[i]; cnt[clinic[i]]++; }
+  const m = new Float64Array(G);
+  for (let g = 0; g < G; g++) m[g] = sums[g] / cnt[g];
+  return m;
+}
+
+function iccDecomp(Y, clinic, G) {
+  const cmean = clusterMeans(Y, clinic, G);
+  const grand = mean(Y);
+  let ssBetween = 0;
+  for (let g = 0; g < G; g++) {
+    const cnt_g = Y.length / G;  // approx, fine for equal n
+    ssBetween += cnt_g * (cmean[g] - grand) ** 2;
+  }
+  let ssWithin = 0;
+  for (let i = 0; i < Y.length; i++) ssWithin += (Y[i] - cmean[clinic[i]]) ** 2;
+  const varBetween = ssBetween / (Y.length - G);
+  const varWithin  = ssWithin  / (Y.length - G);
+  const icc = varBetween / (varBetween + varWithin);
+  return { cmean, varBetween, varWithin, icc };
+}
+
+function makeBins(values, nbins, lo, hi) {
+  const w = (hi - lo) / nbins;
+  const cnt = new Array(nbins).fill(0);
+  for (const v of values) {
+    if (v < lo || v >= hi) continue;
+    cnt[Math.min(nbins - 1, Math.floor((v - lo) / w))]++;
+  }
+  const x = new Array(nbins);
+  for (let i = 0; i < nbins; i++) x[i] = lo + (i + 0.5) * w;
+  return { x, y: cnt, w };
+}
+
+function kde(values, lo, hi, nGrid = 200) {
+  const n = values.length;
+  if (n === 0) return { x: [], y: [] };
+  const sigma = sd(values);
+  const h = 1.06 * sigma * Math.pow(n, -1/5) || 1;
+  const x = new Array(nGrid), y = new Array(nGrid).fill(0);
+  for (let i = 0; i < nGrid; i++) x[i] = lo + (hi - lo) * i / (nGrid - 1);
+  const k = 1 / (Math.sqrt(2 * Math.PI) * h * n);
+  for (const v of values) {
+    for (let i = 0; i < nGrid; i++) {
+      const z = (x[i] - v) / h;
+      y[i] += k * Math.exp(-0.5 * z * z);
+    }
+  }
+  return { x, y };
+}
+
+// OLS τ̂ for binary D — closed form
+function olsTauOnD(Y, D) {
+  let n=Y.length, sd=0, sy=0, sdy=0, sd2=0;
+  for (let i = 0; i < n; i++) { sd += D[i]; sy += Y[i]; sdy += D[i]*Y[i]; sd2 += D[i]*D[i]; }
+  const denom = n*sd2 - sd*sd;
+  if (denom === 0) return NaN;
+  return (n*sdy - sd*sy) / denom;
+}
+
+// HC1 SE for τ̂ on binary D
+function hc1SE(Y, D, tauHat) {
+  const n = Y.length;
+  let n1 = 0; for (let i = 0; i < n; i++) n1 += D[i];
+  const n0 = n - n1;
+  let m1 = 0, m0 = 0;
+  for (let i = 0; i < n; i++) { if (D[i]===1) m1 += Y[i]; else m0 += Y[i]; }
+  m1 /= n1; m0 /= n0;
+  // residuals e_i, then sandwich for D coef under (intercept, D) design
+  // For binary D, robust SE on τ̂ simplifies via residual variance per group
+  let s1 = 0, s0 = 0;
+  for (let i = 0; i < n; i++) {
+    const e = Y[i] - (D[i]===1 ? m1 : m0);
+    if (D[i]===1) s1 += e*e; else s0 += e*e;
+  }
+  // HC1 = (n/(n-2)) * sigma2_HC0 ; for binary D, var(τ̂_HC0) = s1/n1^2 + s0/n0^2
+  const var0 = s1/(n1*n1) + s0/(n0*n0);
+  const var1 = (n/(n-2)) * var0;
+  return Math.sqrt(var1);
+}
+
+// CR1 (cluster-robust) SE for τ̂ on binary cluster-assigned D
+function cr1SEclu(Y, D, clinic, G) {
+  const n = Y.length;
+  let n1 = 0; for (let i = 0; i < n; i++) n1 += D[i];
+  const n0 = n - n1;
+  let m1 = 0, m0 = 0;
+  for (let i = 0; i < n; i++) { if (D[i]===1) m1 += Y[i]; else m0 += Y[i]; }
+  m1 /= n1; m0 /= n0;
+  // sum of e_i*x_i within each cluster, where x_i is centered D (D_i - p_hat)
+  const p = n1 / n;
+  const u = new Float64Array(G);
+  for (let i = 0; i < n; i++) {
+    const e = Y[i] - (D[i]===1 ? m1 : m0);
+    const x = D[i] - p;
+    u[clinic[i]] += e * x;
+  }
+  let meat = 0;
+  for (let g = 0; g < G; g++) meat += u[g] * u[g];
+  // variance of x: n*p*(1-p); bread = 1/(n*p*(1-p))
+  const bread = 1 / (n * p * (1 - p));
+  const cr0   = bread * meat * bread;
+  const cr1   = (G / (G - 1)) * ((n - 1) / (n - 2)) * cr0;
+  return Math.sqrt(cr1);
+}
+
+// ───── Panel 1: ICC ───────────────────────────────────────────────
+function renderP1() {
+  if (!POP) return;
+  const dec = iccDecomp(POP.Y, POP.clinic, POP.G);
+
+  const cmean = Array.from(dec.cmean);
+  // sort by mean for nicer plot
+  const idx = cmean.map((v,i)=>i).sort((a,b)=>cmean[a]-cmean[b]);
+  const xCl = idx.map((_,k)=>k+1);
+  const yCl = idx.map(i=>cmean[i]);
+
+  Plotly.newPlot('plot-1a', [{
+    x: xCl, y: yCl, type: 'scatter', mode: 'markers',
+    marker: { color: C.blue, size: 5, opacity: 0.7 },
+    name: 'média da clínica',
+    hovertemplate: 'clínica %{x}<br>ȳ_g = %{y:.2f}<extra></extra>'
+  }, {
+    x: [1, POP.G], y: [mean(POP.Y), mean(POP.Y)],
+    type: 'scatter', mode: 'lines',
+    line: { color: C.red, width: 1.5, dash: 'dash' },
+    name: 'média geral', hoverinfo: 'skip'
+  }], {
+    title: { text: 'Médias por clínica (variância between)', font: {...FONT, size: 12, color: C.dark }},
+    margin: { t: 36, r: 16, b: 36, l: 48 }, font: FONT,
+    xaxis: { title: 'clínica (ordenada)', range: [0.5, POP.G+0.5], showgrid: false },
+    yaxis: { title: 'pressão sistólica', range: AX_Y },
+    showlegend: false, plot_bgcolor: '#FAFAFA'
+  }, PLOT_CFG);
+
+  const bins = makeBins(Array.from(POP.Y), 50, AX_Y[0], AX_Y[1]);
+  Plotly.newPlot('plot-1b', [{
+    x: bins.x, y: bins.y, type: 'bar',
+    marker: { color: C.green, opacity: 0.85 },
+    width: bins.w * 0.95,
+    hovertemplate: 'Y ≈ %{x:.1f}<br>n = %{y}<extra></extra>'
+  }], {
+    title: { text: 'Distribuição agregada de Y (todos os pacientes)', font: {...FONT, size: 12, color: C.dark }},
+    margin: { t: 36, r: 16, b: 36, l: 48 }, font: FONT,
+    xaxis: { title: 'pressão sistólica', range: AX_Y },
+    yaxis: { title: 'frequência' },
+    showlegend: false, plot_bgcolor: '#FAFAFA', bargap: 0.02
+  }, PLOT_CFG);
+
+  document.getElementById('stats-1').innerHTML =
+    `<span class="lbl">var entre clínicas:</span> <span class="v">${dec.varBetween.toFixed(2)}</span> &nbsp;·&nbsp;
+     <span class="lbl">var dentro:</span> <span class="v">${dec.varWithin.toFixed(2)}</span> &nbsp;·&nbsp;
+     <span class="lbl">ICC estimado:</span> <span class="v">${dec.icc.toFixed(3)}</span> &nbsp;<span class="lbl">(alvo ${POP.icc.toFixed(2)})</span>`;
+}
+
+// ───── Panel 2: Individual RCT ────────────────────────────────────
+function runP2() {
+  if (!POP) return;
+  const reps = +document.getElementById('r2-reps').value;
+  const r    = mulberry32((POP.seed + 7) >>> 0);
+  const taus = new Float64Array(reps);
+  let rej = 0;
+  const D = new Uint8Array(POP.N);
+  for (let b = 0; b < reps; b++) {
+    for (let i = 0; i < POP.N; i++) D[i] = r() < 0.5 ? 1 : 0;
+    const tau = olsTauOnD(POP.Y, D);
+    const se  = hc1SE(POP.Y, D, tau);
+    taus[b] = tau;
+    if (Math.abs(tau / se) > 1.959964) rej++;
+  }
+  const m = mean(taus), s = sd(taus), size = rej / reps;
+
+  const k = kde(Array.from(taus), AX_TAU[0], AX_TAU[1]);
+
+  Plotly.newPlot('plot-2', [{
+    x: k.x, y: k.y, type: 'scatter', mode: 'lines', fill: 'tozeroy',
+    line: { color: C.blue, width: 2 },
+    fillcolor: 'rgba(70,100,123,0.18)',
+    name: 'τ̂ individual', hovertemplate: 'τ̂ = %{x:.2f}<extra></extra>'
+  }, {
+    x: [0, 0], y: [0, Math.max(...k.y)*1.05],
+    type: 'scatter', mode: 'lines',
+    line: { color: C.red, width: 1.5, dash: 'dash' },
+    name: 'τ verdadeiro = 0', hoverinfo: 'skip'
+  }], {
+    title: { text: `Distribuição de τ̂ — ${reps} simulações`, font: {...FONT, size: 12, color: C.dark }},
+    margin: { t: 36, r: 16, b: 36, l: 48 }, font: FONT,
+    xaxis: { title: 'τ̂ (mmHg)', range: AX_TAU },
+    yaxis: { title: 'densidade' },
+    showlegend: false, plot_bgcolor: '#FAFAFA',
+    annotations: [{
+      x: AX_TAU[1]*0.62, y: Math.max(...k.y)*0.85,
+      text: `<b>SD(τ̂)</b> = ${s.toFixed(3)}<br><b>tamanho</b> @α=0.05: <b>${(size*100).toFixed(1)}%</b>`,
+      showarrow: false, align: 'left', bgcolor: 'rgba(255,255,255,0.97)',
+      bordercolor: '#CCC', borderwidth: 1, borderpad: 6, font: { size: 11 }
+    }]
+  }, PLOT_CFG);
+
+  // Stash for Panel 4
+  POP._sd_ind = s;
+  POP._size_ind = size;
+
+  document.getElementById('stats-2').innerHTML =
+    `<span class="lbl">média τ̂:</span> <span class="v">${m.toFixed(4)}</span> &nbsp;·&nbsp;
+     <span class="lbl">SD entre sims:</span> <span class="v">${s.toFixed(3)}</span> &nbsp;·&nbsp;
+     <span class="lbl">tamanho HC1:</span> <span class="${Math.abs(size-0.05)<0.015?'ok':'no'}">${(size*100).toFixed(1)}%</span>
+     &nbsp;(alvo 5%)`;
+  refreshP4();
+}
+
+// ───── Panel 3: Cluster RCT ───────────────────────────────────────
+function runP3() {
+  if (!POP) return;
+  const reps = +document.getElementById('r3-reps').value;
+  const r    = mulberry32((POP.seed + 13) >>> 0);
+  const taus = new Float64Array(reps);
+  let rejHC = 0, rejCL = 0;
+  const Dg  = new Uint8Array(POP.G);
+  const D   = new Uint8Array(POP.N);
+  for (let b = 0; b < reps; b++) {
+    for (let g = 0; g < POP.G; g++) Dg[g] = r() < 0.5 ? 1 : 0;
+    for (let i = 0; i < POP.N; i++) D[i] = Dg[POP.clinic[i]];
+    const tau = olsTauOnD(POP.Y, D);
+    const seH = hc1SE(POP.Y, D, tau);
+    const seC = cr1SEclu(POP.Y, D, POP.clinic, POP.G);
+    taus[b]  = tau;
+    if (Math.abs(tau / seH) > 1.959964) rejHC++;
+    if (Math.abs(tau / seC) > 1.959964) rejCL++;
+  }
+  const sTrue = sd(taus);
+  const sizeHC = rejHC / reps, sizeCL = rejCL / reps;
+
+  const k = kde(Array.from(taus), AX_TAU[0], AX_TAU[1]);
+
+  Plotly.newPlot('plot-3', [{
+    x: k.x, y: k.y, type: 'scatter', mode: 'lines', fill: 'tozeroy',
+    line: { color: C.green, width: 2 },
+    fillcolor: 'rgba(80,120,103,0.18)',
+    name: 'τ̂ cluster', hovertemplate: 'τ̂ = %{x:.2f}<extra></extra>'
+  }, {
+    x: [0, 0], y: [0, Math.max(...k.y)*1.05],
+    type: 'scatter', mode: 'lines',
+    line: { color: C.red, width: 1.5, dash: 'dash' },
+    hoverinfo: 'skip'
+  }], {
+    title: { text: `Distribuição de τ̂ sob cluster RCT — ${reps} simulações`, font: {...FONT, size: 12, color: C.dark }},
+    margin: { t: 36, r: 16, b: 36, l: 48 }, font: FONT,
+    xaxis: { title: 'τ̂ (mmHg)', range: AX_TAU },
+    yaxis: { title: 'densidade' },
+    showlegend: false, plot_bgcolor: '#FAFAFA',
+    annotations: [{
+      x: AX_TAU[1]*0.55, y: Math.max(...k.y)*0.95,
+      text: `<b>SD(τ̂) verdadeiro</b> = ${sTrue.toFixed(3)}<br>tamanho HC1 (errado): <b>${(sizeHC*100).toFixed(1)}%</b><br>tamanho CR1 (correto): <b>${(sizeCL*100).toFixed(1)}%</b>`,
+      showarrow: false, align: 'left', bgcolor: 'rgba(255,255,255,0.97)',
+      bordercolor: '#CCC', borderwidth: 1, borderpad: 6, font: { size: 11 }
+    }]
+  }, PLOT_CFG);
+
+  POP._sd_clu  = sTrue;
+  POP._size_HC = sizeHC;
+  POP._size_CL = sizeCL;
+
+  document.getElementById('stats-3').innerHTML =
+    `<span class="lbl">SD verdadeiro:</span> <span class="v">${sTrue.toFixed(3)}</span> &nbsp;·&nbsp;
+     <span class="lbl">tamanho HC1:</span> <span class="${Math.abs(sizeHC-0.05)<0.015?'ok':'no'}">${(sizeHC*100).toFixed(1)}%</span> &nbsp;·&nbsp;
+     <span class="lbl">tamanho CR1:</span> <span class="${Math.abs(sizeCL-0.05)<0.015?'ok':'no'}">${(sizeCL*100).toFixed(1)}%</span>
+     &nbsp;<span class="lbl">DE estimado:</span> <span class="v">${(POP._sd_ind ? (sTrue/POP._sd_ind)**2 : NaN).toFixed(2)}</span>`;
+  refreshP4();
+}
+
+// ───── Panel 4: MDE ───────────────────────────────────────────────
+function refreshP4() {
+  if (!POP) return;
+  const sdInd = POP._sd_ind, sdClu = POP._sd_clu;
+  const z = 1.959964 + 0.841621;
+
+  const mdeInd = sdInd ? z * sdInd : null;
+  const mdeClu = sdClu ? z * sdClu : null;
+
+  const xs = ['RCT individual', 'RCT por cluster'];
+  const ys = [mdeInd || 0, mdeClu || 0];
+  const cols = [C.blue, C.green];
+
+  Plotly.newPlot('plot-4', [{
+    x: xs, y: ys, type: 'bar',
+    marker: { color: cols },
+    text: ys.map(v => v ? v.toFixed(2) : '—'),
+    textposition: 'outside',
+    hovertemplate: '%{x}<br>MDE = %{y:.2f}<extra></extra>'
+  }], {
+    title: { text: 'Efeito Mínimo Detectável (α=0.05, poder=0.80)', font: {...FONT, size: 12, color: C.dark }},
+    margin: { t: 36, r: 16, b: 36, l: 48 }, font: FONT,
+    yaxis: { title: 'MDE (mmHg)', range: [0, Math.max(2, (mdeClu||1)*1.3)] },
+    showlegend: false, plot_bgcolor: '#FAFAFA'
+  }, PLOT_CFG);
+
+  const ratio = (sdInd && sdClu) ? (sdClu/sdInd)**2 : null;
+  const nbar  = POP.n;
+  const deApprox = 1 + (nbar - 1) * POP.icc;
+
+  document.getElementById('stats-4').innerHTML = `
+    <span class="lbl">MDE individual:</span> <span class="v">${mdeInd ? mdeInd.toFixed(3) : '— rode painel 2'}</span> &nbsp;·&nbsp;
+    <span class="lbl">MDE cluster:</span> <span class="v">${mdeClu ? mdeClu.toFixed(3) : '— rode painel 3'}</span> &nbsp;·&nbsp;
+    <span class="lbl">design effect estimado:</span> <span class="v">${ratio ? ratio.toFixed(2) : '—'}</span>
+    &nbsp;<span class="lbl">DE teórico ≈ 1+(n̄−1)ρ:</span> <span class="v">${deApprox.toFixed(2)}</span>`;
+}
+
+// ───── Wiring ────────────────────────────────────────────────────
+document.getElementById('regenerate').addEventListener('click', () => {
+  buildPop(); renderP1();
+  ['stats-2','stats-3','stats-4'].forEach(id => document.getElementById(id).textContent = '— regenerada, rode novamente —');
+  ['plot-2','plot-3','plot-4'].forEach(id => Plotly.purge(id));
+  POP._sd_ind = POP._sd_clu = POP._size_ind = POP._size_HC = POP._size_CL = undefined;
+});
+
+['r2-reps','r3-reps'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('input', () => document.getElementById(id+'-v').textContent = el.value);
+});
+
+document.getElementById('run-2').addEventListener('click', runP2);
+document.getElementById('run-3').addEventListener('click', runP3);
+
+buildPop();
+renderP1();
+runP2();
+runP3();
+</script>
+
+</body>
+</html>

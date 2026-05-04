@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aula 6 — Variáveis Instrumentais · Microeconometria Aplicada</title>
+<meta name="description" content="Aula 6: instrumento, first stage, forma reduzida, Wald e LATE — quem são os compliers?">
+<link rel="icon" href="../../../favicon.ico" type="image/x-icon">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<link rel="stylesheet" href="aula_shared.css">
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="../../index.html" class="nav-name">Nícolas Goulart</a>
+    <div class="nav-links">
+      <a href="../../index.html">About</a>
+      <a href="../../cv.html">CV</a>
+      <a href="../../research.html">Research</a>
+      <a href="../../teaching.html" class="active">Teaching</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+
+  <div class="breadcrumb">
+    <a href="../../teaching.html">Teaching</a> ·
+    <a href="index.html">Applied Microeconometrics</a> · Aula 6
+  </div>
+
+  <div class="lecture-toc">
+    <span class="lecture-toc-label">Nesta aula</span>
+    <a href="#p1">1 · Por que OLS falha</a>
+    <a href="#p2">2 · First stage</a>
+    <a href="#p3">3 · Forma reduzida</a>
+    <a href="#p4">4 · Wald e LATE</a>
+    <a href="#snippets">Snippets R</a>
+  </div>
+
+  <div class="lecture-header">
+    <div class="lecture-kicker">Aula 06</div>
+    <h1 class="lecture-h1">Variáveis Instrumentais e LATE</h1>
+    <p class="lecture-intro">
+      Quando o tratamento <code>D</code> é endógeno e <code>X</code> não é suficiente para
+      a CIA, precisamos de um <strong>instrumento</strong> <code>Z</code> que satisfaça três
+      requisitos: <em>relevância</em> (<code>Cov(Z, D) ≠ 0</code>), <em>exogeneidade</em>
+      (<code>{Y(0), Y(1)} ⊥ Z</code>), e <em>exclusão</em> (<code>Z</code> só afeta <code>Y</code>
+      via <code>D</code>). Sob <strong>monotonicidade</strong>, o estimador IV identifica o
+      LATE — o efeito médio sobre os <em>compliers</em>.
+    </p>
+    <p class="lecture-intro">
+      A população desta página difere do workbook: <em>loteria de subsídio</em> para motoristas
+      de aplicativo (Brasília). <code>Z</code> = ofereceu subsídio (sorteio aleatório);
+      <code>D</code> = aderiu ao subsídio (decisão do motorista); <code>Y</code> =
+      faturamento mensal (R$). Sob monotonicidade, a oferta nunca <em>desincentiva</em>
+      a adesão.
+    </p>
+  </div>
+
+  <div class="global-controls">
+    <div class="control">
+      <label for="pop-seed">Seed da população</label>
+      <input type="number" id="pop-seed" value="20260428" step="1">
+    </div>
+    <div class="control">
+      <label for="pop-N">N (motoristas)</label>
+      <input type="number" id="pop-N" value="40000" step="2000" min="2000" max="200000">
+    </div>
+    <div class="control">
+      <label for="pop-fs">Force first stage</label>
+      <input type="number" id="pop-fs" value="0.35" step="0.05" min="0.05" max="0.7">
+    </div>
+    <button class="btn" id="regenerate">Regenerar população</button>
+    <span class="val" id="pop-status" style="margin-left:auto"></span>
+  </div>
+
+  <!-- PANEL 1 -->
+  <section class="panel" id="p1">
+    <div class="panel-head">
+      <div class="panel-num">1</div>
+      <div class="panel-title">Por que OLS é viesado</div>
+    </div>
+    <p class="panel-q">
+      Cada motorista tem uma <em>habilidade</em> latente <code>U</code> que aumenta tanto
+      <code>Y(0)</code> quanto a probabilidade de aderir voluntariamente. Comparar
+      <code>E[Y|D=1]</code> e <code>E[Y|D=0]</code> mistura <em>seleção</em> (quem adere
+      tem mais habilidade) com <em>efeito causal</em> (o subsídio aumenta o faturamento).
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre><span class="com"># OLS ingênuo</span>
+fit_ols <- lm(Y ~ D, data = data)
+coeftest(fit_ols, vcov = vcovHC(fit_ols, <span class="str">"HC1"</span>))
+
+<span class="com"># Mostra viés contra ATE verdadeiro</span>
+ATE <- mean(data$Y1 - data$Y0)
+c(OLS = coef(fit_ols)[<span class="str">"D"</span>], ATE = ATE)</pre>
+      </div>
+      <div class="panel-viz">
+        <div id="plot-1" class="plot"></div>
+        <div class="stats" id="stats-1">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANEL 2 -->
+  <section class="panel" id="p2">
+    <div class="panel-head">
+      <div class="panel-num">2</div>
+      <div class="panel-title">First stage: o instrumento move <code>D</code>?</div>
+    </div>
+    <p class="panel-q">
+      <code>FS = E[D|Z=1] − E[D|Z=0]</code>. Se for próximo de zero, o instrumento é <em>fraco</em>
+      e os erros padrão de IV explodem (regra prática: <code>F &gt; 10</code>). Os <strong>compliers</strong>
+      são aqueles com <code>D(1)=1, D(0)=0</code>: a fração de compliers é <em>exatamente</em>
+      a magnitude do first stage.
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre><span class="com"># First stage</span>
+fit_fs <- lm(D ~ Z, data = data)
+fs_coef <- coef(fit_fs)[<span class="str">"Z"</span>]
+
+<span class="com"># Estatística F (regra: F > 10)</span>
+F_fs <- summary(fit_fs)$fstatistic[<span class="num">1</span>]
+
+c(first_stage = fs_coef, F = F_fs)</pre>
+      </div>
+      <div class="panel-viz">
+        <div id="plot-2" class="plot"></div>
+        <div class="stats" id="stats-2">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANEL 3 -->
+  <section class="panel" id="p3">
+    <div class="panel-head">
+      <div class="panel-num">3</div>
+      <div class="panel-title">Forma reduzida: <code>Z</code> sobre <code>Y</code></div>
+    </div>
+    <p class="panel-q">
+      <code>RF = E[Y|Z=1] − E[Y|Z=0]</code>. Sob aleatorização do instrumento, esse é o efeito
+      causal de <em>oferecer</em> o subsídio (intent-to-treat). Não é o efeito do subsídio em si
+      — porque nem todos a quem foi oferecido aderiram.
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre><span class="com"># Forma reduzida (= ITT do instrumento)</span>
+fit_rf <- lm(Y ~ Z, data = data)
+rf_coef <- coef(fit_rf)[<span class="str">"Z"</span>]
+
+<span class="com"># Mesma coisa, mas em uma chamada IV</span>
+library(AER)
+fit_iv <- ivreg(Y ~ D | Z, data = data)
+summary(fit_iv,
+        vcov = vcovHC(fit_iv, <span class="str">"HC1"</span>),
+        diagnostics = TRUE)</pre>
+      </div>
+      <div class="panel-viz">
+        <div id="plot-3" class="plot"></div>
+        <div class="stats" id="stats-3">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANEL 4 -->
+  <section class="panel" id="p4">
+    <div class="panel-head">
+      <div class="panel-num">4</div>
+      <div class="panel-title">Wald = RF / FS = LATE</div>
+    </div>
+    <p class="panel-q">
+      <code>τ̂<sub>Wald</sub> = (E[Y|Z=1] − E[Y|Z=0]) / (E[D|Z=1] − E[D|Z=0])</code>.
+      Sob exogeneidade, exclusão e monotonicidade,
+      <code>τ̂<sub>Wald</sub> →<sub>p</sub> E[Y(1) − Y(0) | complier]</code>. O painel
+      compara OLS, RF, Wald e o ATE/LATE verdadeiros.
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre><span class="com"># Wald estimador (cálculo direto)</span>
+yz1 <- mean(data$Y[data$Z == <span class="num">1</span>])
+yz0 <- mean(data$Y[data$Z == <span class="num">0</span>])
+dz1 <- mean(data$D[data$Z == <span class="num">1</span>])
+dz0 <- mean(data$D[data$Z == <span class="num">0</span>])
+
+tau_wald <- (yz1 - yz0) / (dz1 - dz0)
+c(Wald = tau_wald)
+
+<span class="com"># Equivalente</span>
+ivreg(Y ~ D | Z, data = data)$coef[<span class="str">"D"</span>]</pre>
+      </div>
+      <div class="panel-viz">
+        <div id="plot-4" class="plot"></div>
+        <div class="stats" id="stats-4">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SNIPPETS -->
+  <section class="panel" id="snippets">
+    <div class="panel-head">
+      <div class="panel-num">★</div>
+      <div class="panel-title">Snippets úteis em R</div>
+    </div>
+    <div class="snippet-grid">
+
+      <div class="snippet">
+        <div class="snippet-title">IV via AER::ivreg</div>
+<pre>library(AER)
+
+<span class="com"># Sintaxe: y ~ d | z (ou ~ d + x | z + x)</span>
+fit_iv <- ivreg(Y ~ D | Z, data = df)
+summary(fit_iv,
+        vcov         = vcovHC(fit_iv, <span class="str">"HC1"</span>),
+        diagnostics  = TRUE)
+<span class="com"># diagnostics: weak inst, Wu-Hausman, Sargan</span></pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-title">First stage e F</div>
+<pre>fit_fs <- lm(D ~ Z, data = df)
+F_fs   <- summary(fit_fs)$fstatistic[<span class="num">1</span>]
+
+cat(sprintf(<span class="str">"FS = %.3f, F = %.1f%s\n"</span>,
+    coef(fit_fs)[<span class="str">"Z"</span>], F_fs,
+    if (F_fs &lt; <span class="num">10</span>) <span class="str">" — INSTRUMENTO FRACO"</span> else <span class="str">""</span>))</pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-title">IV com fixest::feols (ultra rápido)</div>
+<pre>library(fixest)
+
+fit <- feols(Y ~ <span class="num">1</span> | school_id | D ~ Z,
+             data = df,
+             cluster = ~school_id)
+summary(fit)
+fitstat(fit, ~ . + ivf)   <span class="com"># 1st-stage F</span></pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-title">Caracterizando os compliers</div>
+<pre><span class="com"># Tamanho do grupo de compliers</span>
+share_compliers <- mean(df$D[df$Z == <span class="num">1</span>]) -
+                   mean(df$D[df$Z == <span class="num">0</span>])
+
+<span class="com"># Médias de X por tipo (Abadie kappa weighting)</span>
+df$kappa <- <span class="num">1</span> - df$D*(<span class="num">1</span>-df$Z) /
+                (<span class="num">1</span> - mean(df$Z)) -
+            (<span class="num">1</span>-df$D)*df$Z / mean(df$Z)
+
+<span class="com"># Média de X entre compliers</span>
+sum(df$X * df$kappa) / sum(df$kappa)</pre>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  © 2026 Nícolas Goulart · Built with HTML & CSS · Aula 06
+</footer>
+
+<script>
+'use strict';
+
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function makeNormal(rng){let s=null;return function(){if(s!==null){const v=s;s=null;return v}let u,v,r;do{u=rng()*2-1;v=rng()*2-1;r=u*u+v*v}while(r===0||r>=1);const c=Math.sqrt(-2*Math.log(r)/r);s=v*c;return u*c}}
+
+const C = { red:'#973B74', blue:'#46647B', green:'#507867', gray:'#8A8A8A', light:'#E6E6E6', dark:'#1A1A1A' };
+const PLOT_CFG = { displayModeBar:false, responsive:true };
+const FONT = { family:'DM Sans, sans-serif', size:11, color:'#3A3A3A' };
+
+let POP = null;
+
+function buildPop() {
+  const seed = +document.getElementById('pop-seed').value || 20260428;
+  const N    = Math.max(2000, Math.min(200000, +document.getElementById('pop-N').value || 40000));
+  const fsTarget = Math.max(0.05, Math.min(0.7, +document.getElementById('pop-fs').value || 0.35));
+
+  const r    = mulberry32(seed);
+  const norm = makeNormal(r);
+
+  // 4 types: never-taker (D(0)=D(1)=0), always-taker (D(0)=D(1)=1), complier (D(0)=0,D(1)=1).
+  // No defiers (monotonicity).
+  // Choose proportions so first-stage = share of compliers.
+  // Always-takers proportion ≈ 0.20, never-takers fill the rest.
+  const pAT = 0.20;
+  const pCO = fsTarget;
+  const pNT = 1 - pAT - pCO;
+
+  const Z   = new Uint8Array(N);
+  const D   = new Uint8Array(N);
+  const Y0  = new Float64Array(N);
+  const Y1  = new Float64Array(N);
+  const Y   = new Float64Array(N);
+  const Type = new Uint8Array(N);   // 0=NT, 1=AT, 2=CO
+  const U   = new Float64Array(N);
+
+  // Heterogeneous effects: compliers gain less than always-takers — common LATE pattern
+  for (let i = 0; i < N; i++) {
+    Z[i] = r() < 0.5 ? 1 : 0;
+    const t = r();
+    let typ;
+    if (t < pAT) typ = 1;          // always-taker
+    else if (t < pAT + pCO) typ = 2; // complier
+    else typ = 0;                  // never-taker
+    Type[i] = typ;
+
+    // Latent ability differs across types: AT > CO > NT
+    const u = (typ === 1 ? 0.7 : typ === 2 ? 0.0 : -0.7) + 0.6 * norm();
+    U[i] = u;
+
+    // D depends on type and Z
+    D[i] = (typ === 1) ? 1 : (typ === 2 && Z[i] === 1) ? 1 : 0;
+
+    // Y(0): increasing in U (selection on levels)
+    Y0[i] = 4000 + 800 * u + 600 * norm();
+
+    // τ varies by type: AT gain 600, CO gain 1200, NT gain 900 — but NT/AT effects don't matter for LATE
+    const tau = (typ === 1 ? 600 : typ === 2 ? 1200 : 900) + 200 * norm();
+    Y1[i] = Y0[i] + tau;
+    Y[i]  = D[i] ? Y1[i] : Y0[i];
+  }
+
+  // True LATE = mean tau among compliers
+  let tauCO = 0, nCO = 0, ATEsum = 0;
+  for (let i = 0; i < N; i++) {
+    ATEsum += (Y1[i] - Y0[i]);
+    if (Type[i] === 2) { tauCO += (Y1[i] - Y0[i]); nCO++; }
+  }
+  const trueLATE = tauCO / nCO;
+  const trueATE  = ATEsum / N;
+
+  POP = { seed, N, Z, D, Y0, Y1, Y, U, Type, trueLATE, trueATE, pAT, pCO, pNT };
+  document.getElementById('pop-status').textContent =
+    `população: N=${N}, AT=${(pAT*100).toFixed(0)}%, CO=${(pCO*100).toFixed(0)}%, NT=${(pNT*100).toFixed(0)}%, LATE=${trueLATE.toFixed(0)}, ATE=${trueATE.toFixed(0)}`;
+}
+
+function meanFiltered(arr, mask, val) {
+  let s=0, k=0;
+  for (let i = 0; i < arr.length; i++) if (mask[i] === val) { s += arr[i]; k++; }
+  return s/k;
+}
+
+function renderP1() {
+  if (!POP) return;
+  const yD1 = meanFiltered(POP.Y, POP.D, 1);
+  const yD0 = meanFiltered(POP.Y, POP.D, 0);
+  const ols = yD1 - yD0;
+
+  // Y(0) by D — shows selection bias
+  const y0_D1 = meanFiltered(POP.Y0, POP.D, 1);
+  const y0_D0 = meanFiltered(POP.Y0, POP.D, 0);
+  const selBias = y0_D1 - y0_D0;
+
+  Plotly.newPlot('plot-1', [{
+    x: ['E[Y(0) | D=0]','E[Y(0) | D=1]','E[Y | D=0]','E[Y | D=1]'],
+    y: [y0_D0, y0_D1, yD0, yD1],
+    type: 'bar',
+    marker: { color: [C.blue, C.blue, C.red, C.red], opacity: [0.55, 0.55, 1, 1] },
+    text: [y0_D0, y0_D1, yD0, yD1].map(v => v.toFixed(0)),
+    textposition: 'outside',
+    hovertemplate: '%{x}<br>%{y:.0f}<extra></extra>'
+  }], {
+    title: { text: `OLS = ${ols.toFixed(0)}, ATE = ${POP.trueATE.toFixed(0)}, LATE = ${POP.trueLATE.toFixed(0)}`, font: {...FONT, size: 12, color: C.dark }},
+    margin: { t: 36, r: 16, b: 36, l: 56 }, font: FONT,
+    yaxis: { title: 'faturamento (R$)', range: [0, 7500] },
+    showlegend: false, plot_bgcolor: '#FAFAFA'
+  }, PLOT_CFG);
+
+  document.getElementById('stats-1').innerHTML =
+    `<span class="lbl">τ̂ OLS:</span> <span class="no">${ols.toFixed(2)}</span> &nbsp;·&nbsp;
+     <span class="lbl">viés de seleção em níveis:</span> <span class="v">${selBias.toFixed(2)}</span> &nbsp;·&nbsp;
+     <span class="lbl">ATE verdadeiro:</span> <span class="ok">${POP.trueATE.toFixed(2)}</span> &nbsp;·&nbsp;
+     <span class="lbl">LATE verdadeiro:</span> <span class="ok">${POP.trueLATE.toFixed(2)}</span>`;
+}
+
+function renderP2() {
+  if (!POP) return;
+  const dZ1 = meanFiltered(POP.D, POP.Z, 1);
+  const dZ0 = meanFiltered(POP.D, POP.Z, 0);
+  const fs = dZ1 - dZ0;
+
+  // F-stat for univariate: F = (n-2) * R^2 / (1 - R^2), with R^2 from regression D ~ Z
+  // We'll compute σ²_D (sample) and Var(D|Z=z), then approximate
+  let n=POP.N, sumD=0; for (let i = 0; i < n; i++) sumD += POP.D[i];
+  const meanD = sumD/n;
+  // R^2 = explained variance / total
+  let ssTot=0, ssRes=0;
+  for (let i = 0; i < n; i++) {
+    ssTot += (POP.D[i] - meanD)**2;
+    const pred = (POP.Z[i] === 1) ? dZ1 : dZ0;
+    ssRes += (POP.D[i] - pred)**2;
+  }
+  const r2 = 1 - ssRes/ssTot;
+  const F  = (n - 2) * r2 / (1 - r2);
+
+  Plotly.newPlot('plot-2', [{
+    x: ['Z=0', 'Z=1'], y: [dZ0, dZ1],
+    type: 'bar', marker: { color: [C.gray, C.green] },
+    text: [dZ0, dZ1].map(v => v.toFixed(3)),
+    textposition: 'outside',
+    hovertemplate: '%{x}<br>P(D=1) = %{y:.3f}<extra></extra>'
+  }], {
+    title: { text: `First stage = ${fs.toFixed(3)}, F = ${F.toFixed(0)}`, font: {...FONT, size: 12, color: C.dark }},
+    margin: { t: 36, r: 16, b: 36, l: 48 }, font: FONT,
+    yaxis: { title: 'P(D=1 | Z)', range: [0, 1] },
+    showlegend: false, plot_bgcolor: '#FAFAFA'
+  }, PLOT_CFG);
+
+  POP._fs = fs; POP._F = F;
+  document.getElementById('stats-2').innerHTML =
+    `<span class="lbl">P(D=1|Z=0):</span> <span class="v">${dZ0.toFixed(3)}</span> &nbsp;·&nbsp;
+     <span class="lbl">P(D=1|Z=1):</span> <span class="v">${dZ1.toFixed(3)}</span> &nbsp;·&nbsp;
+     <span class="lbl">first stage:</span> <span class="${F>10?'ok':'no'}">${fs.toFixed(3)}</span> &nbsp;
+     <span class="lbl">F:</span> <span class="${F>10?'ok':'no'}">${F.toFixed(0)}</span>
+     ${F>10 ? '(forte)' : '(fraco)'}`;
+}
+
+function renderP3() {
+  if (!POP) return;
+  const yZ1 = meanFiltered(POP.Y, POP.Z, 1);
+  const yZ0 = meanFiltered(POP.Y, POP.Z, 0);
+  const rf = yZ1 - yZ0;
+
+  Plotly.newPlot('plot-3', [{
+    x: ['Z=0', 'Z=1'], y: [yZ0, yZ1],
+    type: 'bar', marker: { color: [C.gray, C.green] },
+    text: [yZ0, yZ1].map(v => v.toFixed(0)),
+    textposition: 'outside',
+    hovertemplate: '%{x}<br>E[Y] = %{y:.0f}<extra></extra>'
+  }], {
+    title: { text: `Forma reduzida (ITT) = ${rf.toFixed(0)}`, font: {...FONT, size: 12, color: C.dark }},
+    margin: { t: 36, r: 16, b: 36, l: 48 }, font: FONT,
+    yaxis: { title: 'E[Y | Z] (R$)', range: [3500, 6000] },
+    showlegend: false, plot_bgcolor: '#FAFAFA'
+  }, PLOT_CFG);
+
+  POP._rf = rf;
+  document.getElementById('stats-3').innerHTML =
+    `<span class="lbl">E[Y|Z=0]:</span> <span class="v">${yZ0.toFixed(2)}</span> &nbsp;·&nbsp;
+     <span class="lbl">E[Y|Z=1]:</span> <span class="v">${yZ1.toFixed(2)}</span> &nbsp;·&nbsp;
+     <span class="lbl">forma reduzida:</span> <span class="v">${rf.toFixed(2)}</span>
+     <span class="lbl">(efeito de oferecer o subsídio — ITT)</span>`;
+}
+
+function renderP4() {
+  if (!POP) return;
+  const fs = POP._fs ?? (meanFiltered(POP.D, POP.Z, 1) - meanFiltered(POP.D, POP.Z, 0));
+  const rf = POP._rf ?? (meanFiltered(POP.Y, POP.Z, 1) - meanFiltered(POP.Y, POP.Z, 0));
+  const wald = rf / fs;
+
+  const yD1 = meanFiltered(POP.Y, POP.D, 1);
+  const yD0 = meanFiltered(POP.Y, POP.D, 0);
+  const ols = yD1 - yD0;
+
+  Plotly.newPlot('plot-4', [{
+    x: ['τ̂ OLS','τ̂ ITT (RF)','τ̂ Wald (LATE)'],
+    y: [ols, rf, wald],
+    type: 'bar', marker: { color: [C.red, C.blue, C.green] },
+    text: [ols, rf, wald].map(v => v.toFixed(0)),
+    textposition: 'outside',
+    hovertemplate: '%{x}<br>%{y:.2f}<extra></extra>'
+  }, {
+    x: ['τ̂ OLS','τ̂ ITT (RF)','τ̂ Wald (LATE)'],
+    y: [POP.trueATE, POP.trueLATE * POP.pCO, POP.trueLATE],
+    type: 'scatter', mode: 'markers',
+    marker: { symbol: 'diamond', color: C.dark, size: 12 },
+    name: 'verdadeiro', hovertemplate: 'verdadeiro = %{y:.2f}<extra></extra>'
+  }], {
+    title: { text: `Wald = RF / FS = ${rf.toFixed(0)} / ${fs.toFixed(2)} = ${wald.toFixed(0)}`, font: {...FONT, size: 12, color: C.dark }},
+    margin: { t: 36, r: 16, b: 36, l: 48 }, font: FONT,
+    yaxis: { title: 'efeito (R$)', range: [-200, Math.max(ols, wald) * 1.4] },
+    plot_bgcolor: '#FAFAFA',
+    legend: { orientation: 'h', y: -0.18 }
+  }, PLOT_CFG);
+
+  document.getElementById('stats-4').innerHTML =
+    `<span class="lbl">OLS:</span> <span class="v">${ols.toFixed(2)}</span> &nbsp;·&nbsp;
+     <span class="lbl">RF (ITT):</span> <span class="v">${rf.toFixed(2)}</span> &nbsp;·&nbsp;
+     <span class="lbl">Wald:</span> <span class="ok">${wald.toFixed(2)}</span>
+     &nbsp;<span class="lbl">LATE verdadeiro:</span> <span class="v">${POP.trueLATE.toFixed(2)}</span> &nbsp;·&nbsp;
+     <span class="lbl">ATE verdadeiro:</span> <span class="v">${POP.trueATE.toFixed(2)}</span>`;
+}
+
+document.getElementById('regenerate').addEventListener('click', () => {
+  buildPop(); renderP1(); renderP2(); renderP3(); renderP4();
+});
+buildPop(); renderP1(); renderP2(); renderP3(); renderP4();
+</script>
+
+</body>
+</html>

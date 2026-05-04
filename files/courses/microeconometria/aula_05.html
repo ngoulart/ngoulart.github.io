@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aula 5 — Seleção em Observáveis (CIA) · Microeconometria Aplicada</title>
+<meta name="description" content="Aula 5: independência condicional, balanço dentro de X, matching exato e pesos da regressão multivariada.">
+<link rel="icon" href="../../../favicon.ico" type="image/x-icon">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<link rel="stylesheet" href="aula_shared.css">
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="../../index.html" class="nav-name">Nícolas Goulart</a>
+    <div class="nav-links">
+      <a href="../../index.html">About</a>
+      <a href="../../cv.html">CV</a>
+      <a href="../../research.html">Research</a>
+      <a href="../../teaching.html" class="active">Teaching</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+
+  <div class="breadcrumb">
+    <a href="../../teaching.html">Teaching</a> ·
+    <a href="index.html">Applied Microeconometrics</a> · Aula 5
+  </div>
+
+  <div class="lecture-toc">
+    <span class="lecture-toc-label">Nesta aula</span>
+    <a href="#p1">1 · Propensity por X</a>
+    <a href="#p2">2 · Naive vs CIA</a>
+    <a href="#p3">3 · Matching exato</a>
+    <a href="#p4">4 · Pesos da regressão</a>
+    <a href="#snippets">Snippets R</a>
+  </div>
+
+  <div class="lecture-header">
+    <div class="lecture-kicker">Aula 05</div>
+    <h1 class="lecture-h1">Seleção em Observáveis (CIA)</h1>
+    <p class="lecture-intro">
+      Quando o tratamento <em>não</em> é aleatório, mas a seleção depende somente de covariáveis
+      observáveis <code>X</code>, vale a hipótese de <strong>independência condicional</strong>:
+      <code>{Y(0), Y(1)} ⊥ D | X</code>. Sob CIA, podemos identificar o ATE comparando tratados
+      e controles <em>dentro</em> de cada valor de <code>X</code> e tirando uma média ponderada.
+      A regressão multivariada faz isso, mas com <strong>pesos próprios</strong> que nem sempre
+      coincidem com o ATE.
+    </p>
+    <p class="lecture-intro">
+      A população desta página difere do workbook: <em>bolsa de iniciação científica</em> para
+      graduandos, com <code>X</code> ∈ {básico, intermediário, avançado, expert} (faixa
+      pré-tratamento de desempenho) e <code>Y</code> = produtividade científica medida 12 meses
+      depois. Quem tem maior <code>X</code> tem maior chance de receber a bolsa <em>e</em>
+      maior <code>Y(0)</code>.
+    </p>
+  </div>
+
+  <div class="global-controls">
+    <div class="control">
+      <label for="pop-seed">Seed da população</label>
+      <input type="number" id="pop-seed" value="20260428" step="1">
+    </div>
+    <div class="control">
+      <label for="pop-N">N (alunos)</label>
+      <input type="number" id="pop-N" value="50000" step="5000" min="5000" max="200000">
+    </div>
+    <button class="btn" id="regenerate">Regenerar população</button>
+    <span class="val" id="pop-status" style="margin-left:auto"></span>
+  </div>
+
+  <!-- PANEL 1 -->
+  <section class="panel" id="p1">
+    <div class="panel-head">
+      <div class="panel-num">1</div>
+      <div class="panel-title">Propensity por estrato</div>
+    </div>
+    <p class="panel-q">
+      Cada faixa <code>X</code> tem sua própria <code>P(D=1|X)</code> — o propensity score.
+      <strong>Suporte comum</strong>: precisamos ter <em>tratados e controles em cada estrato</em>
+      (caso contrário, certos contrafactuais não existem).
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre><span class="com"># Propensity por estrato</span>
+data %&gt;%
+  group_by(X) %&gt;%
+  summarise(N        = n(),
+            P_D1     = mean(D),
+            n_trat   = sum(D),
+            n_ctrl   = sum(<span class="num">1</span> - D))</pre>
+      </div>
+      <div class="panel-viz">
+        <div id="plot-1" class="plot"></div>
+        <div class="stats" id="stats-1">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANEL 2 -->
+  <section class="panel" id="p2">
+    <div class="panel-head">
+      <div class="panel-num">2</div>
+      <div class="panel-title">Naive vs CIA: balanço dentro de cada X</div>
+    </div>
+    <p class="panel-q">
+      A diferença simples <code>Ȳ<sub>D=1</sub> − Ȳ<sub>D=0</sub></code> é viesada porque
+      compara estratos diferentes. Mas <strong>dentro</strong> de cada <code>X</code>,
+      <code>E[Y|X,D=1] − E[Y|X,D=0]</code> identifica o ATE condicional. O gráfico mostra
+      <code>E[Y|X,D]</code> por estrato — as barras devem ter <em>diferenças semelhantes</em>
+      ao verdadeiro <code>τ(x)</code>.
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre><span class="com"># Diferença ingênua</span>
+naive <- mean(data$Y[data$D == <span class="num">1</span>]) -
+         mean(data$Y[data$D == <span class="num">0</span>])
+
+<span class="com"># Diferença dentro de cada X</span>
+data %&gt;%
+  group_by(X, D) %&gt;%
+  summarise(media_Y = mean(Y),
+            n       = n()) %&gt;%
+  pivot_wider(names_from = D,
+              values_from = c(media_Y, n)) %&gt;%
+  mutate(tau_x = media_Y_1 - media_Y_0)</pre>
+      </div>
+      <div class="panel-viz">
+        <div id="plot-2" class="plot"></div>
+        <div class="stats" id="stats-2">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANEL 3 -->
+  <section class="panel" id="p3">
+    <div class="panel-head">
+      <div class="panel-num">3</div>
+      <div class="panel-title">Matching exato: ATE e ATT</div>
+    </div>
+    <p class="panel-q">
+      Sob CIA: <code>τ̂<sub>ATE</sub> = Σ<sub>x</sub> π(x) · τ̂(x)</code>, onde
+      <code>π(x) = P(X=x)</code> (frequência marginal).<br>
+      Para o ATT, ponderamos pelos <em>tratados</em>: <code>τ̂<sub>ATT</sub> = Σ<sub>x</sub> π(x|D=1) · τ̂(x)</code>.
+      Quando <code>τ(x)</code> varia com <code>x</code>, ATE ≠ ATT.
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre><span class="com"># Matching exato — passo a passo</span>
+strat <- data %&gt;%
+  group_by(X) %&gt;%
+  summarise(tau_x  = mean(Y[D==<span class="num">1</span>]) - mean(Y[D==<span class="num">0</span>]),
+            pi_x   = n() / nrow(data),
+            piTr_x = sum(D) / sum(data$D))
+
+ATE_hat <- sum(strat$tau_x * strat$pi_x)
+ATT_hat <- sum(strat$tau_x * strat$piTr_x)
+
+c(ATE = ATE_hat, ATT = ATT_hat)</pre>
+      </div>
+      <div class="panel-viz">
+        <div id="plot-3" class="plot"></div>
+        <div class="stats" id="stats-3">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANEL 4 -->
+  <section class="panel" id="p4">
+    <div class="panel-head">
+      <div class="panel-num">4</div>
+      <div class="panel-title">Pesos da regressão multivariada</div>
+    </div>
+    <p class="panel-q">
+      A regressão <code>Y = α + τ·D + Σ β<sub>x</sub>·1{X=x} + u</code> também produz uma média
+      ponderada dos <code>τ(x)</code>, mas com pesos
+      <code>ω(x) ∝ π(x) · p(x)·(1 − p(x))</code>: a regressão dá <strong>mais peso</strong> a
+      estratos onde a variância de <code>D</code> é maior (<code>p(x) ≈ 0.5</code>) e
+      <strong>menos peso</strong> a estratos com propensity extrema. Sob heterogeneidade,
+      <code>τ̂<sub>OLS</sub> ≠ ATE</code>.
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre><span class="com"># Regressão saturada com efeitos fixos de X</span>
+fit <- lm(Y ~ D + factor(X), data = data)
+tau_OLS <- coef(fit)[<span class="str">"D"</span>]
+
+<span class="com"># Pesos implícitos da regressão</span>
+strat <- strat %&gt;%
+  mutate(p_x   = pi_x,
+         varD  = ((sum(data$D)/nrow(data)) -    <span class="com"># aprox.</span>
+                  mean(D[X == X])) ,            <span class="com"># pseudo</span>
+         omega = pi_x * (P_D1*(<span class="num">1</span>-P_D1)),
+         omega = omega / sum(omega))</pre>
+      </div>
+      <div class="panel-viz">
+        <div id="plot-4" class="plot"></div>
+        <div class="stats" id="stats-4">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SNIPPETS -->
+  <section class="panel" id="snippets">
+    <div class="panel-head">
+      <div class="panel-num">★</div>
+      <div class="panel-title">Snippets úteis em R</div>
+    </div>
+    <div class="snippet-grid">
+
+      <div class="snippet">
+        <div class="snippet-title">Verificar suporte comum</div>
+<pre>tab <- with(df, table(X, D))
+cat(<span class="str">"Estratos sem suporte comum:\n"</span>)
+which(tab[,<span class="str">"0"</span>] == <span class="num">0</span> | tab[,<span class="str">"1"</span>] == <span class="num">0</span>)
+
+<span class="com"># Visual rápido</span>
+ggplot(df, aes(factor(X), fill = factor(D))) +
+  geom_bar(position = <span class="str">"fill"</span>) +
+  labs(y = <span class="str">"P(D|X)"</span>, fill = <span class="str">"D"</span>)</pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-title">Matching exato em uma chamada</div>
+<pre>library(MatchIt)
+
+m <- matchit(D ~ X,
+             data = df,
+             method = <span class="str">"exact"</span>,
+             estimand = <span class="str">"ATE"</span>)
+md <- match.data(m)
+
+fit <- lm(Y ~ D, data = md, weights = weights)
+coeftest(fit, vcovCL(fit, cluster = md$subclass))</pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-title">Pesos implícitos da OLS</div>
+<pre><span class="com"># Decomposição de Angrist (1998) / Aronow-Samii</span>
+omega_x <- df %&gt;%
+  group_by(X) %&gt;%
+  summarise(p_x  = n() / nrow(df),
+            phat = mean(D)) %&gt;%
+  mutate(w_unnorm = p_x * phat * (<span class="num">1</span> - phat),
+         omega_OLS = w_unnorm / sum(w_unnorm))
+
+<span class="com"># Comparar com pesos do ATE (π(x))</span>
+omega_x %&gt;% select(X, p_x, omega_OLS)</pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-title">Estimar tau(x) e agregar</div>
+<pre>tau_x <- df %&gt;%
+  group_by(X) %&gt;%
+  summarise(tau   = mean(Y[D==<span class="num">1</span>]) - mean(Y[D==<span class="num">0</span>]),
+            n_t   = sum(D),
+            n_c   = sum(<span class="num">1</span>-D),
+            n     = n())
+
+ATE <- sum(tau_x$tau * tau_x$n)         / sum(tau_x$n)
+ATT <- sum(tau_x$tau * tau_x$n_t)       / sum(tau_x$n_t)
+ATU <- sum(tau_x$tau * tau_x$n_c)       / sum(tau_x$n_c)
+c(ATE, ATT, ATU)</pre>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  © 2026 Nícolas Goulart · Built with HTML & CSS · Aula 05
+</footer>
+
+<script>
+'use strict';
+
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function makeNormal(rng){let s=null;return function(){if(s!==null){const v=s;s=null;return v}let u,v,r;do{u=rng()*2-1;v=rng()*2-1;r=u*u+v*v}while(r===0||r>=1);const c=Math.sqrt(-2*Math.log(r)/r);s=v*c;return u*c}}
+
+const C = { red:'#973B74', blue:'#46647B', green:'#507867', gray:'#8A8A8A', light:'#E6E6E6', dark:'#1A1A1A' };
+const PLOT_CFG = { displayModeBar:false, responsive:true };
+const FONT = { family:'DM Sans, sans-serif', size:11, color:'#3A3A3A' };
+
+const STRATA   = ['básico','intermediário','avançado','expert'];
+const STRAT_PI = [0.30, 0.35, 0.25, 0.10];
+const PROP     = [0.10, 0.30, 0.60, 0.85];   // P(D=1|X)
+const Y0_X     = [40,   55,   70,   82  ];   // E[Y(0)|X]
+const TAU_X    = [12,   8,    5,    3   ];   // τ(x): heterogeneity (decreasing)
+const SIG      = 8;
+
+let POP = null;
+
+function buildPop() {
+  const seed = +document.getElementById('pop-seed').value || 20260428;
+  const N    = Math.max(5000, Math.min(200000, +document.getElementById('pop-N').value || 50000));
+  const r    = mulberry32(seed);
+  const norm = makeNormal(r);
+
+  const Xidx = new Uint8Array(N);
+  const D    = new Uint8Array(N);
+  const Y0   = new Float64Array(N);
+  const Y1   = new Float64Array(N);
+  const Y    = new Float64Array(N);
+
+  // cumulative probs for sampling X
+  const cum = []; let acc = 0;
+  for (const p of STRAT_PI) { acc += p; cum.push(acc); }
+
+  for (let i = 0; i < N; i++) {
+    const u = r();
+    let x = 0; while (u > cum[x] && x < cum.length - 1) x++;
+    Xidx[i] = x;
+    D[i]    = r() < PROP[x] ? 1 : 0;
+    Y0[i]   = Y0_X[x] + SIG * norm();
+    Y1[i]   = Y0[i] + TAU_X[x] + 1.5 * norm();
+    Y[i]    = D[i] ? Y1[i] : Y0[i];
+  }
+
+  // strat-level summaries
+  const cnt = new Array(STRATA.length).fill(0);
+  const cntT = new Array(STRATA.length).fill(0);
+  const sumY1 = new Array(STRATA.length).fill(0);
+  const sumY0 = new Array(STRATA.length).fill(0);
+  for (let i = 0; i < N; i++) {
+    cnt[Xidx[i]]++;
+    if (D[i]) { cntT[Xidx[i]]++; sumY1[Xidx[i]] += Y[i]; }
+    else      {                  sumY0[Xidx[i]] += Y[i]; }
+  }
+  const tauHat = new Array(STRATA.length);
+  const pi_x   = new Array(STRATA.length);
+  const piTr_x = new Array(STRATA.length);
+  const phat_x = new Array(STRATA.length);
+  let totT = 0; for (const c of cntT) totT += c;
+  for (let x = 0; x < STRATA.length; x++) {
+    const m1 = sumY1[x] / cntT[x];
+    const m0 = sumY0[x] / (cnt[x] - cntT[x]);
+    tauHat[x] = m1 - m0;
+    pi_x[x]   = cnt[x] / N;
+    piTr_x[x] = cntT[x] / totT;
+    phat_x[x] = cntT[x] / cnt[x];
+  }
+
+  let trueATE = 0; for (let x = 0; x < STRATA.length; x++) trueATE += STRAT_PI[x] * TAU_X[x];
+
+  POP = { seed, N, Xidx, D, Y0, Y1, Y, cnt, cntT, tauHat, pi_x, piTr_x, phat_x, trueATE };
+  document.getElementById('pop-status').textContent = `população: N=${N}, ATE verdadeiro=${trueATE.toFixed(2)}`;
+}
+
+function renderP1() {
+  if (!POP) return;
+  Plotly.newPlot('plot-1', [{
+    x: STRATA, y: POP.phat_x, type: 'bar',
+    marker: { color: C.blue },
+    text: POP.phat_x.map(v => v.toFixed(2)),
+    textposition: 'outside',
+    name: 'P̂(D=1|X)', hovertemplate: 'X = %{x}<br>P(D=1|X) = %{y:.3f}<extra></extra>'
+  }], {
+    title: { text: 'Propensity por estrato', font: {...FONT, size: 12, color: C.dark }},
+    margin: { t: 36, r: 16, b: 36, l: 48 }, font: FONT,
+    yaxis: { title: 'P(D=1 | X)', range: [0, 1] },
+    showlegend: false, plot_bgcolor: '#FAFAFA'
+  }, PLOT_CFG);
+  document.getElementById('stats-1').innerHTML = STRATA.map((s,i) =>
+    `<span class="lbl">${s}:</span> n=<span class="v">${POP.cnt[i]}</span> (${POP.cntT[i]} trat / ${POP.cnt[i]-POP.cntT[i]} ctrl)`
+  ).join(' &nbsp;·&nbsp; ');
+}
+
+function renderP2() {
+  if (!POP) return;
+  // E[Y|X,D]
+  const m1 = new Array(STRATA.length), m0 = new Array(STRATA.length);
+  const s1 = new Array(STRATA.length).fill(0), s0 = new Array(STRATA.length).fill(0);
+  for (let i = 0; i < POP.N; i++) {
+    if (POP.D[i]) s1[POP.Xidx[i]] += POP.Y[i]; else s0[POP.Xidx[i]] += POP.Y[i];
+  }
+  for (let x = 0; x < STRATA.length; x++) {
+    m1[x] = s1[x] / POP.cntT[x];
+    m0[x] = s0[x] / (POP.cnt[x] - POP.cntT[x]);
+  }
+  let mY1=0, n1=0, mY0=0, n0=0;
+  for (let i = 0; i < POP.N; i++) { if (POP.D[i]) { mY1 += POP.Y[i]; n1++; } else { mY0 += POP.Y[i]; n0++; } }
+  const naive = mY1/n1 - mY0/n0;
+
+  Plotly.newPlot('plot-2', [{
+    x: STRATA, y: m0, type: 'bar', name: 'E[Y | X, D=0]',
+    marker: { color: C.blue }, text: m0.map(v => v.toFixed(1)), textposition: 'inside'
+  }, {
+    x: STRATA, y: m1, type: 'bar', name: 'E[Y | X, D=1]',
+    marker: { color: C.red }, text: m1.map(v => v.toFixed(1)), textposition: 'inside'
+  }], {
+    title: { text: 'Médias condicionais por estrato', font: {...FONT, size: 12, color: C.dark }},
+    margin: { t: 36, r: 16, b: 36, l: 48 }, font: FONT,
+    yaxis: { title: 'pontuação Y', range: [0, 110] },
+    barmode: 'group', plot_bgcolor: '#FAFAFA',
+    legend: { orientation: 'h', y: -0.18 }
+  }, PLOT_CFG);
+
+  document.getElementById('stats-2').innerHTML =
+    `<span class="lbl">τ̂(x) por estrato:</span> ` +
+    STRATA.map((s,i) => `${s} = <span class="v">${POP.tauHat[i].toFixed(2)}</span>`).join(', ') +
+    ` &nbsp;·&nbsp; <span class="lbl">τ̂ ingênuo:</span> <span class="no">${naive.toFixed(2)}</span> ` +
+    `<span class="lbl">vs ATE</span> <span class="ok">${POP.trueATE.toFixed(2)}</span>`;
+}
+
+function renderP3() {
+  if (!POP) return;
+  let ate = 0, att = 0, atu = 0;
+  let totU = 0; for (let x = 0; x < STRATA.length; x++) totU += (POP.cnt[x] - POP.cntT[x]);
+  for (let x = 0; x < STRATA.length; x++) {
+    ate += POP.pi_x[x] * POP.tauHat[x];
+    att += POP.piTr_x[x] * POP.tauHat[x];
+    atu += ((POP.cnt[x] - POP.cntT[x]) / totU) * POP.tauHat[x];
+  }
+  const trueATT = TAU_X.reduce((s,t,x) => s + t * STRAT_PI[x] * PROP[x], 0)
+                / STRAT_PI.reduce((s,p,x) => s + p * PROP[x], 0);
+  const trueATU = TAU_X.reduce((s,t,x) => s + t * STRAT_PI[x] * (1-PROP[x]), 0)
+                / STRAT_PI.reduce((s,p,x) => s + p * (1-PROP[x]), 0);
+
+  Plotly.newPlot('plot-3', [{
+    x: ['ATE', 'ATT', 'ATU'],
+    y: [ate, att, atu],
+    type: 'bar', marker: { color: [C.green, C.red, C.blue] },
+    text: [ate, att, atu].map(v => v.toFixed(2)),
+    textposition: 'outside', name: 'estimativas'
+  }, {
+    x: ['ATE', 'ATT', 'ATU'],
+    y: [POP.trueATE, trueATT, trueATU],
+    type: 'scatter', mode: 'markers',
+    marker: { symbol: 'diamond', color: C.dark, size: 12 },
+    name: 'verdadeiro', hovertemplate: 'verdadeiro: %{y:.2f}<extra></extra>'
+  }], {
+    title: { text: 'Estimativas via matching exato (vs verdadeiro)', font: {...FONT, size: 12, color: C.dark }},
+    margin: { t: 36, r: 16, b: 36, l: 48 }, font: FONT,
+    yaxis: { title: 'efeito (pontos)', range: [0, Math.max(ate, att, atu) * 1.3] },
+    plot_bgcolor: '#FAFAFA', legend: { orientation: 'h', y: -0.18 }
+  }, PLOT_CFG);
+
+  document.getElementById('stats-3').innerHTML =
+    `<span class="lbl">ATE matching:</span> <span class="v">${ate.toFixed(3)}</span> &nbsp;·&nbsp;
+     <span class="lbl">ATT matching:</span> <span class="v">${att.toFixed(3)}</span> &nbsp;·&nbsp;
+     <span class="lbl">ATU matching:</span> <span class="v">${atu.toFixed(3)}</span>
+     &nbsp;<span class="lbl">(verdadeiros: ${POP.trueATE.toFixed(2)} / ${trueATT.toFixed(2)} / ${trueATU.toFixed(2)})</span>`;
+}
+
+function renderP4() {
+  if (!POP) return;
+  // OLS-implied weights ω(x) ∝ π(x) · p(x)·(1-p(x))
+  const wRaw = POP.pi_x.map((p, x) => p * POP.phat_x[x] * (1 - POP.phat_x[x]));
+  const wSum = wRaw.reduce((a,b)=>a+b, 0);
+  const wOLS = wRaw.map(w => w / wSum);
+  const wATE = POP.pi_x.slice();
+
+  let tauOLS = 0; for (let x = 0; x < STRATA.length; x++) tauOLS += wOLS[x] * POP.tauHat[x];
+  let tauMatch = 0; for (let x = 0; x < STRATA.length; x++) tauMatch += wATE[x] * POP.tauHat[x];
+
+  Plotly.newPlot('plot-4', [{
+    x: STRATA, y: wATE, type: 'bar', name: 'π(x) — ATE/matching',
+    marker: { color: C.green },
+    hovertemplate: '%{x}<br>π = %{y:.3f}<extra></extra>'
+  }, {
+    x: STRATA, y: wOLS, type: 'bar', name: 'ω(x) — OLS',
+    marker: { color: C.red },
+    hovertemplate: '%{x}<br>ω = %{y:.3f}<extra></extra>'
+  }], {
+    title: { text: `Pesos: matching (π) vs OLS (ω). τ̂_OLS=${tauOLS.toFixed(2)}, τ̂_match=${tauMatch.toFixed(2)}`, font: {...FONT, size: 12, color: C.dark }},
+    margin: { t: 36, r: 16, b: 36, l: 48 }, font: FONT,
+    yaxis: { title: 'peso', range: [0, Math.max(...wATE, ...wOLS) * 1.2] },
+    barmode: 'group', plot_bgcolor: '#FAFAFA',
+    legend: { orientation: 'h', y: -0.18 }
+  }, PLOT_CFG);
+
+  document.getElementById('stats-4').innerHTML =
+    `<span class="lbl">pesos OLS:</span> ` +
+    STRATA.map((s,i) => `${s} = <span class="v">${wOLS[i].toFixed(3)}</span>`).join(', ') +
+    `<br><span class="lbl">τ̂ OLS:</span> <span class="v">${tauOLS.toFixed(3)}</span> vs
+     <span class="lbl">τ̂ matching:</span> <span class="v">${tauMatch.toFixed(3)}</span> vs
+     <span class="lbl">ATE verdadeiro:</span> <span class="ok">${POP.trueATE.toFixed(3)}</span>`;
+}
+
+document.getElementById('regenerate').addEventListener('click', () => {
+  buildPop(); renderP1(); renderP2(); renderP3(); renderP4();
+});
+buildPop(); renderP1(); renderP2(); renderP3(); renderP4();
+</script>
+
+</body>
+</html>

@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../style.css">
+<link rel="stylesheet" href="aula_shared.css">
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
 <style>
   /* widen the page so code + viz fits comfortably */
@@ -240,6 +241,7 @@
     <a href="#p3">3 · Monte Carlo</a>
     <a href="#p4">4 · LGN</a>
     <a href="#p5">5 · TCL</a>
+    <a href="#snippets">Snippets R</a>
   </div>
 
   <div class="lecture-header">
@@ -497,6 +499,115 @@ z_df &lt;- <span class="kw">do.call</span>(<span class="kw">rbind</span>, <span 
         <div id="plot-5" class="plot tall"></div>
         <div class="stats" id="stats-5">…</div>
       </div>
+    </div>
+  </section>
+
+  <!-- SNIPPETS -->
+  <section class="panel" id="snippets">
+    <div class="panel-head">
+      <div class="panel-num">★</div>
+      <div class="panel-title">Snippets úteis em R</div>
+    </div>
+    <div class="snippet-grid">
+
+      <div class="snippet">
+        <div class="snippet-title">Setup mínimo de aula</div>
+<pre><span class="com"># Pacotes mais usados ao longo do curso</span>
+library(tidyverse)
+library(broom)
+library(modelsummary)
+
+<span class="com"># Reprodutibilidade</span>
+set.seed(<span class="num">20260428</span>)
+
+<span class="com"># Tema gráfico padrão</span>
+theme_set(theme_minimal(base_size = <span class="num">12</span>))</pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-title">Monte Carlo de uma média</div>
+<pre>R     <- <span class="num">5000</span>
+n     <- <span class="num">100</span>
+mu    <- <span class="num">10</span>
+sigma <- <span class="num">2</span>
+
+xbar <- replicate(R, {
+  x <- rnorm(n, mu, sigma)
+  mean(x)
+})
+
+mean(xbar); sd(xbar)
+hist(xbar, breaks = <span class="num">40</span>,
+     col = <span class="str">"steelblue"</span>, border = <span class="str">"white"</span>)</pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-title">LGN — média acumulada</div>
+<pre>n <- <span class="num">5000</span>
+x <- rbinom(n, <span class="num">1</span>, p = <span class="num">0.3</span>)
+
+run_mean <- cumsum(x) / seq_along(x)
+
+p <- ggplot(
+  data.frame(n = <span class="num">1</span>:n, m = run_mean),
+  aes(n, m)
+) +
+  geom_line() +
+  geom_hline(yintercept = <span class="num">0.3</span>,
+             linetype = <span class="str">"dashed"</span>) +
+  labs(x = <span class="str">"n"</span>, y = <span class="str">"X̄_n"</span>)
+
+ggsave(<span class="str">"figs/lgn.pdf"</span>, p,
+       width = <span class="num">6</span>, height = <span class="num">3.5</span>)</pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-title">TCL — distribuição amostral</div>
+<pre>R <- <span class="num">3000</span>
+n <- <span class="num">50</span>
+
+<span class="com"># Distribuição base bem assimétrica</span>
+xbar <- replicate(R, mean(rexp(n, rate = <span class="num">1</span>)))
+
+<span class="com"># Histograma + densidade Normal teórica</span>
+ggplot(data.frame(xbar), aes(xbar)) +
+  geom_histogram(aes(y = after_stat(density)),
+                 bins = <span class="num">40</span>, fill = <span class="str">"steelblue"</span>) +
+  stat_function(fun = dnorm,
+                args = list(mean = <span class="num">1</span>,
+                            sd = <span class="num">1</span>/sqrt(n)),
+                color = <span class="str">"red"</span>, linewidth = <span class="num">1</span>)</pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-title">Intervalo de confiança via t</div>
+<pre>x <- rnorm(<span class="num">50</span>, mean = <span class="num">10</span>, sd = <span class="num">2</span>)
+
+<span class="com"># t.test() já dá IC95</span>
+t.test(x)$conf.int
+
+<span class="com"># Manualmente</span>
+xb <- mean(x); s <- sd(x); n <- length(x)
+xb + qt(c(<span class="num">0.025</span>, <span class="num">0.975</span>), df = n-<span class="num">1</span>) * s/sqrt(n)</pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-title">Salvar figura para LaTeX</div>
+<pre>library(ggplot2)
+
+p <- ggplot(diamonds, aes(carat, price)) +
+  geom_point(alpha = <span class="num">0.3</span>) +
+  theme_minimal(base_size = <span class="num">11</span>)
+
+<span class="com"># PDF — vetorial, escala perfeita no LaTeX</span>
+ggsave(<span class="str">"figs/diamonds.pdf"</span>, p,
+       width = <span class="num">6</span>, height = <span class="num">4</span>,
+       device = cairo_pdf)
+
+<span class="com"># Dimensões batendo com o textwidth</span>
+<span class="com"># em artigos: width = 6, em slides: 4.5</span></pre>
+      </div>
+
     </div>
   </section>
 

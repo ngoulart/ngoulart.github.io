@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aula 7 — Regressão Descontínua · Microeconometria Aplicada</title>
+<meta name="description" content="Aula 7: sharp RDD, escolha de bandwidth, teste de densidade (McCrary), e placebo em covariáveis pré-tratamento.">
+<link rel="icon" href="../../../favicon.ico" type="image/x-icon">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<link rel="stylesheet" href="aula_shared.css">
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="../../index.html" class="nav-name">Nícolas Goulart</a>
+    <div class="nav-links">
+      <a href="../../index.html">About</a>
+      <a href="../../cv.html">CV</a>
+      <a href="../../research.html">Research</a>
+      <a href="../../teaching.html" class="active">Teaching</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+
+  <div class="breadcrumb">
+    <a href="../../teaching.html">Teaching</a> ·
+    <a href="index.html">Applied Microeconometrics</a> · Aula 7
+  </div>
+
+  <div class="lecture-toc">
+    <span class="lecture-toc-label">Nesta aula</span>
+    <a href="#p1">1 · Salto em <code>Y</code></a>
+    <a href="#p2">2 · Bandwidth</a>
+    <a href="#p3">3 · Densidade</a>
+    <a href="#p4">4 · Placebo</a>
+    <a href="#snippets">Snippets R</a>
+  </div>
+
+  <div class="lecture-header">
+    <div class="lecture-kicker">Aula 07</div>
+    <h1 class="lecture-h1">Regressão Descontínua: Identificação Local</h1>
+    <p class="lecture-intro">
+      Quando o tratamento é uma função descontínua de uma variável <em>running</em>
+      <code>R</code> em torno de um corte <code>c</code>, podemos identificar o efeito
+      causal <strong>localmente</strong> comparando indivíduos imediatamente abaixo e
+      acima do corte. O design exige <em>continuidade</em> dos potenciais
+      <code>E[Y(d)|R = r]</code> em <code>r = c</code> — qualquer descontinuidade na
+      densidade de <code>R</code> ao redor do corte (manipulação) invalida o desenho.
+    </p>
+    <p class="lecture-intro">
+      A população desta página difere do workbook: <em>bolsa de mestrado</em> com corte
+      em <code>R = 700</code> de uma prova padronizada. Quem tem <code>R ≥ 700</code>
+      recebe a bolsa (<code>D = 1</code>); o desfecho <code>Y</code> é o tempo até a
+      defesa (em meses, menor é melhor — então o efeito esperado é <em>negativo</em>).
+    </p>
+  </div>
+
+  <div class="global-controls">
+    <div class="control">
+      <label for="pop-seed">Seed da população</label>
+      <input type="number" id="pop-seed" value="20260428" step="1">
+    </div>
+    <div class="control">
+      <label for="pop-N">N (candidatos)</label>
+      <input type="number" id="pop-N" value="8000" step="500" min="1000" max="40000">
+    </div>
+    <div class="control">
+      <label for="pop-tau">Salto verdadeiro (meses)</label>
+      <input type="number" id="pop-tau" value="-3" step="0.5" min="-8" max="0">
+    </div>
+    <div class="control">
+      <label for="pop-manip">Manipulação no corte</label>
+      <select id="pop-manip">
+        <option value="0">Sem manipulação</option>
+        <option value="0.5">Leve (50%)</option>
+        <option value="1">Forte (100%)</option>
+      </select>
+    </div>
+    <button class="btn" id="regenerate">Regenerar população</button>
+    <span class="val" id="pop-status" style="margin-left:auto"></span>
+  </div>
+
+  <!-- PANEL 1 -->
+  <section class="panel" id="p1">
+    <div class="panel-head">
+      <div class="panel-num">1</div>
+      <div class="panel-title">O salto em <code>Y</code> no corte</div>
+    </div>
+    <p class="panel-q">
+      O <em>scatter</em> binado com ajuste polinomial local mostra a evolução de <code>Y</code>
+      ao longo de <code>R</code>. O <strong>tamanho do salto</strong> em <code>R = c</code>
+      é <code>τ̂<sub>SRD</sub></code>. O ajuste é feito separadamente à esquerda e à direita
+      do corte.
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre><span class="com"># RDD com pacote rdrobust</span>
+library(rdrobust)
+
+est <- rdrobust(y = data$Y, x = data$R,
+                c = <span class="num">700</span>, p = <span class="num">1</span>)
+summary(est)
+
+<span class="com"># Plot binado oficial</span>
+rdplot(y = data$Y, x = data$R,
+       c = <span class="num">700</span>, p = <span class="num">1</span>,
+       binselect = <span class="str">"esmv"</span>)</pre>
+      </div>
+      <div class="panel-viz">
+        <div id="plot-1" class="plot tall"></div>
+        <div class="stats" id="stats-1">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANEL 2 -->
+  <section class="panel" id="p2">
+    <div class="panel-head">
+      <div class="panel-num">2</div>
+      <div class="panel-title">Sensibilidade à bandwidth</div>
+    </div>
+    <p class="panel-q">
+      O estimador local depende de <code>h</code>. Bandwidths grandes reduzem a variância
+      mas aumentam o viés (uso de pontos longe do corte); bandwidths pequenas fazem o oposto.
+      Use o slider para variar <code>h</code> e observe estabilidade. <code>rdrobust::rdbwselect</code>
+      escolhe <code>h</code> ótimo via MSE.
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre><span class="com"># Bandwidth ótimo (Imbens-Kalyanaraman/CCT)</span>
+bw <- rdbwselect(y = data$Y, x = data$R,
+                 c = <span class="num">700</span>, bwselect = <span class="str">"mserd"</span>)
+bw$bws
+
+<span class="com"># Sensibilidade</span>
+hs <- seq(<span class="num">10</span>, <span class="num">120</span>, by = <span class="num">10</span>)
+res <- sapply(hs, function(h) {
+  rdrobust(data$Y, data$R, c = <span class="num">700</span>, h = h)$Estimate[<span class="num">1</span>]
+})
+plot(hs, res, type = <span class="str">"l"</span>)</pre>
+      </div>
+      <div class="panel-viz">
+        <div class="controls-row">
+          <label>h:</label>
+          <input type="range" id="r2-h" min="10" max="200" step="5" value="60">
+          <span class="val" id="r2-h-v">60</span>
+          <label style="margin-left:0.6rem">grau:</label>
+          <select id="r2-p">
+            <option value="1">linear</option>
+            <option value="2">quadrático</option>
+          </select>
+        </div>
+        <div id="plot-2" class="plot"></div>
+        <div class="stats" id="stats-2">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANEL 3 -->
+  <section class="panel" id="p3">
+    <div class="panel-head">
+      <div class="panel-num">3</div>
+      <div class="panel-title">Teste de densidade (McCrary)</div>
+    </div>
+    <p class="panel-q">
+      Sem manipulação, a densidade de <code>R</code> deve ser <em>contínua</em> em <code>c</code>.
+      Se candidatos manipulam o resultado para ficar acima do corte (ou abaixo), aparece um
+      "salto" na densidade. Use o seletor acima para ativar manipulação e veja a densidade
+      mudar de forma.
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre><span class="com"># McCrary via pacote rddensity</span>
+library(rddensity)
+
+dens <- rddensity(X = data$R, c = <span class="num">700</span>)
+summary(dens)
+
+<span class="com"># Plot oficial</span>
+rdplotdensity(rdd = dens, X = data$R)</pre>
+      </div>
+      <div class="panel-viz">
+        <div id="plot-3" class="plot"></div>
+        <div class="stats" id="stats-3">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANEL 4 -->
+  <section class="panel" id="p4">
+    <div class="panel-head">
+      <div class="panel-num">4</div>
+      <div class="panel-title">Placebo: covariável pré-tratamento</div>
+    </div>
+    <p class="panel-q">
+      Uma variável fixada <em>antes</em> do tratamento (ex.: idade) não pode ser afetada pelo
+      programa. Aplicar RDD à idade no mesmo corte deve dar <em>zero</em>. Salto significativo
+      é sinal de descontinuidade espúria — o desenho perde credibilidade.
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre><span class="com"># Placebo: aplicar RDD em covariável pré-tratamento</span>
+plac <- rdrobust(y = data$idade,
+                 x = data$R,
+                 c = <span class="num">700</span>, p = <span class="num">1</span>)
+summary(plac)
+
+<span class="com"># Salto deve ser ≈ 0 e não significativo</span></pre>
+      </div>
+      <div class="panel-viz">
+        <div id="plot-4" class="plot"></div>
+        <div class="stats" id="stats-4">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SNIPPETS -->
+  <section class="panel" id="snippets">
+    <div class="panel-head">
+      <div class="panel-num">★</div>
+      <div class="panel-title">Snippets úteis em R</div>
+    </div>
+    <div class="snippet-grid">
+
+      <div class="snippet">
+        <div class="snippet-title">RDD com rdrobust</div>
+<pre>library(rdrobust)
+
+<span class="com"># Estimação completa</span>
+fit <- rdrobust(y = df$Y, x = df$R,
+                c = cutoff,
+                p = <span class="num">1</span>,           <span class="com"># grau do polinômio</span>
+                kernel = <span class="str">"triangular"</span>,
+                bwselect = <span class="str">"mserd"</span>)
+summary(fit)
+
+<span class="com"># Plot oficial com binned scatter</span>
+rdplot(y = df$Y, x = df$R, c = cutoff,
+       p = <span class="num">1</span>, binselect = <span class="str">"esmv"</span>,
+       y.label = <span class="str">"Tempo até defesa"</span>,
+       x.label = <span class="str">"Score"</span>)</pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-title">Teste de densidade</div>
+<pre>library(rddensity)
+
+dens <- rddensity(X = df$R, c = cutoff)
+summary(dens)        <span class="com"># T-stat, p-valor</span>
+
+<span class="com"># Plot</span>
+plt <- rdplotdensity(rdd = dens, X = df$R,
+                     plotN = <span class="num">25</span>)
+ggsave(<span class="str">"figs/density_test.pdf"</span>, plt$Estplot,
+       width = <span class="num">5</span>, height = <span class="num">3.5</span>)</pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-title">Bateria de placebos</div>
+<pre>covars <- c(<span class="str">"idade"</span>, <span class="str">"renda_familiar"</span>, <span class="str">"genero"</span>)
+
+placebos <- lapply(covars, function(v) {
+  fit <- rdrobust(df[[v]], df$R, c = cutoff)
+  c(coef = fit$Estimate[<span class="num">1</span>],
+    p    = fit$pv[<span class="num">3</span>])    <span class="com"># robust p-value</span>
+})
+do.call(rbind, placebos)</pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-title">Fuzzy RDD</div>
+<pre><span class="com"># Quando elegibilidade ≠ tomada</span>
+fit_fuzzy <- rdrobust(y = df$Y,
+                      x = df$R,
+                      fuzzy = df$D,
+                      c = cutoff)
+summary(fit_fuzzy)
+<span class="com"># Equivalente a IV: RF/FS no entorno</span></pre>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  © 2026 Nícolas Goulart · Built with HTML & CSS · Aula 07
+</footer>
+
+<script>
+'use strict';
+
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function makeNormal(rng){let s=null;return function(){if(s!==null){const v=s;s=null;return v}let u,v,r;do{u=rng()*2-1;v=rng()*2-1;r=u*u+v*v}while(r===0||r>=1);const c=Math.sqrt(-2*Math.log(r)/r);s=v*c;return u*c}}
+
+const C = { red:'#973B74', blue:'#46647B', green:'#507867', gray:'#8A8A8A', light:'#E6E6E6', dark:'#1A1A1A' };
+const PLOT_CFG = { displayModeBar:false, responsive:true };
+const FONT = { family:'DM Sans, sans-serif', size:11, color:'#3A3A3A' };
+
+const CUTOFF = 700;
+const AX_R = [550, 850];
+const AX_Y = [12, 36];   // months until defense
+
+let POP = null;
+
+function buildPop() {
+  const seed = +document.getElementById('pop-seed').value || 20260428;
+  const N    = Math.max(1000, Math.min(40000, +document.getElementById('pop-N').value || 8000));
+  const tau  = Math.max(-8, Math.min(0, +document.getElementById('pop-tau').value || -3));
+  const manip = +document.getElementById('pop-manip').value;
+
+  const r    = mulberry32(seed);
+  const norm = makeNormal(r);
+
+  // Running var R ~ Normal(680, 50)
+  const R = new Float64Array(N);
+  const D = new Uint8Array(N);
+  const Y = new Float64Array(N);
+  const Idade = new Float64Array(N);  // baseline placebo
+
+  for (let i = 0; i < N; i++) {
+    let r0 = 680 + 50 * norm();
+    // Manipulation: a fraction of those just below cutoff push themselves above
+    if (manip > 0 && r0 < CUTOFF && r0 > CUTOFF - 30 && r() < manip) {
+      r0 = CUTOFF + Math.abs(15 * norm());
+    }
+    R[i] = r0;
+    D[i] = r0 >= CUTOFF ? 1 : 0;
+
+    // Smooth E[Y|R]: months decrease with R
+    const baseY = 32 - 0.025 * (r0 - 600);   // ~32 at R=600 → ~26 at R=850
+    const tauI = tau + 0.5 * norm();
+    Y[i] = baseY + (D[i] ? tauI : 0) + 1.8 * norm();
+
+    // Baseline age — independent of R (continuous through cutoff)
+    Idade[i] = 25 + 0.005 * (r0 - 700) + 2.5 * norm();
+  }
+
+  POP = { seed, N, tau, manip, R, D, Y, Idade };
+  document.getElementById('pop-status').textContent =
+    `população: N=${N}, salto verdadeiro=${tau.toFixed(1)} meses, manipulação=${(manip*100).toFixed(0)}%`;
+}
+
+// Local linear regression with triangular kernel at cutoff
+function locLinAtCutoff(R, Y, c, h, p, side) {
+  // side: -1 left, +1 right
+  let Sw=0, Swx=0, Swy=0, Swxy=0, Swxx=0, Swxxx=0, Swxxxx=0, Swxxy=0, n=0;
+  for (let i = 0; i < R.length; i++) {
+    const dr = R[i] - c;
+    if (side < 0 && dr > 0) continue;
+    if (side > 0 && dr < 0) continue;
+    const ad = Math.abs(dr);
+    if (ad > h) continue;
+    const w = 1 - ad / h;
+    n++;
+    Sw    += w;
+    Swx   += w * dr;
+    Swy   += w * Y[i];
+    Swxy  += w * dr * Y[i];
+    Swxx  += w * dr * dr;
+    Swxxx += w * dr * dr * dr;
+    Swxxxx+= w * dr * dr * dr * dr;
+    Swxxy += w * dr * dr * Y[i];
+  }
+  if (n < 5) return { intercept: NaN, n: n };
+
+  if (p === 1) {
+    const denom = Sw * Swxx - Swx * Swx;
+    const beta  = (Sw * Swxy - Swx * Swy) / denom;
+    const alpha = (Swy - beta * Swx) / Sw;
+    return { intercept: alpha, n: n };
+  } else {
+    // Solve 3x3 normal equations
+    const A = [[Sw,Swx,Swxx],[Swx,Swxx,Swxxx],[Swxx,Swxxx,Swxxxx]];
+    const b = [Swy, Swxy, Swxxy];
+    const sol = solve3(A, b);
+    return { intercept: sol[0], n: n };
+  }
+}
+function solve3(A, b) {
+  // Simple Gaussian elimination
+  const M = A.map((row,i) => row.concat([b[i]]));
+  for (let i = 0; i < 3; i++) {
+    let pivot = i;
+    for (let k = i+1; k < 3; k++) if (Math.abs(M[k][i]) > Math.abs(M[pivot][i])) pivot = k;
+    [M[i], M[pivot]] = [M[pivot], M[i]];
+    if (Math.abs(M[i][i]) < 1e-12) return [NaN, NaN, NaN];
+    for (let k = i+1; k < 3; k++) {
+      const f = M[k][i] / M[i][i];
+      for (let j = i; j < 4; j++) M[k][j] -= f * M[i][j];
+    }
+  }
+  const x = [0,0,0];
+  for (let i = 2; i >= 0; i--) {
+    let s = M[i][3];
+    for (let j = i+1; j < 3; j++) s -= M[i][j] * x[j];
+    x[i] = s / M[i][i];
+  }
+  return x;
+}
+
+function binMeans(R, Y, lo, hi, nBins) {
+  const w = (hi - lo) / nBins;
+  const sums = new Float64Array(nBins);
+  const cnts = new Int32Array(nBins);
+  for (let i = 0; i < R.length; i++) {
+    if (R[i] < lo || R[i] >= hi) continue;
+    const k = Math.min(nBins - 1, Math.floor((R[i] - lo) / w));
+    sums[k] += Y[i]; cnts[k]++;
+  }
+  const x = [], y = [], n = [];
+  for (let k = 0; k < nBins; k++) {
+    if (cnts[k] > 0) {
+      x.push(lo + (k + 0.5) * w);
+      y.push(sums[k] / cnts[k]);
+      n.push(cnts[k]);
+    }
+  }
+  return { x, y, n };
+}
+
+// ─── Panel 1 ──────────────
+function renderP1() {
+  if (!POP) return;
+  const bins = binMeans(POP.R, POP.Y, AX_R[0], AX_R[1], 30);
+
+  // local linear fits each side, h=60
+  const h = 60;
+  const left = locLinAtCutoff(POP.R, POP.Y, CUTOFF, h, 1, -1);
+  const right = locLinAtCutoff(POP.R, POP.Y, CUTOFF, h, 1, +1);
+  const jump = right.intercept - left.intercept;
+
+  // make smoothed line for visualization (fit a polynomial line on each side)
+  const xL = []; const yL = [];
+  const xR = []; const yR = [];
+  for (let r = AX_R[0]; r <= CUTOFF; r += 2) {
+    // cubic fit on left band [c-h, c]
+    let Sw=0, Swy=0, Swx=0, Swxx=0, Swxy=0, n=0;
+    for (let i = 0; i < POP.R.length; i++) {
+      if (POP.R[i] >= CUTOFF) continue;
+      const dr = POP.R[i] - r;
+      if (Math.abs(dr) > 30) continue;
+      const w = 1 - Math.abs(dr)/30;
+      Sw += w; Swy += w*POP.Y[i]; Swx += w*dr; Swxx += w*dr*dr; Swxy += w*dr*POP.Y[i]; n++;
+    }
+    if (n > 5) {
+      const denom = Sw*Swxx - Swx*Swx;
+      const a = (Swxx*Swy - Swx*Swxy) / denom;
+      xL.push(r); yL.push(a);
+    }
+  }
+  for (let r = CUTOFF; r <= AX_R[1]; r += 2) {
+    let Sw=0, Swy=0, Swx=0, Swxx=0, Swxy=0, n=0;
+    for (let i = 0; i < POP.R.length; i++) {
+      if (POP.R[i] < CUTOFF) continue;
+      const dr = POP.R[i] - r;
+      if (Math.abs(dr) > 30) continue;
+      const w = 1 - Math.abs(dr)/30;
+      Sw += w; Swy += w*POP.Y[i]; Swx += w*dr; Swxx += w*dr*dr; Swxy += w*dr*POP.Y[i]; n++;
+    }
+    if (n > 5) {
+      const denom = Sw*Swxx - Swx*Swx;
+      const a = (Swxx*Swy - Swx*Swxy) / denom;
+      xR.push(r); yR.push(a);
+    }
+  }
+
+  Plotly.newPlot('plot-1', [{
+    x: bins.x, y: bins.y, type: 'scatter', mode: 'markers',
+    marker: { color: bins.x.map(x => x < CUTOFF ? C.blue : C.red), size: 6, opacity: 0.7 },
+    name: 'binned mean',
+    hovertemplate: 'R ≈ %{x:.0f}<br>Ȳ = %{y:.2f}<extra></extra>'
+  }, {
+    x: xL, y: yL, type: 'scatter', mode: 'lines',
+    line: { color: C.blue, width: 2 }, name: 'fit (R<700)', hoverinfo: 'skip'
+  }, {
+    x: xR, y: yR, type: 'scatter', mode: 'lines',
+    line: { color: C.red, width: 2 }, name: 'fit (R≥700)', hoverinfo: 'skip'
+  }], {
+    title: { text: `Salto estimado em R=700: τ̂ = ${jump.toFixed(2)} (verdadeiro: ${POP.tau.toFixed(1)})`, font: {...FONT, size: 12, color: C.dark }},
+    margin: { t: 36, r: 16, b: 36, l: 48 }, font: FONT,
+    xaxis: { title: 'score (running variable)', range: AX_R },
+    yaxis: { title: 'tempo até defesa (meses)', range: AX_Y, autorange: 'reversed' },
+    showlegend: false, plot_bgcolor: '#FAFAFA',
+    shapes: [{
+      type: 'line', x0: CUTOFF, x1: CUTOFF, yref: 'paper',
+      y0: 0, y1: 1, line: { color: C.gray, dash: 'dash', width: 1 }
+    }]
+  }, PLOT_CFG);
+
+  document.getElementById('stats-1').innerHTML =
+    `<span class="lbl">τ̂ (h=60, p=1):</span> <span class="v">${jump.toFixed(3)}</span> &nbsp;·&nbsp;
+     <span class="lbl">τ verdadeiro:</span> <span class="ok">${POP.tau.toFixed(2)}</span> &nbsp;·&nbsp;
+     <span class="lbl">n local:</span> <span class="v">${left.n + right.n}</span>`;
+}
+
+// ─── Panel 2: bandwidth sensitivity ──────
+function renderP2() {
+  if (!POP) return;
+  const h = +document.getElementById('r2-h').value;
+  const p = +document.getElementById('r2-p').value;
+
+  // Sweep h to show stability
+  const hs = [];
+  const ts = [];
+  for (let hh = 10; hh <= 200; hh += 5) {
+    const l = locLinAtCutoff(POP.R, POP.Y, CUTOFF, hh, p, -1);
+    const r = locLinAtCutoff(POP.R, POP.Y, CUTOFF, hh, p, +1);
+    if (!isNaN(l.intercept) && !isNaN(r.intercept)) {
+      hs.push(hh); ts.push(r.intercept - l.intercept);
+    }
+  }
+
+  Plotly.newPlot('plot-2', [{
+    x: hs, y: ts, type: 'scatter', mode: 'lines',
+    line: { color: C.blue, width: 2 },
+    name: 'τ̂(h)', hovertemplate: 'h = %{x}<br>τ̂ = %{y:.2f}<extra></extra>'
+  }, {
+    x: [hs[0], hs[hs.length-1]], y: [POP.tau, POP.tau],
+    type: 'scatter', mode: 'lines',
+    line: { color: C.green, dash: 'dash', width: 1.5 },
+    name: 'τ verdadeiro', hoverinfo: 'skip'
+  }, {
+    x: [h], y: [ts[hs.indexOf(h)] || NaN], type: 'scatter', mode: 'markers',
+    marker: { color: C.red, size: 12, symbol: 'diamond' },
+    name: 'seleção atual'
+  }], {
+    title: { text: `τ̂ em função de h (grau ${p})`, font: {...FONT, size: 12, color: C.dark }},
+    margin: { t: 36, r: 16, b: 36, l: 48 }, font: FONT,
+    xaxis: { title: 'bandwidth h' },
+    yaxis: { title: 'τ̂', autorange: 'reversed' },
+    showlegend: false, plot_bgcolor: '#FAFAFA'
+  }, PLOT_CFG);
+
+  const tauAtH = ts[hs.indexOf(h)];
+  document.getElementById('stats-2').innerHTML =
+    `<span class="lbl">τ̂ em h=${h}:</span> <span class="v">${tauAtH ? tauAtH.toFixed(3) : '—'}</span> &nbsp;·&nbsp;
+     <span class="lbl">τ verdadeiro:</span> <span class="ok">${POP.tau.toFixed(2)}</span>`;
+}
+
+// ─── Panel 3: density ─────
+function renderP3() {
+  if (!POP) return;
+  const lo = AX_R[0], hi = AX_R[1], nBins = 60;
+  const w = (hi - lo) / nBins;
+  const cnt = new Array(nBins).fill(0);
+  for (const v of POP.R) {
+    if (v < lo || v >= hi) continue;
+    cnt[Math.min(nBins - 1, Math.floor((v - lo) / w))]++;
+  }
+  const x = []; const y = [];
+  for (let k = 0; k < nBins; k++) { x.push(lo + (k + 0.5) * w); y.push(cnt[k]); }
+
+  // Local densities at cutoff (left/right)
+  let leftN=0, rightN=0;
+  for (const v of POP.R) {
+    if (v >= CUTOFF - 30 && v < CUTOFF) leftN++;
+    if (v >= CUTOFF && v <  CUTOFF + 30) rightN++;
+  }
+  const leftDensity = leftN / 30 / POP.N;
+  const rightDensity = rightN / 30 / POP.N;
+  const ratio = rightDensity / leftDensity;
+
+  Plotly.newPlot('plot-3', [{
+    x: x, y: y, type: 'bar',
+    marker: { color: x.map(v => v < CUTOFF ? C.blue : C.red), opacity: 0.7 },
+    width: w * 0.9, name: 'densidade R'
+  }], {
+    title: { text: `Densidade de R em torno de c=700 (manipulação=${(POP.manip*100).toFixed(0)}%)`, font: {...FONT, size: 12, color: C.dark }},
+    margin: { t: 36, r: 16, b: 36, l: 48 }, font: FONT,
+    xaxis: { title: 'score (R)', range: AX_R },
+    yaxis: { title: 'frequência' },
+    showlegend: false, plot_bgcolor: '#FAFAFA',
+    shapes: [{
+      type: 'line', x0: CUTOFF, x1: CUTOFF, yref: 'paper',
+      y0: 0, y1: 1, line: { color: C.gray, dash: 'dash', width: 1 }
+    }]
+  }, PLOT_CFG);
+
+  const flag = ratio > 1.1 || ratio < 0.9;
+  document.getElementById('stats-3').innerHTML =
+    `<span class="lbl">densidade local esquerda:</span> <span class="v">${(leftDensity*1000).toFixed(2)}</span>e-3 &nbsp;·&nbsp;
+     <span class="lbl">direita:</span> <span class="v">${(rightDensity*1000).toFixed(2)}</span>e-3 &nbsp;·&nbsp;
+     <span class="lbl">razão direita/esquerda:</span> <span class="${flag?'no':'ok'}">${ratio.toFixed(3)}</span>
+     ${flag ? ' (suspeito de manipulação)' : ' (consistente com continuidade)'}`;
+}
+
+// ─── Panel 4: placebo on baseline ────
+function renderP4() {
+  if (!POP) return;
+  const h = 60;
+  const l = locLinAtCutoff(POP.R, POP.Idade, CUTOFF, h, 1, -1);
+  const r = locLinAtCutoff(POP.R, POP.Idade, CUTOFF, h, 1, +1);
+  const jump = r.intercept - l.intercept;
+
+  const bins = binMeans(POP.R, POP.Idade, AX_R[0], AX_R[1], 30);
+
+  Plotly.newPlot('plot-4', [{
+    x: bins.x, y: bins.y, type: 'scatter', mode: 'markers',
+    marker: { color: bins.x.map(x => x < CUTOFF ? C.blue : C.red), size: 6, opacity: 0.7 },
+    hovertemplate: 'R ≈ %{x:.0f}<br>idade = %{y:.2f}<extra></extra>'
+  }], {
+    title: { text: `Placebo: salto na idade = ${jump.toFixed(3)} (deveria ser ≈ 0)`, font: {...FONT, size: 12, color: C.dark }},
+    margin: { t: 36, r: 16, b: 36, l: 48 }, font: FONT,
+    xaxis: { title: 'score (R)', range: AX_R },
+    yaxis: { title: 'idade (anos)' },
+    showlegend: false, plot_bgcolor: '#FAFAFA',
+    shapes: [{
+      type: 'line', x0: CUTOFF, x1: CUTOFF, yref: 'paper',
+      y0: 0, y1: 1, line: { color: C.gray, dash: 'dash', width: 1 }
+    }]
+  }, PLOT_CFG);
+
+  document.getElementById('stats-4').innerHTML =
+    `<span class="lbl">salto placebo:</span> <span class="${Math.abs(jump)<0.5?'ok':'no'}">${jump.toFixed(3)}</span>
+     &nbsp;<span class="lbl">(salto na idade — deve ser ≈ 0 sob continuidade)</span>`;
+}
+
+document.getElementById('regenerate').addEventListener('click', () => {
+  buildPop(); renderP1(); renderP2(); renderP3(); renderP4();
+});
+
+['r2-h', 'r2-p'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('input', () => {
+    if (id === 'r2-h') document.getElementById('r2-h-v').textContent = el.value;
+    renderP2();
+  });
+});
+
+buildPop(); renderP1(); renderP2(); renderP3(); renderP4();
+</script>
+
+</body>
+</html>

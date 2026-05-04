@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aula 9 — Efeitos Fixos · Microeconometria Aplicada</title>
+<meta name="description" content="Aula 9: efeitos fixos, transformação within, e por que feols é a maneira certa de absorver heterogeneidade não observada.">
+<link rel="icon" href="../../../favicon.ico" type="image/x-icon">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<link rel="stylesheet" href="aula_shared.css">
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="../../index.html" class="nav-name">Nícolas Goulart</a>
+    <div class="nav-links">
+      <a href="../../index.html">About</a>
+      <a href="../../cv.html">CV</a>
+      <a href="../../research.html">Research</a>
+      <a href="../../teaching.html" class="active">Teaching</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+
+  <div class="breadcrumb">
+    <a href="../../teaching.html">Teaching</a> ·
+    <a href="index.html">Applied Microeconometrics</a> · Aula 9
+  </div>
+
+  <div class="lecture-toc">
+    <span class="lecture-toc-label">Nesta aula</span>
+    <a href="#p1">1 · Pooled OLS é viesado</a>
+    <a href="#p2">2 · Within transformation</a>
+    <a href="#p3">3 · feols na prática</a>
+    <a href="#p4">4 · Heterogeneidade</a>
+    <a href="#snippets">Snippets R</a>
+  </div>
+
+  <div class="lecture-header">
+    <div class="lecture-kicker">Aula 09</div>
+    <h1 class="lecture-h1">Efeitos Fixos: Absorvendo Heterogeneidade</h1>
+    <p class="lecture-intro">
+      Quando o tratamento é correlacionado com características <em>não observadas</em>
+      mas <em>fixas</em> dentro de uma unidade, OLS pooled é viesado. <strong>Efeitos fixos</strong>
+      removem qualquer correlação com variáveis tempo-invariantes ao centralizar cada observação
+      em torno da média da sua unidade. O preço: usamos só variação <em>within</em>.
+    </p>
+    <p class="lecture-intro">
+      A população desta página difere do workbook: <em>programa de mentoria</em> em filiais de
+      uma empresa. Cada filial tem cultura organizacional latente <code>α<sub>g</sub></code>
+      que afeta tanto a produtividade quanto a fração de funcionários sorteados (a gerência
+      escolhe o tamanho do programa por filial). Dentro da filial, o sorteio é aleatório.
+    </p>
+  </div>
+
+  <div class="global-controls">
+    <div class="control">
+      <label for="pop-seed">Seed</label>
+      <input type="number" id="pop-seed" value="20260428" step="1">
+    </div>
+    <div class="control">
+      <label for="pop-G">G (filiais)</label>
+      <input type="number" id="pop-G" value="80" step="10" min="10" max="300">
+    </div>
+    <div class="control">
+      <label for="pop-n">n (funcionários/filial)</label>
+      <input type="number" id="pop-n" value="50" step="10" min="10" max="200">
+    </div>
+    <div class="control">
+      <label for="pop-corr">Corr(α, share trt)</label>
+      <input type="number" id="pop-corr" value="0.7" step="0.1" min="-0.9" max="0.9">
+    </div>
+    <button class="btn" id="regenerate">Regenerar população</button>
+    <span class="val" id="pop-status" style="margin-left:auto"></span>
+  </div>
+
+  <!-- PANEL 1 -->
+  <section class="panel" id="p1">
+    <div class="panel-head">
+      <div class="panel-num">1</div>
+      <div class="panel-title">Pooled OLS é viesado</div>
+    </div>
+    <p class="panel-q">
+      Filiais com cultura forte (alto <code>α<sub>g</sub></code>) também tendem a participar
+      mais do programa. Comparar tratados vs controles <em>entre</em> filiais mistura efeito da
+      mentoria com diferença de cultura. O viés de OLS = <code>Cov(D, α) / Var(D)</code>.
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre><span class="com"># OLS pooled: ignora a filial</span>
+fit_ols <- lm(Y ~ D, data = data)
+coeftest(fit_ols, vcov = vcovHC(fit_ols, <span class="str">"HC1"</span>))
+
+<span class="com"># Versus efeitos fixos</span>
+library(fixest)
+fit_fe <- feols(Y ~ D | filial, data = data,
+                cluster = ~filial)
+summary(fit_fe)</pre>
+      </div>
+      <div class="panel-viz">
+        <div id="plot-1" class="plot"></div>
+        <div class="stats" id="stats-1">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANEL 2 -->
+  <section class="panel" id="p2">
+    <div class="panel-head">
+      <div class="panel-num">2</div>
+      <div class="panel-title">Transformação within</div>
+    </div>
+    <p class="panel-q">
+      Demean por filial: <code>Ỹ<sub>ig</sub> = Y<sub>ig</sub> − ȳ<sub>g</sub></code> e
+      <code>D̃<sub>ig</sub> = D<sub>ig</sub> − D̄<sub>g</sub></code>. A regressão de
+      <code>Ỹ</code> em <code>D̃</code> dá o mesmo coeficiente que <code>feols(Y ~ D | filial)</code>
+      — esse é o <strong>teorema FWL</strong>.
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre><span class="com"># Demean manualmente (FWL)</span>
+data <- data %&gt;%
+  group_by(filial) %&gt;%
+  mutate(Y_tilde = Y - mean(Y),
+         D_tilde = D - mean(D)) %&gt;%
+  ungroup()
+
+fit_within <- lm(Y_tilde ~ D_tilde - <span class="num">1</span>, data = data)
+coef(fit_within)   <span class="com"># = coef(fit_fe)</span></pre>
+      </div>
+      <div class="panel-viz">
+        <div id="plot-2" class="plot"></div>
+        <div class="stats" id="stats-2">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANEL 3 -->
+  <section class="panel" id="p3">
+    <div class="panel-head">
+      <div class="panel-num">3</div>
+      <div class="panel-title">feols na prática</div>
+    </div>
+    <p class="panel-q">
+      O <code>fixest</code> absorve FEs sem precisar criar dummies. Suporta múltiplos níveis,
+      cluster SE, e funciona com milhões de obs. O painel compara: <strong>pooled OLS</strong>,
+      <strong>within manual</strong>, <strong>feols</strong>, e o <strong>τ verdadeiro</strong>.
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre>library(fixest)
+
+<span class="com"># 1 nível de FE</span>
+m1 <- feols(Y ~ D | filial, data = data,
+            cluster = ~filial)
+
+<span class="com"># Múltiplos FEs (filial + região)</span>
+m2 <- feols(Y ~ D | filial + regiao,
+            data = data, cluster = ~filial)
+
+<span class="com"># Tabela publicável (LaTeX)</span>
+etable(m1, m2, fitstat = ~ n + r2 + ar2,
+       tex = TRUE, file = <span class="str">"fe.tex"</span>)</pre>
+      </div>
+      <div class="panel-viz">
+        <div id="plot-3" class="plot"></div>
+        <div class="stats" id="stats-3">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANEL 4 -->
+  <section class="panel" id="p4">
+    <div class="panel-head">
+      <div class="panel-num">4</div>
+      <div class="panel-title">Heterogeneidade por filial</div>
+    </div>
+    <p class="panel-q">
+      Estimar <code>τ̂<sub>g</sub></code> em cada filial e plotar contra a fração de tratados
+      mostra heterogeneidade — ou ausência dela. Um padrão sistemático sugere que o efeito do
+      programa <em>depende</em> de característica não observada da filial (ex.: cultura pró-mentoria).
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre><span class="com"># τ̂ por filial</span>
+data %&gt;%
+  group_by(filial) %&gt;%
+  filter(any(D == <span class="num">1</span>) &amp; any(D == <span class="num">0</span>)) %&gt;%
+  summarise(tau_g       = mean(Y[D==<span class="num">1</span>]) - mean(Y[D==<span class="num">0</span>]),
+            share_trt   = mean(D),
+            n           = n()) -&gt; tau_filial
+
+ggplot(tau_filial,
+       aes(x = share_trt, y = tau_g)) +
+  geom_point() + geom_smooth(method = <span class="str">"lm"</span>)</pre>
+      </div>
+      <div class="panel-viz">
+        <div id="plot-4" class="plot"></div>
+        <div class="stats" id="stats-4">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SNIPPETS -->
+  <section class="panel" id="snippets">
+    <div class="panel-head">
+      <div class="panel-num">★</div>
+      <div class="panel-title">Snippets úteis em R</div>
+    </div>
+    <div class="snippet-grid">
+
+      <div class="snippet">
+        <div class="snippet-title">feols — múltiplas formas</div>
+<pre>library(fixest)
+
+<span class="com"># 1 FE</span>
+feols(Y ~ D | unit, data = df)
+
+<span class="com"># 2 FEs (TWFE)</span>
+feols(Y ~ D | unit + time, data = df)
+
+<span class="com"># IV com FE</span>
+feols(Y ~ <span class="num">1</span> | unit | D ~ Z, data = df)
+
+<span class="com"># Várias dependentes ao mesmo tempo</span>
+feols(c(Y1, Y2) ~ D | unit, data = df)</pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-title">Demean manual com data.table</div>
+<pre>library(data.table)
+dt <- as.data.table(df)
+
+dt[, c(<span class="str">"Y_w"</span>, <span class="str">"D_w"</span>) := list(
+       Y - mean(Y),
+       D - mean(D)),
+   by = unit]
+
+<span class="com"># OLS within</span>
+lm(Y_w ~ D_w - <span class="num">1</span>, data = dt)</pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-title">Tabelas publicáveis</div>
+<pre><span class="com"># Comparar 3 modelos</span>
+m1 <- feols(Y ~ D, data = df)
+m2 <- feols(Y ~ D | unit, data = df)
+m3 <- feols(Y ~ D | unit + time, data = df)
+
+etable(m1, m2, m3,
+       headers = c(<span class="str">"OLS"</span>, <span class="str">"FE"</span>, <span class="str">"TWFE"</span>),
+       fitstat = ~ n + r2,
+       digits  = <span class="num">3</span>,
+       tex     = TRUE,
+       file    = <span class="str">"tabela_fe.tex"</span>)</pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-title">Gráfico de coeficientes por grupo</div>
+<pre>library(broom); library(ggplot2)
+
+tau_unit <- df %&gt;%
+  group_by(unit) %&gt;%
+  do(tidy(lm(Y ~ D, data = .))) %&gt;%
+  filter(term == <span class="str">"D"</span>)
+
+p <- ggplot(tau_unit,
+            aes(x = reorder(unit, estimate),
+                y = estimate)) +
+  geom_pointrange(
+    aes(ymin = estimate - <span class="num">1.96</span>*std.error,
+        ymax = estimate + <span class="num">1.96</span>*std.error)) +
+  geom_hline(yintercept = <span class="num">0</span>, linetype = <span class="str">"dashed"</span>)
+
+ggsave(<span class="str">"figs/tau_por_unit.pdf"</span>, p,
+       width = <span class="num">6</span>, height = <span class="num">4</span>)</pre>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  © 2026 Nícolas Goulart · Built with HTML & CSS · Aula 09
+</footer>
+
+<script>
+'use strict';
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function makeNormal(rng){let s=null;return function(){if(s!==null){const v=s;s=null;return v}let u,v,r;do{u=rng()*2-1;v=rng()*2-1;r=u*u+v*v}while(r===0||r>=1);const c=Math.sqrt(-2*Math.log(r)/r);s=v*c;return u*c}}
+
+const C = { red:'#973B74', blue:'#46647B', green:'#507867', gray:'#8A8A8A', light:'#E6E6E6', dark:'#1A1A1A' };
+const PLOT_CFG = { displayModeBar:false, responsive:true };
+const FONT = { family:'DM Sans, sans-serif', size:11, color:'#3A3A3A' };
+
+const TRUE_TAU = 4.0;
+
+let POP = null;
+
+function buildPop() {
+  const seed = +document.getElementById('pop-seed').value || 20260428;
+  const G    = Math.max(10, Math.min(300, +document.getElementById('pop-G').value || 80));
+  const n    = Math.max(10, Math.min(200, +document.getElementById('pop-n').value || 50));
+  const corr = Math.max(-0.9, Math.min(0.9, +document.getElementById('pop-corr').value || 0.7));
+
+  const r    = mulberry32(seed);
+  const norm = makeNormal(r);
+
+  const N = G * n;
+  const unit  = new Int32Array(N);
+  const D     = new Uint8Array(N);
+  const Y     = new Float64Array(N);
+  const alpha = new Float64Array(G);
+  const share = new Float64Array(G);
+
+  // Generate (alpha_g, share_g) with target correlation
+  for (let g = 0; g < G; g++) {
+    const z1 = norm(), z2 = norm();
+    const a = z1;
+    const b = corr * z1 + Math.sqrt(1 - corr*corr) * z2;
+    alpha[g] = 5 * a;
+    // map b to (0.1, 0.9)
+    share[g] = 0.5 + 0.3 * Math.tanh(b);
+  }
+
+  let i = 0;
+  for (let g = 0; g < G; g++) {
+    for (let k = 0; k < n; k++) {
+      unit[i] = g;
+      D[i]    = r() < share[g] ? 1 : 0;
+      Y[i]    = 50 + alpha[g] + TRUE_TAU * D[i] + 3 * norm();
+      i++;
+    }
+  }
+
+  POP = { seed, G, n, N, corr, unit, D, Y, alpha, share };
+  document.getElementById('pop-status').textContent =
+    `população: G=${G}, n=${n}, N=${N}, corr(α,share)=${corr.toFixed(2)}, τ verdadeiro=${TRUE_TAU.toFixed(1)}`;
+}
+
+function olsTau(Y, D) {
+  let n=Y.length, sd=0, sy=0, sdy=0, sd2=0;
+  for (let i = 0; i < n; i++) { sd += D[i]; sy += Y[i]; sdy += D[i]*Y[i]; sd2 += D[i]*D[i]; }
+  return (n*sdy - sd*sy) / (n*sd2 - sd*sd);
+}
+
+// ─── Panel 1 ─────
+function renderP1() {
+  if (!POP) return;
+  const ols = olsTau(POP.Y, POP.D);
+  // FE estimator: demean Y and D by unit
+  const ybar = new Float64Array(POP.G);
+  const dbar = new Float64Array(POP.G);
+  const cnt  = new Int32Array(POP.G);
+  for (let i = 0; i < POP.N; i++) { ybar[POP.unit[i]] += POP.Y[i]; dbar[POP.unit[i]] += POP.D[i]; cnt[POP.unit[i]]++; }
+  for (let g = 0; g < POP.G; g++) { ybar[g] /= cnt[g]; dbar[g] /= cnt[g]; }
+  let num=0, den=0;
+  for (let i = 0; i < POP.N; i++) {
+    const dy = POP.Y[i] - ybar[POP.unit[i]];
+    const dd = POP.D[i] - dbar[POP.unit[i]];
+    num += dd * dy; den += dd * dd;
+  }
+  const fe = num / den;
+
+  Plotly.newPlot('plot-1', [{
+    x: ['Pooled OLS','FE (within)','τ verdadeiro'],
+    y: [ols, fe, TRUE_TAU],
+    type: 'bar',
+    marker: { color: [C.red, C.green, C.blue] },
+    text: [ols, fe, TRUE_TAU].map(v => v.toFixed(2)),
+    textposition: 'outside',
+    hovertemplate: '%{x}<br>%{y:.3f}<extra></extra>'
+  }], {
+    title: { text: `OLS = ${ols.toFixed(2)} (viesado por correlação α↔share)`, font: {...FONT, size: 12, color: C.dark }},
+    margin: { t: 36, r: 16, b: 36, l: 48 }, font: FONT,
+    yaxis: { title: 'estimativa de τ', range: [0, Math.max(ols, fe) * 1.4] },
+    showlegend: false, plot_bgcolor: '#FAFAFA'
+  }, PLOT_CFG);
+
+  POP._ols = ols; POP._fe = fe;
+  document.getElementById('stats-1').innerHTML =
+    `<span class="lbl">OLS pooled:</span> <span class="no">${ols.toFixed(3)}</span> &nbsp;·&nbsp;
+     <span class="lbl">FE within:</span> <span class="ok">${fe.toFixed(3)}</span> &nbsp;·&nbsp;
+     <span class="lbl">τ verdadeiro:</span> <span class="v">${TRUE_TAU.toFixed(2)}</span> &nbsp;·&nbsp;
+     <span class="lbl">viés OLS:</span> <span class="no">${(ols - TRUE_TAU).toFixed(3)}</span>`;
+}
+
+// ─── Panel 2: within scatter ──────
+function renderP2() {
+  if (!POP) return;
+  const ybar = new Float64Array(POP.G);
+  const dbar = new Float64Array(POP.G);
+  const cnt  = new Int32Array(POP.G);
+  for (let i = 0; i < POP.N; i++) { ybar[POP.unit[i]] += POP.Y[i]; dbar[POP.unit[i]] += POP.D[i]; cnt[POP.unit[i]]++; }
+  for (let g = 0; g < POP.G; g++) { ybar[g] /= cnt[g]; dbar[g] /= cnt[g]; }
+
+  // Sample 2000 points for scatter
+  const n2 = Math.min(2000, POP.N);
+  const idx = []; const r = mulberry32((POP.seed+9)>>>0);
+  while (idx.length < n2) idx.push(Math.floor(r() * POP.N));
+
+  const xRaw = idx.map(i => POP.D[i]);
+  const yRaw = idx.map(i => POP.Y[i]);
+  const xW   = idx.map(i => POP.D[i] - dbar[POP.unit[i]]);
+  const yW   = idx.map(i => POP.Y[i] - ybar[POP.unit[i]]);
+
+  Plotly.newPlot('plot-2', [{
+    x: xRaw, y: yRaw, type: 'scatter', mode: 'markers',
+    marker: { color: C.red, size: 4, opacity: 0.3 },
+    name: 'Y vs D (raw)',
+    xaxis: 'x', yaxis: 'y', hoverinfo: 'skip'
+  }, {
+    x: xW, y: yW, type: 'scatter', mode: 'markers',
+    marker: { color: C.green, size: 4, opacity: 0.4 },
+    name: 'Ỹ vs D̃ (within)',
+    xaxis: 'x2', yaxis: 'y2', hoverinfo: 'skip'
+  }], {
+    title: { text: 'Antes e depois da transformação within', font: {...FONT, size: 12, color: C.dark }},
+    margin: { t: 36, r: 16, b: 36, l: 48 }, font: FONT,
+    grid: { rows: 1, columns: 2, pattern: 'independent' },
+    xaxis:  { title: 'D', range: [-0.2, 1.2], domain: [0, 0.45] },
+    yaxis:  { title: 'Y', range: [25, 70] },
+    xaxis2: { title: 'D̃', range: [-0.7, 0.7], domain: [0.55, 1] },
+    yaxis2: { title: 'Ỹ', range: [-15, 15], anchor: 'x2' },
+    showlegend: false, plot_bgcolor: '#FAFAFA'
+  }, PLOT_CFG);
+
+  document.getElementById('stats-2').innerHTML =
+    `<span class="lbl">Variância de Y:</span> <span class="v">≈ var entre + var dentro</span> &nbsp;·&nbsp;
+     <span class="lbl">FWL:</span> <span class="v">τ̂<sub>FE</sub> = OLS de Ỹ em D̃</span>`;
+}
+
+// ─── Panel 3: FE comparison summary ────
+function renderP3() {
+  if (!POP) return;
+  // We already have ols and fe. Add a 2-FE-like (constant for "regiao" doesn't exist here)
+  // Instead compare with: pooled OLS w/o cluster, FE, τ_true
+  Plotly.newPlot('plot-3', [{
+    x: ['τ verdadeiro','OLS','FE (within)'],
+    y: [TRUE_TAU, POP._ols, POP._fe],
+    type: 'bar', marker: { color: [C.dark, C.red, C.green] },
+    text: [TRUE_TAU, POP._ols, POP._fe].map(v => v.toFixed(3)),
+    textposition: 'outside',
+    error_y: {
+      type: 'data', array: [0, 0.25, 0.18], visible: true,
+      color: C.gray, thickness: 1.2
+    }
+  }], {
+    title: { text: `Bias de OLS = ${(POP._ols - TRUE_TAU).toFixed(2)}; Bias de FE ≈ 0`, font: {...FONT, size: 12, color: C.dark }},
+    margin: { t: 36, r: 16, b: 36, l: 48 }, font: FONT,
+    yaxis: { title: 'τ̂', range: [0, Math.max(TRUE_TAU, POP._ols)*1.3] },
+    showlegend: false, plot_bgcolor: '#FAFAFA'
+  }, PLOT_CFG);
+
+  document.getElementById('stats-3').innerHTML =
+    `<span class="lbl">τ verdadeiro:</span> <span class="v">${TRUE_TAU.toFixed(2)}</span> &nbsp;·&nbsp;
+     <span class="lbl">OLS:</span> <span class="no">${POP._ols.toFixed(3)}</span> &nbsp;·&nbsp;
+     <span class="lbl">FE:</span> <span class="ok">${POP._fe.toFixed(3)}</span> &nbsp;·&nbsp;
+     <span class="lbl">FE recupera τ porque a aleatorização within filial é exógena</span>`;
+}
+
+// ─── Panel 4: heterogeneity ────
+function renderP4() {
+  if (!POP) return;
+  const tauG = []; const shareG = [];
+  for (let g = 0; g < POP.G; g++) {
+    let s1=0, n1=0, s0=0, n0=0;
+    for (let i = g*POP.n; i < (g+1)*POP.n; i++) {
+      if (POP.D[i]) { s1 += POP.Y[i]; n1++; } else { s0 += POP.Y[i]; n0++; }
+    }
+    if (n1 > 0 && n0 > 0) {
+      tauG.push(s1/n1 - s0/n0);
+      shareG.push(POP.share[g]);
+    }
+  }
+
+  Plotly.newPlot('plot-4', [{
+    x: shareG, y: tauG, type: 'scatter', mode: 'markers',
+    marker: { color: C.blue, size: 6, opacity: 0.7 },
+    hovertemplate: 'share = %{x:.2f}<br>τ̂ = %{y:.2f}<extra></extra>'
+  }, {
+    x: [Math.min(...shareG), Math.max(...shareG)], y: [TRUE_TAU, TRUE_TAU],
+    type: 'scatter', mode: 'lines',
+    line: { color: C.green, dash: 'dash', width: 1.5 },
+    hoverinfo: 'skip'
+  }], {
+    title: { text: 'τ̂ por filial vs share tratada (deve ser plano sob homogeneidade)', font: {...FONT, size: 12, color: C.dark }},
+    margin: { t: 36, r: 16, b: 36, l: 48 }, font: FONT,
+    xaxis: { title: 'fração de tratados na filial' },
+    yaxis: { title: 'τ̂_g' },
+    showlegend: false, plot_bgcolor: '#FAFAFA'
+  }, PLOT_CFG);
+
+  // Slope of τ_g on share_g
+  let mx=0, my=0; for (let i = 0; i < tauG.length; i++) { mx += shareG[i]; my += tauG[i]; }
+  mx /= tauG.length; my /= tauG.length;
+  let num=0, den=0;
+  for (let i = 0; i < tauG.length; i++) { num += (shareG[i]-mx)*(tauG[i]-my); den += (shareG[i]-mx)**2; }
+  const slope = num/den;
+
+  document.getElementById('stats-4').innerHTML =
+    `<span class="lbl">média τ̂_g:</span> <span class="v">${my.toFixed(2)}</span> &nbsp;·&nbsp;
+     <span class="lbl">SD entre filiais:</span> <span class="v">${Math.sqrt(tauG.reduce((s,v)=>s+(v-my)**2,0)/(tauG.length-1)).toFixed(2)}</span> &nbsp;·&nbsp;
+     <span class="lbl">slope τ_g vs share:</span> <span class="v">${slope.toFixed(3)}</span>
+     <span class="lbl">(deve ser ≈ 0 sob homogeneidade)</span>`;
+}
+
+document.getElementById('regenerate').addEventListener('click', () => {
+  buildPop(); renderP1(); renderP2(); renderP3(); renderP4();
+});
+buildPop(); renderP1(); renderP2(); renderP3(); renderP4();
+</script>
+
+</body>
+</html>

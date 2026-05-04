@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aula 2 — Causalidade e Resultados Potenciais · Microeconometria Aplicada</title>
+<meta name="description" content="Aula 2: resultados potenciais, viés de seleção, ATE/ATT/ATU, seleção vs aleatorização, e Efeito Mínimo Detectável — código em R e visualizações interativas.">
+<link rel="icon" href="../../../favicon.ico" type="image/x-icon">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<link rel="stylesheet" href="aula_shared.css">
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+<style>
+  :root { --max-width: 1100px; }
+
+  .lecture-header { margin-bottom: 1.5rem; }
+  .lecture-kicker {
+    font-size: 0.72rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--red);
+    margin-bottom: 0.3rem;
+  }
+  .lecture-h1 {
+    font-family: var(--font-display);
+    font-size: 1.8rem; font-weight: 700;
+    line-height: 1.2;
+    color: var(--black);
+    margin-bottom: 0.5rem;
+  }
+  .lecture-intro {
+    font-size: 0.93rem; color: var(--gray-dark);
+    line-height: 1.7; margin-bottom: 1rem;
+  }
+  .lecture-intro code { font-family: 'JetBrains Mono', monospace; font-size: 0.85em; background: var(--gray-bg); padding: 0.05em 0.35em; border-radius: 3px; }
+
+  .global-controls {
+    display: flex; flex-wrap: wrap; gap: 0.9rem 1.2rem; align-items: end;
+    background: var(--gray-bg);
+    padding: 0.9rem 1.2rem;
+    border-radius: 6px;
+    border-left: 3px solid var(--red);
+    margin-bottom: 2rem;
+  }
+  .global-controls .control { display: flex; flex-direction: column; gap: 0.3rem; min-width: 140px; }
+  .global-controls label {
+    font-size: 0.7rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--red);
+  }
+  .global-controls input[type="number"] {
+    font-family: var(--font-body);
+    font-size: 0.88rem; padding: 0.4rem 0.55rem;
+    border: 1px solid rgba(0,0,0,0.12); border-radius: 4px;
+    background: var(--white); color: var(--black); width: 7rem;
+  }
+
+  .panel { margin-bottom: 2.5rem; }
+  .panel-head {
+    display: flex; align-items: baseline; gap: 0.7rem;
+    margin-bottom: 0.5rem;
+  }
+  .panel-num {
+    font-family: var(--font-display);
+    font-size: 1.5rem; font-weight: 700;
+    color: var(--red);
+    line-height: 1;
+  }
+  .panel-title {
+    font-family: var(--font-display);
+    font-size: 1.15rem; font-weight: 700;
+    color: var(--black);
+  }
+  .panel-q {
+    font-size: 0.88rem; color: var(--gray-dark);
+    line-height: 1.65; margin-bottom: 1rem;
+  }
+  .panel-q ul, .panel-q ol { margin-left: 1.25rem; margin-top: 0.25rem; }
+  .panel-q code { font-family: 'JetBrains Mono', monospace; font-size: 0.85em; background: var(--gray-bg); padding: 0.05em 0.3em; border-radius: 3px; }
+
+  .panel-grid {
+    display: grid;
+    grid-template-columns: minmax(280px, 1fr) minmax(380px, 1.4fr);
+    gap: 1.25rem;
+    align-items: start;
+  }
+  @media (max-width: 820px) {
+    .panel-grid { grid-template-columns: 1fr; }
+  }
+
+  .panel-code {
+    background: #1A1A1A;
+    border-radius: 6px;
+    overflow: hidden;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .panel-code-header {
+    background: #2A2A2A;
+    color: #BDBDBD;
+    font-size: 0.7rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    padding: 0.45rem 0.85rem;
+    border-bottom: 1px solid #333;
+  }
+  .panel-code pre {
+    margin: 0; padding: 0.85rem 1rem;
+    color: #E8E8E8;
+    font-size: 0.78rem;
+    line-height: 1.6;
+    overflow-x: auto;
+  }
+  .panel-code .kw { color: #FF6B6B; }
+  .panel-code .num { color: #82AAFF; }
+  .panel-code .str { color: #C3E88D; }
+  .panel-code .com { color: #6B7280; font-style: italic; }
+
+  .panel-viz { display: flex; flex-direction: column; gap: 0.6rem; }
+  .panel-viz .controls-row {
+    display: flex; flex-wrap: wrap; gap: 0.6rem 0.9rem; align-items: center;
+    padding: 0.55rem 0.8rem;
+    background: var(--gray-bg);
+    border-radius: 4px;
+    font-size: 0.82rem;
+  }
+  .panel-viz .controls-row label {
+    font-size: 0.7rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em; color: var(--red);
+    margin-right: 0.3rem;
+  }
+  .panel-viz input[type="range"] { accent-color: var(--red); width: 100px; vertical-align: middle; }
+  .panel-viz input[type="number"] {
+    font-family: var(--font-body); font-size: 0.82rem;
+    padding: 0.25rem 0.4rem; width: 5.5rem;
+    border: 1px solid rgba(0,0,0,0.12); border-radius: 3px;
+  }
+  .panel-viz .val { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: var(--gray-mid); }
+
+  .btn {
+    font-family: var(--font-body);
+    font-size: 0.74rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    padding: 0.4rem 0.9rem;
+    border: 1px solid var(--red);
+    border-radius: 3px;
+    background: var(--red); color: var(--white);
+    cursor: pointer; transition: all 0.15s ease;
+  }
+  .btn:hover { background: var(--red-dark); border-color: var(--red-dark); }
+  .btn.secondary { background: var(--white); color: var(--red); }
+  .btn.secondary:hover { background: rgba(204,0,0,0.06); }
+
+  .plot { width: 100%; height: 320px; }
+  .plot.tall { height: 360px; }
+  .plot.short { height: 240px; }
+
+  .stats {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--gray-dark);
+    background: var(--gray-bg);
+    padding: 0.55rem 0.8rem;
+    border-radius: 4px;
+    line-height: 1.7;
+  }
+  .stats .lbl { color: var(--gray-mid); }
+  .stats .v   { color: var(--black); font-weight: 500; }
+  .stats .ok  { color: #2D8C3C; font-weight: 600; }
+  .stats .no  { color: var(--red);  font-weight: 600; }
+
+  .lecture-toc {
+    display: flex; flex-wrap: wrap; align-items: center;
+    gap: 0.3rem 0.6rem;
+    padding: 0.55rem 0.95rem;
+    background: var(--gray-bg);
+    border-radius: 6px;
+    border-left: 3px solid var(--red);
+    margin-bottom: 1.5rem;
+    font-size: 0.78rem;
+  }
+  .lecture-toc-label {
+    font-size: 0.65rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--red);
+    margin-right: 0.3rem;
+  }
+  .lecture-toc a {
+    color: var(--gray-dark);
+    text-decoration: none;
+    padding: 0.2rem 0.55rem;
+    border-radius: 3px;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+  .lecture-toc a:hover { color: var(--red); background: var(--white); }
+
+  .breadcrumb {
+    font-size: 0.78rem;
+    color: var(--gray-mid);
+    margin-bottom: 1rem;
+  }
+  .breadcrumb a { color: var(--red); text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="../../index.html" class="nav-name">Nícolas Goulart</a>
+    <div class="nav-links">
+      <a href="../../index.html">About</a>
+      <a href="../../cv.html">CV</a>
+      <a href="../../research.html">Research</a>
+      <a href="../../teaching.html" class="active">Teaching</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+
+  <div class="breadcrumb">
+    <a href="../../teaching.html">Teaching</a> ·
+    <a href="index.html">Applied Microeconometrics</a> · Aula 2
+  </div>
+
+  <div class="lecture-toc">
+    <span class="lecture-toc-label">Nesta aula</span>
+    <a href="#p1">1 · Resultados potenciais</a>
+    <a href="#p2">2 · Viés de seleção</a>
+    <a href="#p3">3 · ATE, ATT, ATU</a>
+    <a href="#p4">4 · Seleção vs RCT</a>
+    <a href="#p5">5 · MDE</a>
+    <a href="#snippets">Snippets R</a>
+  </div>
+
+  <div class="lecture-header">
+    <div class="lecture-kicker">Aula 02</div>
+    <h1 class="lecture-h1">Causalidade e Resultados Potenciais</h1>
+    <p class="lecture-intro">
+      Toda inferência causal começa por reconhecer que cada indivíduo carrega <em>dois</em>
+      resultados potenciais — <code>Y<sub>i</sub>(0)</code> e <code>Y<sub>i</sub>(1)</code>
+      — mas observamos apenas um. Esse é o <strong>problema fundamental</strong>: os efeitos
+      de tratamento individuais nunca são diretamente visíveis. As médias, no entanto,
+      podem ser. O que esta aula explora é <em>quando</em> elas podem ser interpretadas
+      causalmente.
+    </p>
+    <p class="lecture-intro">
+      Para evitar que os gráficos "respondam" ao enunciado, a população sintética desta
+      página é diferente da do workbook. Imagine um <em>curso intensivo de inglês</em>
+      para profissionais de tecnologia, com <code>Y</code> = pontuação numa prova de
+      proficiência (escala ~0–100). Cada indivíduo tem uma aptidão linguística latente
+      <code>U</code> que afeta tanto o resultado base quanto o ganho com o curso —
+      e também a probabilidade de se inscrever. Isso gera <strong>seleção tanto em níveis
+      quanto em ganhos</strong>: ATT &gt; ATE &gt; ATU.
+    </p>
+    <p class="lecture-intro">
+      Cada painel mostra o <strong>código R</strong> à esquerda e a <strong>simulação
+      interativa</strong> à direita. Toda computação roda no seu navegador. A
+      <em>seed</em> padrão é a data de hoje (formato <code>YYYYMMDD</code>).
+    </p>
+  </div>
+
+  <div class="global-controls">
+    <div class="control">
+      <label for="pop-seed">Seed da população</label>
+      <input type="number" id="pop-seed" value="20260427" step="1">
+    </div>
+    <div class="control">
+      <label for="pop-N">N (tamanho da população)</label>
+      <input type="number" id="pop-N" value="100000" step="10000" min="10000" max="500000">
+    </div>
+    <button class="btn" id="regenerate">Regenerar população</button>
+    <span class="val" id="pop-status" style="margin-left:auto"></span>
+  </div>
+
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <!-- PANEL 1 — Resultados potenciais                              -->
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <section class="panel" id="p1">
+    <div class="panel-head">
+      <div class="panel-num">1</div>
+      <div class="panel-title">Resultados potenciais e o problema fundamental</div>
+    </div>
+    <p class="panel-q">
+      Aqui vemos o que normalmente é invisível: <code>Y(0)</code> e <code>Y(1)</code>
+      lado a lado. O <strong>primeiro gráfico</strong> compara as duas distribuições
+      potenciais. O <strong>segundo</strong> mostra a distribuição dos efeitos
+      individuais <code>τ<sub>i</sub> = Y<sub>i</sub>(1) − Y<sub>i</sub>(0)</code>:
+      como <code>τ<sub>i</sub></code> varia entre indivíduos, há
+      <em>heterogeneidade de efeitos</em>. O ATE = <code>E[τ<sub>i</sub>]</code>
+      é a média dessa distribuição.
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre><span class="com"># Resultado observado para cada indivíduo</span>
+data$Y_obs &lt;- data$D * data$Y1 +
+              (<span class="num">1</span> - data$D) * data$Y0
+
+<span class="com"># Efeito individual e ATE</span>
+data$tau &lt;- data$Y1 - data$Y0
+ATE      &lt;- <span class="kw">mean</span>(data$tau)
+
+<span class="com"># Equivalente: diferença das médias dos POs</span>
+mu_Y0 &lt;- <span class="kw">mean</span>(data$Y0)
+mu_Y1 &lt;- <span class="kw">mean</span>(data$Y1)
+<span class="kw">stopifnot</span>(<span class="kw">all.equal</span>(ATE, mu_Y1 - mu_Y0))</pre>
+      </div>
+      <div class="panel-viz">
+        <div id="plot-1a" class="plot short"></div>
+        <div id="plot-1b" class="plot short"></div>
+        <div class="stats" id="stats-1">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <!-- PANEL 2 — Selection bias                                     -->
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <section class="panel" id="p2">
+    <div class="panel-head">
+      <div class="panel-num">2</div>
+      <div class="panel-title">Viés de seleção</div>
+    </div>
+    <p class="panel-q">
+      Na vida real só observamos <code>Y<sub>i</sub>(D<sub>i</sub>)</code>, e
+      <code>D<sub>i</sub></code> não é aleatório. A comparação ingênua
+      <code>E[Y|D=1] − E[Y|D=0]</code> mistura o efeito do tratamento com diferenças
+      pré-existentes nos resultados base. O gráfico abaixo mostra as quatro médias
+      condicionais <code>E[Y(d)|D=d']</code> — duas observadas (sólidas) e duas
+      contrafactuais (hachuradas). A barra vermelha vertical na esquerda é o
+      <strong>viés de seleção</strong>:
+      <code>E[Y(0)|D=1] − E[Y(0)|D=0]</code>.
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre><span class="com"># Diferença ingênua observada</span>
+naive &lt;- <span class="kw">mean</span>(data$Y_obs[data$D == <span class="num">1</span>]) -
+         <span class="kw">mean</span>(data$Y_obs[data$D == <span class="num">0</span>])
+
+<span class="com"># Decomposição: naive = ATT + viés_seleção</span>
+ATT     &lt;- <span class="kw">mean</span>(data$tau[data$D == <span class="num">1</span>])
+sel_bias &lt;- <span class="kw">mean</span>(data$Y0[data$D == <span class="num">1</span>]) -
+            <span class="kw">mean</span>(data$Y0[data$D == <span class="num">0</span>])
+<span class="kw">stopifnot</span>(<span class="kw">all.equal</span>(naive, ATT + sel_bias))</pre>
+      </div>
+      <div class="panel-viz">
+        <div id="plot-2" class="plot tall"></div>
+        <div class="stats" id="stats-2">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <!-- PANEL 3 — ATE / ATT / ATU                                    -->
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <section class="panel" id="p3">
+    <div class="panel-head">
+      <div class="panel-num">3</div>
+      <div class="panel-title">ATE, ATT e ATU</div>
+    </div>
+    <p class="panel-q">
+      Existem três efeitos médios distintos, e eles só coincidem quando o efeito é
+      homogêneo OU o tratamento é independente do efeito. Aqui ATT &gt; ATE &gt; ATU
+      porque os indivíduos que se inscrevem (D=1) têm <code>U</code> mais alto
+      <em>e</em> ganham mais com o tratamento (<code>τ<sub>i</sub></code> cresce
+      com <code>U</code>). Isto é <strong>seleção em ganhos</strong>.
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre>ATE &lt;- <span class="kw">mean</span>(data$tau)
+ATT &lt;- <span class="kw">mean</span>(data$tau[data$D == <span class="num">1</span>])
+ATU &lt;- <span class="kw">mean</span>(data$tau[data$D == <span class="num">0</span>])
+
+<span class="com"># Lei das esperanças iteradas:</span>
+<span class="com"># ATE = π·ATT + (1−π)·ATU,   π = P(D=1)</span>
+pi  &lt;- <span class="kw">mean</span>(data$D)
+<span class="kw">stopifnot</span>(<span class="kw">all.equal</span>(ATE,
+            pi * ATT + (<span class="num">1</span> - pi) * ATU))</pre>
+      </div>
+      <div class="panel-viz">
+        <div id="plot-3" class="plot"></div>
+        <div class="stats" id="stats-3">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <!-- PANEL 4 — Selection vs Randomization (Monte Carlo)           -->
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <section class="panel" id="p4">
+    <div class="panel-head">
+      <div class="panel-num">4</div>
+      <div class="panel-title">Seleção vs aleatorização (Monte Carlo)</div>
+    </div>
+    <p class="panel-q">
+      Para cada repetição, sorteamos uma amostra de tamanho <code>n</code> da população
+      e estimamos <code>τ̂</code> via OLS de <code>Y</code> em <code>D</code>. Sob
+      <em>seleção</em> (D original), o estimador converge para a diferença ingênua —
+      é viesado. Sob <em>aleatorização</em> (D re-sorteado Bernoulli(0.5)), o
+      estimador converge para o ATE — é não-viesado.
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre>n_reps &lt;- <span class="num">1000</span>
+n      &lt;- <span class="num">1000</span>
+tau_sel &lt;- <span class="kw">numeric</span>(n_reps)
+tau_rct &lt;- <span class="kw">numeric</span>(n_reps)
+
+<span class="kw">for</span>(i <span class="kw">in</span> <span class="num">1</span>:n_reps) {
+  s &lt;- data[<span class="kw">sample</span>(<span class="kw">nrow</span>(data), n), ]
+  tau_sel[i] &lt;- <span class="kw">coef</span>(<span class="kw">lm</span>(Y_obs ~ D, s))[<span class="num">2</span>]
+
+  s$D_RCT &lt;- <span class="kw">rbinom</span>(n, <span class="num">1</span>, <span class="num">0.5</span>)
+  s$Y_RCT &lt;- s$D_RCT*s$Y1 + (<span class="num">1</span>-s$D_RCT)*s$Y0
+  tau_rct[i] &lt;- <span class="kw">coef</span>(<span class="kw">lm</span>(Y_RCT ~ D_RCT, s))[<span class="num">2</span>]
+}</pre>
+      </div>
+      <div class="panel-viz">
+        <div class="controls-row">
+          <label for="p4-reps">repetições</label>
+          <input type="range" id="p4-reps" min="200" max="3000" step="100" value="1000">
+          <span class="val" id="p4-reps-val">1000</span>
+          <label for="p4-n" style="margin-left: 0.5rem">n</label>
+          <input type="number" id="p4-n" value="1000" min="50" max="5000" step="50">
+          <button class="btn secondary" id="p4-run">Rodar</button>
+        </div>
+        <div id="plot-4" class="plot tall"></div>
+        <div class="stats" id="stats-4">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <!-- PANEL 5 — Minimum Detectable Effect                          -->
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <section class="panel" id="p5">
+    <div class="panel-head">
+      <div class="panel-num">5</div>
+      <div class="panel-title">Efeito Mínimo Detectável (MDE)</div>
+    </div>
+    <p class="panel-q">
+      Para um experimento aleatorizado com <code>α=0.05</code> bilateral e poder
+      <code>1−κ=0.80</code>:
+      <code>MDE = (z<sub>1−α/2</sub> + z<sub>1−κ</sub>) · SE(τ̂<sup>RCT</sup>)
+      ≈ 2.802 · σ̂<sub>Y</sub>·√(2/n)</code> sob alocação 50/50. O gráfico
+      mostra MDE em função de <code>n</code> — comparado ao ATE verdadeiro.
+      Onde a curva passa abaixo do ATE, o experimento <em>tem poder</em> para detectá-lo.
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre>z_a &lt;- <span class="num">1.96</span>; z_k &lt;- <span class="num">0.842</span>
+
+<span class="com"># SE(τ̂_RCT) ≈ σ_Y · √(2/n) sob 50/50</span>
+sigma_Y &lt;- <span class="kw">sd</span>(data$Y_obs)
+mde &lt;- <span class="kw">function</span>(n) {
+  (z_a + z_k) * sigma_Y * <span class="kw">sqrt</span>(<span class="num">2</span>/n)
+}
+
+ns  &lt;- <span class="kw">c</span>(<span class="num">50</span>, <span class="num">100</span>, <span class="num">500</span>, <span class="num">1000</span>, <span class="num">5000</span>)
+<span class="kw">data.frame</span>(n = ns, MDE = <span class="kw">sapply</span>(ns, mde))</pre>
+      </div>
+      <div class="panel-viz">
+        <div class="controls-row">
+          <label for="p5-n">n</label>
+          <input type="range" id="p5-n" min="50" max="5000" step="50" value="1000">
+          <span class="val" id="p5-n-val">1000</span>
+        </div>
+        <div id="plot-5" class="plot tall"></div>
+        <div class="stats" id="stats-5">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SNIPPETS -->
+  <section class="panel" id="snippets">
+    <div class="panel-head">
+      <div class="panel-num">★</div>
+      <div class="panel-title">Snippets úteis em R</div>
+    </div>
+    <div class="snippet-grid">
+
+      <div class="snippet">
+        <div class="snippet-title">DGP com resultados potenciais</div>
+<pre>set.seed(<span class="num">1</span>)
+n  <- <span class="num">2000</span>
+
+<span class="com"># Y(0), Y(1) latentes</span>
+Y0 <- rnorm(n, mean = <span class="num">100</span>, sd = <span class="num">10</span>)
+tau <- rnorm(n, mean = <span class="num">5</span>, sd = <span class="num">2</span>)
+Y1 <- Y0 + tau
+
+<span class="com"># Atribuição (selection on Y0)</span>
+D <- as.integer(Y0 &gt; quantile(Y0, .<span class="num">5</span>))
+
+<span class="com"># Apenas observamos Y</span>
+Y <- D * Y1 + (<span class="num">1</span> - D) * Y0
+df <- data.frame(Y, D, Y0, Y1)</pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-title">ATE / ATT / ATU "oráculo"</div>
+<pre><span class="com"># Quando se conhece Y0 e Y1 (simulação)</span>
+ATE <- mean(df$Y1 - df$Y0)
+ATT <- mean((df$Y1 - df$Y0)[df$D == <span class="num">1</span>])
+ATU <- mean((df$Y1 - df$Y0)[df$D == <span class="num">0</span>])
+
+<span class="com"># Diferença simples (viesada se há seleção)</span>
+naive <- mean(df$Y[df$D == <span class="num">1</span>]) -
+         mean(df$Y[df$D == <span class="num">0</span>])
+
+c(ATE = ATE, ATT = ATT,
+  ATU = ATU, naive = naive)</pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-title">RCT — sortear e comparar</div>
+<pre>set.seed(<span class="num">42</span>)
+n <- <span class="num">2000</span>
+
+<span class="com"># Atribuição aleatória 50/50</span>
+D <- rbinom(n, <span class="num">1</span>, <span class="num">0.5</span>)
+Y0 <- rnorm(n, <span class="num">100</span>, <span class="num">10</span>)
+Y  <- Y0 + <span class="num">5</span> * D + rnorm(n, <span class="num">0</span>, <span class="num">2</span>)
+
+<span class="com"># Estimador simples (sem viés)</span>
+fit <- lm(Y ~ D)
+coef(fit)[<span class="str">"D"</span>]
+
+<span class="com"># SE robusto (HC1)</span>
+library(sandwich); library(lmtest)
+coeftest(fit, vcov = vcovHC(fit, <span class="str">"HC1"</span>))</pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-title">MDE (Minimum Detectable Effect)</div>
+<pre><span class="com"># MDE para teste two-sided 5%, poder 80%</span>
+<span class="com"># MDE ≈ (z_{1-α/2} + z_{1-β}) · SE(τ̂)</span>
+mde <- function(n, sigma, p = <span class="num">0.5</span>,
+                alpha = <span class="num">.05</span>, power = <span class="num">.80</span>) {
+  se <- sigma * sqrt(<span class="num">1</span>/(p*(<span class="num">1</span>-p)*n))
+  (qnorm(<span class="num">1</span>-alpha/<span class="num">2</span>) + qnorm(power)) * se
+}
+
+<span class="com"># MDE como função de n</span>
+ns <- seq(<span class="num">100</span>, <span class="num">5000</span>, by = <span class="num">100</span>)
+plot(ns, mde(ns, sigma = <span class="num">10</span>),
+     type = <span class="str">"l"</span>, xlab = <span class="str">"n"</span>, ylab = <span class="str">"MDE"</span>)</pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-title">Power calculation com pwr</div>
+<pre>library(pwr)
+
+<span class="com"># Two-sample t-test, efeito padronizado d = τ/σ</span>
+pwr.t.test(d     = <span class="num">0.2</span>,
+           sig.level = <span class="num">0.05</span>,
+           power = <span class="num">0.80</span>,
+           type  = <span class="str">"two.sample"</span>)
+
+<span class="com"># Resolva pelo n necessário</span>
+<span class="com"># (deixe um dos argumentos = NULL)</span>
+
+<span class="com"># Curva de poder</span>
+library(ggplot2)
+ds <- seq(<span class="num">0.05</span>, <span class="num">0.5</span>, by = <span class="num">0.01</span>)
+pw <- sapply(ds, function(d)
+  pwr.t.test(n = <span class="num">200</span>, d = d)$power)
+qplot(ds, pw, geom = <span class="str">"line"</span>)</pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-title">Tabela publicável (modelsummary)</div>
+<pre>library(modelsummary)
+library(sandwich)
+
+m1 <- lm(Y ~ D, data = df)
+m2 <- lm(Y ~ D + X, data = df)
+
+modelsummary(
+  list(<span class="str">"Simples"</span> = m1, <span class="str">"Com X"</span> = m2),
+  vcov   = <span class="str">"HC1"</span>,
+  stars  = TRUE,
+  output = <span class="str">"tabs/rct.tex"</span>,
+  gof_omit = <span class="str">"AIC|BIC|Log"</span>
+)</pre>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  © 2026 Nícolas Goulart · Built with HTML & CSS
+</footer>
+
+<script>
+/* ════════════════════════════════════════════════════════════════
+   Utilities
+   ════════════════════════════════════════════════════════════════ */
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = a;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function makeNormal(rand) {
+  let spare = null;
+  return function () {
+    if (spare !== null) { const v = spare; spare = null; return v; }
+    let u1, u2;
+    do { u1 = rand(); } while (u1 === 0);
+    u2 = rand();
+    const m = Math.sqrt(-2 * Math.log(u1));
+    spare = m * Math.sin(2 * Math.PI * u2);
+    return m * Math.cos(2 * Math.PI * u2);
+  };
+}
+const fmt = (x, d=2) => x.toLocaleString('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d });
+const RED='#CC0000', SLATE='#46647B', SAGE='#507867', PLUM='#973B74', GRAY='#6B6B6B';
+const RGBA_SLATE = a => `rgba(70,100,123,${a})`;
+const RGBA_SAGE  = a => `rgba(80,120,103,${a})`;
+const RGBA_PLUM  = a => `rgba(151,59,116,${a})`;
+const RGBA_RED   = a => `rgba(204,0,0,${a})`;
+const AX = {
+  Y:    { min: 20,  max: 90  },   // potential outcomes
+  TAU:  { min: -2,  max: 14  },   // individual treatment effect
+  BAR:  { min: 40,  max: 65  },   // means in panel 2/3
+  TAUH: { min: 4,   max: 12  },   // sampling distribution of τ̂
+  N:    { logMin: 1.6, logMax: 3.8 }, // n axis on MDE (log10)
+  MDE:  { min: 0,   max: 25 }
+};
+
+/* ════════════════════════════════════════════════════════════════
+   Build synthetic population — DIFFERENT FROM WORKBOOK
+   Y = pontos numa prova de proficiência em inglês (~0–100)
+   U  ~ N(0,1)            aptidão linguística latente
+   Y0 = 50 + 8·U + ε,     ε ~ N(0, 5²)        →  σ_Y0 ≈ 9.43
+   τ_i = 6 + 2·U          →  ATE = 6, heterogêneo
+   Y1 = Y0 + τ_i
+   D  ~ Bernoulli(σ(0.7·U))   →  seleção em níveis E ganhos
+   ════════════════════════════════════════════════════════════════ */
+let POP = null;
+function buildPopulation(seed, N) {
+  const r = mulberry32(seed);
+  const norm = makeNormal(r);
+  const Y0 = new Float64Array(N);
+  const Y1 = new Float64Array(N);
+  const D  = new Uint8Array(N);
+  for (let i = 0; i < N; i++) {
+    const u   = norm();
+    const e0  = 5 * norm();
+    const y0  = 50 + 8 * u + e0;
+    const tau = 6 + 2 * u;
+    Y0[i] = y0;
+    Y1[i] = y0 + tau;
+    const p = 1 / (1 + Math.exp(-(0.7 * u)));
+    D[i] = r() < p ? 1 : 0;
+  }
+  // Population summaries
+  let sY0 = 0, sY1 = 0, sTau = 0;
+  let n0 = 0, n1 = 0;
+  let sY0_d0 = 0, sY0_d1 = 0, sY1_d0 = 0, sY1_d1 = 0;
+  for (let i = 0; i < N; i++) {
+    sY0 += Y0[i]; sY1 += Y1[i]; sTau += (Y1[i] - Y0[i]);
+    if (D[i]) { n1++; sY0_d1 += Y0[i]; sY1_d1 += Y1[i]; }
+    else      { n0++; sY0_d0 += Y0[i]; sY1_d0 += Y1[i]; }
+  }
+  const muY0 = sY0 / N, muY1 = sY1 / N;
+  const ATE  = sTau / N;
+  const muY0_d0 = sY0_d0 / n0, muY0_d1 = sY0_d1 / n1;
+  const muY1_d0 = sY1_d0 / n0, muY1_d1 = sY1_d1 / n1;
+  const ATT  = muY1_d1 - muY0_d1;
+  const ATU  = muY1_d0 - muY0_d0;
+  const naiveDiff = muY1_d1 - muY0_d0;          // = E[Y|D=1] - E[Y|D=0]
+  const selBias   = muY0_d1 - muY0_d0;          // viés de seleção em níveis
+  // sd of observed Y under selection (used for MDE approximation)
+  let sumY = 0;
+  for (let i = 0; i < N; i++) sumY += D[i] ? Y1[i] : Y0[i];
+  const muYobs = sumY / N;
+  let varY = 0;
+  for (let i = 0; i < N; i++) { const v = (D[i] ? Y1[i] : Y0[i]) - muYobs; varY += v*v; }
+  const sigmaY = Math.sqrt(varY / N);
+  // sd of τ_i (heterogeneity)
+  let varTau = 0;
+  for (let i = 0; i < N; i++) { const t = (Y1[i] - Y0[i]) - ATE; varTau += t*t; }
+  const sdTau = Math.sqrt(varTau / N);
+  return { Y0, Y1, D, N,
+           muY0, muY1, ATE, ATT, ATU,
+           muY0_d0, muY0_d1, muY1_d0, muY1_d1,
+           naiveDiff, selBias, sigmaY, sdTau,
+           pTreated: n1 / N };
+}
+
+function histogram(values, bins, lo, hi) {
+  const w = (hi - lo) / bins;
+  const counts = new Float64Array(bins);
+  const centers = new Float64Array(bins);
+  for (let i = 0; i < bins; i++) centers[i] = lo + (i + 0.5) * w;
+  for (const v of values) {
+    let idx = Math.floor((v - lo) / w);
+    if (idx < 0) idx = 0; else if (idx >= bins) idx = bins - 1;
+    counts[idx]++;
+  }
+  return { centers, counts: Array.from(counts), w, lo, hi };
+}
+
+function kde(values, gridX) {
+  const n = values.length;
+  let m = 0; for (let i = 0; i < n; i++) m += values[i]; m /= n;
+  let v = 0; for (let i = 0; i < n; i++) { const d = values[i] - m; v += d * d; }
+  const std = Math.sqrt(v / (n - 1));
+  const h = 1.06 * std * Math.pow(n, -0.2);
+  const out = new Float64Array(gridX.length);
+  const inv = 1 / (n * h * Math.sqrt(2 * Math.PI));
+  for (let i = 0; i < gridX.length; i++) {
+    let s = 0;
+    for (let j = 0; j < n; j++) {
+      const u = (gridX[i] - values[j]) / h;
+      s += Math.exp(-0.5 * u * u);
+    }
+    out[i] = s * inv;
+  }
+  return out;
+}
+
+function baseLayout(title, xlab, ylab) {
+  return {
+    margin: { l: 55, r: 15, t: 10, b: 45 },
+    xaxis: { title: xlab, gridcolor: 'rgba(0,0,0,0.06)', zerolinecolor: 'rgba(0,0,0,0.15)' },
+    yaxis: { title: ylab, gridcolor: 'rgba(0,0,0,0.06)', zerolinecolor: 'rgba(0,0,0,0.15)' },
+    paper_bgcolor: 'white', plot_bgcolor: 'white',
+    font: { family: 'DM Sans, sans-serif', size: 11, color: '#1A1A1A' },
+    legend: { orientation: 'h', y: -0.22, x: 0.5, xanchor: 'center' },
+    hovermode: 'closest'
+  };
+}
+const PLOT_CFG = { displaylogo: false, responsive: true, modeBarButtonsToRemove: ['lasso2d', 'select2d', 'autoScale2d'] };
+
+/* ════════════════════════════════════════════════════════════════
+   Panel 1 — Resultados potenciais
+   ════════════════════════════════════════════════════════════════ */
+function renderPanel1() {
+  // 1a — densities of Y0 and Y1
+  const BINS = 50;
+  const h0 = histogram(POP.Y0, BINS, AX.Y.min, AX.Y.max);
+  const h1 = histogram(POP.Y1, BINS, AX.Y.min, AX.Y.max);
+  const d0 = h0.counts.map(c => c / (POP.N * h0.w));
+  const d1 = h1.counts.map(c => c / (POP.N * h1.w));
+  const traces1a = [
+    { type: 'bar', x: h0.centers, y: d0,
+      marker: { color: RGBA_SLATE(0.55), line: { width: 0 } },
+      name: 'Y(0)', showlegend: true,
+      hovertemplate: 'Y(0)≈%{x:.0f}<br>%{y:.4f}<extra></extra>' },
+    { type: 'bar', x: h1.centers, y: d1,
+      marker: { color: RGBA_SAGE(0.55), line: { width: 0 } },
+      name: 'Y(1)', showlegend: true,
+      hovertemplate: 'Y(1)≈%{x:.0f}<br>%{y:.4f}<extra></extra>' }
+  ];
+  const lay1a = baseLayout(null, 'Y — pontuação na prova', 'densidade');
+  lay1a.barmode = 'overlay';
+  lay1a.xaxis.range = [AX.Y.min, AX.Y.max];
+  lay1a.yaxis.range = [0, 0.06];
+  lay1a.shapes = [
+    { type: 'line', xref: 'x', yref: 'paper',
+      x0: POP.muY0, x1: POP.muY0, y0: 0, y1: 1,
+      line: { color: SLATE, width: 2, dash: 'dash' } },
+    { type: 'line', xref: 'x', yref: 'paper',
+      x0: POP.muY1, x1: POP.muY1, y0: 0, y1: 1,
+      line: { color: SAGE, width: 2, dash: 'dash' } }
+  ];
+  lay1a.annotations = [
+    { x: POP.muY0, y: 1.04, xref: 'x', yref: 'paper',
+      text: `μ_Y0=${fmt(POP.muY0,1)}`, showarrow: false,
+      font: { color: SLATE, size: 10 } },
+    { x: POP.muY1, y: 1.04, xref: 'x', yref: 'paper',
+      text: `μ_Y1=${fmt(POP.muY1,1)}`, showarrow: false,
+      font: { color: SAGE, size: 10 } }
+  ];
+  lay1a.legend = { orientation: 'h', y: -0.28, x: 0.5, xanchor: 'center' };
+  lay1a.margin = { l: 55, r: 15, t: 25, b: 50 };
+  Plotly.react('plot-1a', traces1a, lay1a, PLOT_CFG);
+
+  // 1b — distribution of individual τ
+  const tau = new Float64Array(POP.N);
+  for (let i = 0; i < POP.N; i++) tau[i] = POP.Y1[i] - POP.Y0[i];
+  const ht = histogram(tau, 60, AX.TAU.min, AX.TAU.max);
+  const dt = ht.counts.map(c => c / (POP.N * ht.w));
+  const traces1b = [
+    { type: 'bar', x: ht.centers, y: dt,
+      marker: { color: PLUM, line: { width: 0 } },
+      hovertemplate: 'τ≈%{x:.1f}<br>%{y:.3f}<extra></extra>',
+      showlegend: false }
+  ];
+  const lay1b = baseLayout(null, 'τᵢ = Yᵢ(1) − Yᵢ(0) — efeito individual', 'densidade');
+  lay1b.xaxis.range = [AX.TAU.min, AX.TAU.max];
+  lay1b.yaxis.range = [0, 0.25];
+  lay1b.shapes = [
+    { type: 'line', xref: 'x', yref: 'paper',
+      x0: POP.ATE, x1: POP.ATE, y0: 0, y1: 1,
+      line: { color: RED, width: 2, dash: 'dash' } }
+  ];
+  lay1b.annotations = [
+    { x: POP.ATE, y: 1.04, xref: 'x', yref: 'paper',
+      text: `<b>ATE = ${fmt(POP.ATE,2)}</b>`, showarrow: false,
+      font: { color: RED, size: 11, family: 'DM Sans' } }
+  ];
+  lay1b.margin = { l: 55, r: 15, t: 25, b: 40 };
+  Plotly.react('plot-1b', traces1b, lay1b, PLOT_CFG);
+
+  document.getElementById('stats-1').innerHTML =
+    `<span class="lbl">μ_Y(0) =</span> <span class="v">${fmt(POP.muY0)}</span> · ` +
+    `<span class="lbl">μ_Y(1) =</span> <span class="v">${fmt(POP.muY1)}</span> · ` +
+    `<span class="lbl">ATE =</span> <span class="v">${fmt(POP.ATE)}</span> · ` +
+    `<span class="lbl">σ(τᵢ) =</span> <span class="v">${fmt(POP.sdTau)}</span> ` +
+    `<span class="lbl">(heterogeneidade)</span>`;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Panel 2 — Selection bias decomposition
+   ════════════════════════════════════════════════════════════════ */
+function renderPanel2() {
+  // Four conditional means: solid = observed, hatched = counterfactual
+  const xs = ['D = 0', 'D = 1'];
+  const traces = [
+    // Y(0) — observed for D=0, counterfactual for D=1
+    { type: 'bar', x: xs, y: [POP.muY0_d0, POP.muY0_d1],
+      marker: {
+        color: [SLATE, RGBA_SLATE(0.35)],
+        pattern: { shape: ['', '/'], fgcolor: SLATE, size: 6, solidity: 0.4 },
+        line: { color: SLATE, width: 1 }
+      },
+      name: 'E[Y(0) | D]',
+      hovertemplate: '%{x}: E[Y(0)] = %{y:.2f}<extra></extra>' },
+    // Y(1) — counterfactual for D=0, observed for D=1
+    { type: 'bar', x: xs, y: [POP.muY1_d0, POP.muY1_d1],
+      marker: {
+        color: [RGBA_SAGE(0.35), SAGE],
+        pattern: { shape: ['/', ''], fgcolor: SAGE, size: 6, solidity: 0.4 },
+        line: { color: SAGE, width: 1 }
+      },
+      name: 'E[Y(1) | D]',
+      hovertemplate: '%{x}: E[Y(1)] = %{y:.2f}<extra></extra>' }
+  ];
+  const lay = baseLayout(null, '', 'pontos na prova');
+  lay.barmode = 'group';
+  lay.yaxis.range = [AX.BAR.min, AX.BAR.max];
+  lay.legend = { orientation: 'h', y: -0.18, x: 0.5, xanchor: 'center' };
+  lay.margin = { l: 55, r: 25, t: 30, b: 60 };
+  // Annotations: naive comparison (red), selection bias on Y(0) (red bar on left)
+  lay.annotations = [
+    { x: 0, y: POP.muY0_d0, text: `${fmt(POP.muY0_d0,1)}`,
+      showarrow: false, xanchor: 'right', yanchor: 'bottom',
+      xshift: -22, yshift: 0,
+      font: { color: SLATE, size: 10 } },
+    { x: 1, y: POP.muY0_d1, text: `${fmt(POP.muY0_d1,1)}`,
+      showarrow: false, xanchor: 'right', yanchor: 'bottom',
+      xshift: -22, yshift: 0,
+      font: { color: SLATE, size: 10 } },
+    { x: 0, y: POP.muY1_d0, text: `${fmt(POP.muY1_d0,1)}`,
+      showarrow: false, xanchor: 'left', yanchor: 'bottom',
+      xshift: 22, yshift: 0,
+      font: { color: SAGE, size: 10 } },
+    { x: 1, y: POP.muY1_d1, text: `${fmt(POP.muY1_d1,1)}`,
+      showarrow: false, xanchor: 'left', yanchor: 'bottom',
+      xshift: 22, yshift: 0,
+      font: { color: SAGE, size: 10 } },
+    // Decomposition box at the top
+    { x: 0.5, y: 1.04, xref: 'paper', yref: 'paper',
+      text: `<b>naive = ${fmt(POP.naiveDiff,2)}</b>  =  ATT (${fmt(POP.ATT,2)}) + viés (${fmt(POP.selBias,2)})`,
+      showarrow: false, xanchor: 'center', yanchor: 'bottom',
+      font: { color: RED, size: 11, family: 'DM Sans' },
+      bgcolor: 'rgba(255,255,255,0.97)',
+      bordercolor: RED, borderwidth: 1, borderpad: 6 }
+  ];
+  // Selection-bias arrow: between E[Y(0)|D=0] and E[Y(0)|D=1]
+  lay.shapes = [
+    { type: 'line', x0: -0.20, x1: 0.80, y0: POP.muY0_d0, y1: POP.muY0_d0,
+      line: { color: RED, width: 1, dash: 'dot' } },
+    { type: 'line', x0: 0.80, x1: 0.80, y0: POP.muY0_d0, y1: POP.muY0_d1,
+      line: { color: RED, width: 2 } }
+  ];
+  lay.annotations.push({
+    x: 0.85, y: (POP.muY0_d0 + POP.muY0_d1) / 2,
+    text: `viés<br>${fmt(POP.selBias,1)}`,
+    showarrow: false, xanchor: 'left',
+    font: { color: RED, size: 10, family: 'DM Sans' }
+  });
+  Plotly.react('plot-2', traces, lay, PLOT_CFG);
+
+  document.getElementById('stats-2').innerHTML =
+    `<span class="lbl">E[Y|D=1] − E[Y|D=0] =</span> <span class="v">${fmt(POP.naiveDiff)}</span> ` +
+    `<span class="lbl">vs ATE =</span> <span class="v">${fmt(POP.ATE)}</span> · ` +
+    `<span class="lbl">viés (= naive − ATT):</span> <span class="v">${fmt(POP.selBias)}</span>`;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Panel 3 — ATE / ATT / ATU
+   ════════════════════════════════════════════════════════════════ */
+function renderPanel3() {
+  const labels = ['ATU', 'ATE', 'ATT'];
+  const vals   = [POP.ATU, POP.ATE, POP.ATT];
+  const colors = [GRAY, RED, PLUM];
+  const traces = [
+    { type: 'bar', x: labels, y: vals,
+      marker: { color: colors, line: { width: 0 } },
+      text: vals.map(v => `<b>${fmt(v,2)}</b>`),
+      textposition: 'outside',
+      textfont: { size: 13, family: 'Source Serif 4' },
+      hovertemplate: '%{x} = %{y:.3f}<extra></extra>',
+      showlegend: false }
+  ];
+  const lay = baseLayout(null, '', 'efeito médio (pontos)');
+  lay.yaxis.range = [0, Math.max(...vals) * 1.30];
+  lay.margin = { l: 55, r: 25, t: 30, b: 40 };
+  // Reference line at ATE
+  lay.shapes = [
+    { type: 'line', xref: 'paper', yref: 'y', x0: 0, x1: 1,
+      y0: POP.ATE, y1: POP.ATE,
+      line: { color: RED, width: 1, dash: 'dot' } }
+  ];
+  Plotly.react('plot-3', traces, lay, PLOT_CFG);
+
+  document.getElementById('stats-3').innerHTML =
+    `<span class="lbl">ATU =</span> <span class="v">${fmt(POP.ATU)}</span> · ` +
+    `<span class="lbl">ATE =</span> <span class="v">${fmt(POP.ATE)}</span> · ` +
+    `<span class="lbl">ATT =</span> <span class="v">${fmt(POP.ATT)}</span> · ` +
+    `<span class="lbl">π = P(D=1) =</span> <span class="v">${fmt(POP.pTreated, 3)}</span> ` +
+    `<span class="lbl">→ ATT−ATU mede seleção em ganhos</span>`;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Panel 4 — Selection vs RCT (Monte Carlo)
+   ════════════════════════════════════════════════════════════════ */
+function renderPanel4() {
+  const reps = parseInt(document.getElementById('p4-reps').value, 10);
+  const n    = parseInt(document.getElementById('p4-n').value, 10);
+  const rand = mulberry32(98765 + reps + n);
+  const tauSel = new Float64Array(reps);
+  const tauRct = new Float64Array(reps);
+  const N = POP.N;
+  for (let r = 0; r < reps; r++) {
+    let s0 = 0, s1 = 0, n0 = 0, n1 = 0;
+    let r0 = 0, r1 = 0, m0 = 0, m1 = 0;
+    for (let i = 0; i < n; i++) {
+      const idx = Math.floor(rand() * N);
+      // Under selection: D = original
+      const d = POP.D[idx];
+      const yObs = d ? POP.Y1[idx] : POP.Y0[idx];
+      if (d) { s1 += yObs; n1++; } else { s0 += yObs; n0++; }
+      // Under RCT: re-randomize
+      const dR = rand() < 0.5 ? 1 : 0;
+      const yR = dR ? POP.Y1[idx] : POP.Y0[idx];
+      if (dR) { r1 += yR; m1++; } else { r0 += yR; m0++; }
+    }
+    tauSel[r] = (n1 > 0 && n0 > 0) ? (s1 / n1 - s0 / n0) : 0;
+    tauRct[r] = (m1 > 0 && m0 > 0) ? (r1 / m1 - r0 / m0) : 0;
+  }
+  // Means
+  let sumS = 0, sumR = 0;
+  for (let i = 0; i < reps; i++) { sumS += tauSel[i]; sumR += tauRct[i]; }
+  const mSel = sumS / reps, mRct = sumR / reps;
+  let vS = 0, vR = 0;
+  for (let i = 0; i < reps; i++) {
+    vS += (tauSel[i] - mSel) ** 2;
+    vR += (tauRct[i] - mRct) ** 2;
+  }
+  const sdSel = Math.sqrt(vS / (reps - 1));
+  const sdRct = Math.sqrt(vR / (reps - 1));
+
+  const grid = []; for (let x = AX.TAUH.min; x <= AX.TAUH.max + 0.001; x += 0.05) grid.push(x);
+  const dSel = kde(tauSel, grid);
+  const dRct = kde(tauRct, grid);
+
+  const traces = [
+    { type: 'scatter', mode: 'lines', x: grid, y: Array.from(dSel),
+      line: { color: PLUM, width: 2 },
+      fill: 'tozeroy', fillcolor: RGBA_PLUM(0.18),
+      name: 'τ̂ sob seleção' },
+    { type: 'scatter', mode: 'lines', x: grid, y: Array.from(dRct),
+      line: { color: SAGE, width: 2 },
+      fill: 'tozeroy', fillcolor: RGBA_SAGE(0.18),
+      name: 'τ̂ sob RCT' },
+    { type: 'scatter', mode: 'lines',
+      x: [POP.ATE, POP.ATE], y: [0, 2.5],
+      line: { color: RED, width: 2, dash: 'dash' },
+      name: `ATE = ${fmt(POP.ATE,1)}` },
+    { type: 'scatter', mode: 'lines',
+      x: [POP.naiveDiff, POP.naiveDiff], y: [0, 2.5],
+      line: { color: PLUM, width: 1.5, dash: 'dot' },
+      name: `naive = ${fmt(POP.naiveDiff,1)}` }
+  ];
+  const lay = baseLayout(null, 'τ̂ — estimativa OLS na amostra', 'densidade');
+  lay.xaxis.range = [AX.TAUH.min, AX.TAUH.max];
+  lay.yaxis.range = [0, 2.5];
+  lay.legend = { orientation: 'h', y: -0.20, x: 0.5, xanchor: 'center' };
+  Plotly.react('plot-4', traces, lay, PLOT_CFG);
+
+  document.getElementById('stats-4').innerHTML =
+    `<span class="lbl">média τ̂ seleção:</span> <span class="v">${fmt(mSel)}</span> ` +
+    `<span class="lbl">(viés ${fmt(mSel - POP.ATE, 2)})</span> · ` +
+    `<span class="lbl">média τ̂ RCT:</span> <span class="v">${fmt(mRct)}</span> ` +
+    `<span class="lbl">(viés ${fmt(mRct - POP.ATE, 2)})</span> · ` +
+    `<span class="lbl">SE RCT:</span> <span class="v">${fmt(sdRct, 3)}</span>`;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Panel 5 — Minimum Detectable Effect
+   ════════════════════════════════════════════════════════════════ */
+function renderPanel5() {
+  const nUser = parseInt(document.getElementById('p5-n').value, 10);
+  const Z = 1.96 + 0.842;
+  const sigmaY = POP.sigmaY;
+
+  // MDE curve over a log-spaced grid of n
+  const ns = [];
+  for (let logN = AX.N.logMin; logN <= AX.N.logMax + 0.001; logN += 0.04) {
+    ns.push(Math.round(Math.pow(10, logN)));
+  }
+  const mdes = ns.map(n => Z * sigmaY * Math.sqrt(2 / n));
+  const mdeAtUser = Z * sigmaY * Math.sqrt(2 / nUser);
+  const powered = mdeAtUser <= POP.ATE;
+
+  const traces = [
+    { type: 'scatter', mode: 'lines',
+      x: ns, y: mdes,
+      line: { color: SLATE, width: 2.5 },
+      fill: 'tozeroy', fillcolor: RGBA_SLATE(0.10),
+      name: 'MDE(n)',
+      hovertemplate: 'n=%{x}<br>MDE=%{y:.2f}<extra></extra>' },
+    { type: 'scatter', mode: 'lines',
+      x: [Math.pow(10, AX.N.logMin), Math.pow(10, AX.N.logMax)],
+      y: [POP.ATE, POP.ATE],
+      line: { color: RED, width: 2, dash: 'dash' },
+      name: `ATE = ${fmt(POP.ATE,1)}` },
+    { type: 'scatter', mode: 'markers',
+      x: [nUser], y: [mdeAtUser],
+      marker: { color: powered ? SAGE : PLUM, size: 14, symbol: 'circle',
+                line: { color: 'white', width: 2 } },
+      name: `n = ${nUser}`,
+      hovertemplate: `n=${nUser}<br>MDE=${fmt(mdeAtUser,2)}<extra></extra>` }
+  ];
+  const lay = baseLayout(null, 'tamanho da amostra n (log)', 'MDE (pontos)');
+  lay.xaxis.type = 'log';
+  lay.xaxis.range = [AX.N.logMin, AX.N.logMax];
+  lay.yaxis.range = [AX.MDE.min, AX.MDE.max];
+  lay.legend = { orientation: 'h', y: -0.18, x: 0.5, xanchor: 'center' };
+  // Highlight the user's n
+  lay.shapes = [
+    { type: 'line', xref: 'x', yref: 'y',
+      x0: nUser, x1: nUser, y0: 0, y1: mdeAtUser,
+      line: { color: powered ? SAGE : PLUM, width: 1, dash: 'dot' } }
+  ];
+  lay.annotations = [
+    { x: nUser, y: mdeAtUser, ax: 30, ay: -25,
+      text: `<b>${fmt(mdeAtUser, 2)}</b>`,
+      showarrow: true, arrowcolor: GRAY, arrowwidth: 1,
+      font: { color: powered ? SAGE : PLUM, size: 12, family: 'DM Sans' },
+      bgcolor: 'rgba(255,255,255,0.95)',
+      bordercolor: powered ? SAGE : PLUM, borderwidth: 1, borderpad: 4 }
+  ];
+  Plotly.react('plot-5', traces, lay, PLOT_CFG);
+
+  const status = powered
+    ? `<span class="ok">MDE &lt; ATE → tem poder para detectar</span>`
+    : `<span class="no">MDE &gt; ATE → subdimensionado</span>`;
+  document.getElementById('stats-5').innerHTML =
+    `<span class="lbl">σ̂_Y =</span> <span class="v">${fmt(sigmaY,2)}</span> · ` +
+    `<span class="lbl">com n=${nUser}: MDE =</span> <span class="v">${fmt(mdeAtUser,2)}</span> ` +
+    `<span class="lbl">vs ATE =</span> <span class="v">${fmt(POP.ATE,2)}</span> → ${status}`;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Wiring
+   ════════════════════════════════════════════════════════════════ */
+const $ = id => document.getElementById(id);
+
+function regenerateAll() {
+  const seed = parseInt($('pop-seed').value, 10) || 1;
+  const N    = Math.min(500000, Math.max(10000, parseInt($('pop-N').value, 10) || 100000));
+  const t0 = performance.now();
+  POP = buildPopulation(seed, N);
+  $('pop-status').textContent =
+    `N=${N.toLocaleString('pt-BR')} · gerado em ${(performance.now() - t0).toFixed(0)} ms`;
+  renderAll();
+}
+
+function renderAll() {
+  renderPanel1();
+  renderPanel2();
+  renderPanel3();
+  renderPanel4();
+  renderPanel5();
+}
+
+$('regenerate').addEventListener('click', regenerateAll);
+
+$('p4-reps').addEventListener('input', e => $('p4-reps-val').textContent = e.target.value);
+$('p4-run').addEventListener('click', renderPanel4);
+
+$('p5-n').addEventListener('input', e => {
+  $('p5-n-val').textContent = e.target.value;
+  renderPanel5();
+});
+
+function todaySeed() {
+  const t = new Date();
+  return t.getFullYear() * 10000 + (t.getMonth() + 1) * 100 + t.getDate();
+}
+$('pop-seed').value = todaySeed();
+
+regenerateAll();
+</script>
+
+</body>
+</html>

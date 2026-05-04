@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aula 4 — Atrito e Identificação Parcial · Microeconometria Aplicada</title>
+<meta name="description" content="Aula 4: atrito diferencial, viés do estimador OLS na amostra observada, testes de quantidade e composição, e bounds de Lee.">
+<link rel="icon" href="../../../favicon.ico" type="image/x-icon">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<link rel="stylesheet" href="aula_shared.css">
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="../../index.html" class="nav-name">Nícolas Goulart</a>
+    <div class="nav-links">
+      <a href="../../index.html">About</a>
+      <a href="../../cv.html">CV</a>
+      <a href="../../research.html">Research</a>
+      <a href="../../teaching.html" class="active">Teaching</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+
+  <div class="breadcrumb">
+    <a href="../../teaching.html">Teaching</a> ·
+    <a href="index.html">Applied Microeconometrics</a> · Aula 4
+  </div>
+
+  <div class="lecture-toc">
+    <span class="lecture-toc-label">Nesta aula</span>
+    <a href="#p1">1 · Mecanismo de atrito</a>
+    <a href="#p2">2 · Viés na amostra observada</a>
+    <a href="#p3">3 · Testes diferenciais</a>
+    <a href="#p4">4 · Bounds de Lee</a>
+    <a href="#snippets">Snippets R</a>
+  </div>
+
+  <div class="lecture-header">
+    <div class="lecture-kicker">Aula 04</div>
+    <h1 class="lecture-h1">Atrito Diferencial e Bounds de Lee</h1>
+    <p class="lecture-intro">
+      Mesmo em RCTs perfeitos, o ATE é ameaçado quando <strong>não observamos o
+      <em>outcome</em></strong> para parte dos indivíduos. Se a probabilidade de responder
+      depende do tratamento (atrito diferencial) e/ou do potencial outcome, a média condicional
+      ao subgrupo observado deixa de identificar o ATE. <strong>Bounds de Lee</strong> tornam
+      essa ignorância parcial em um <em>intervalo</em> identificado sob hipóteses fracas
+      (monotonicidade).
+    </p>
+    <p class="lecture-intro">
+      A população desta página difere do workbook: imagine uma plataforma de <em>cursos online</em>
+      com sorteio de acesso a um tutor de IA. <code>Y</code> é a nota final na avaliação;
+      <code>S = 1</code> indica que o aluno completou o curso (e, portanto, observamos
+      <code>Y</code>). Tipos com maior aptidão tendem a completar mais; o tratamento aumenta a
+      conclusão dos tipos <em>marginais</em> — então a média condicional muda de composição.
+    </p>
+  </div>
+
+  <div class="global-controls">
+    <div class="control">
+      <label for="pop-seed">Seed da população</label>
+      <input type="number" id="pop-seed" value="20260428" step="1">
+    </div>
+    <div class="control">
+      <label for="pop-N">N (alunos)</label>
+      <input type="number" id="pop-N" value="20000" step="1000" min="2000" max="100000">
+    </div>
+    <div class="control">
+      <label for="pop-attrit">Atrito do controle</label>
+      <input type="number" id="pop-attrit" value="0.45" step="0.05" min="0.1" max="0.7">
+    </div>
+    <button class="btn" id="regenerate">Regenerar população</button>
+    <span class="val" id="pop-status" style="margin-left:auto"></span>
+  </div>
+
+  <!-- PANEL 1 -->
+  <section class="panel" id="p1">
+    <div class="panel-head">
+      <div class="panel-num">1</div>
+      <div class="panel-title">O mecanismo de atrito</div>
+    </div>
+    <p class="panel-q">
+      Cada aluno tem aptidão latente <code>U</code>. <code>Y(0)</code> e <code>Y(1)</code>
+      crescem com <code>U</code>. A probabilidade de completar é
+      <code>P(S=1|D,U) = Φ(γ<sub>0</sub> + γ<sub>D</sub>·D + γ<sub>U</sub>·U)</code>:
+      o tratamento aumenta a conclusão e atrai os tipos marginais. O gráfico mostra
+      <code>P(S=1|D)</code> ao longo de <code>U</code>.
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre><span class="com"># Quem completou o curso?</span>
+table(data$D, data$S)
+
+<span class="com"># Taxa de conclusão por tratamento</span>
+data %&gt;%
+  group_by(D) %&gt;%
+  summarise(conclusao = mean(S),
+            n_obs     = sum(S))</pre>
+      </div>
+      <div class="panel-viz">
+        <div id="plot-1" class="plot"></div>
+        <div class="stats" id="stats-1">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANEL 2 -->
+  <section class="panel" id="p2">
+    <div class="panel-head">
+      <div class="panel-num">2</div>
+      <div class="panel-title">Estimação ingênua e viés de composição</div>
+    </div>
+    <p class="panel-q">
+      O analista vê apenas <code>Y</code> entre quem completou. Ele estima
+      <code>τ̂<sub>obs</sub> = Ȳ<sub>D=1,S=1</sub> − Ȳ<sub>D=0,S=1</sub></code>.
+      O painel compara essa diferença com o <strong>ATE verdadeiro</strong>
+      <code>E[Y(1) − Y(0)]</code>, calculado na população completa. A diferença é
+      <em>viés de seleção endógena</em>.
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre><span class="com"># Estimador ingênuo na amostra observada</span>
+obs <- data %&gt;% filter(S == <span class="num">1</span>)
+
+fit_naive <- lm(Y ~ D, data = obs)
+summary(fit_naive)
+
+<span class="com"># ATE verdadeiro (só sabemos por simulação)</span>
+ATE <- mean(data$Y1 - data$Y0)</pre>
+      </div>
+      <div class="panel-viz">
+        <div id="plot-2" class="plot"></div>
+        <div class="stats" id="stats-2">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANEL 3 -->
+  <section class="panel" id="p3">
+    <div class="panel-head">
+      <div class="panel-num">3</div>
+      <div class="panel-title">Diagnósticos: quantidade e composição</div>
+    </div>
+    <p class="panel-q">
+      Dois testes essenciais:<br>
+      <strong>(i) Quantidade.</strong> A taxa de atrito é igual entre tratados e controles?
+      Teste de proporções para <code>S</code> em função de <code>D</code>.<br>
+      <strong>(ii) Composição.</strong> Quem ficou em cada braço se parece em variáveis
+      pré-tratamento <code>X</code>? Regressão de <code>X</code> em <code>D</code>
+      restrita a <code>S=1</code>.
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre><span class="com"># (i) Diferença na taxa de atrito</span>
+prop.test(table(data$D, data$S))
+
+<span class="com"># (ii) Composição dos respondentes</span>
+obs <- data %&gt;% filter(S == <span class="num">1</span>)
+
+fit_X <- lm(X ~ D, data = obs)
+coeftest(fit_X, vcov = vcovHC(fit_X, <span class="str">"HC1"</span>))</pre>
+      </div>
+      <div class="panel-viz">
+        <div id="plot-3" class="plot"></div>
+        <div class="stats" id="stats-3">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANEL 4 -->
+  <section class="panel" id="p4">
+    <div class="panel-head">
+      <div class="panel-num">4</div>
+      <div class="panel-title">Bounds de Lee (2009)</div>
+    </div>
+    <p class="panel-q">
+      Sob <strong>monotonicidade</strong> (o tratamento só aumenta a probabilidade de responder),
+      podemos identificar bounds para o ATT na subpopulação <em>always-takers</em>:
+      remover do braço com <em>maior taxa de resposta</em> uma fração
+      <code>q = (P(S=1|D=1) − P(S=1|D=0)) / P(S=1|D=1)</code> dos respondentes —
+      pelos extremos da distribuição — gera o <strong>upper</strong> e <strong>lower</strong> bound.
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre><span class="com"># Lee bounds — passo a passo</span>
+p1 <- mean(data$S[data$D == <span class="num">1</span>])
+p0 <- mean(data$S[data$D == <span class="num">0</span>])
+q  <- (p1 - p0) / p1   <span class="com"># fração a aparar</span>
+
+obs <- data %&gt;% filter(S == <span class="num">1</span>)
+y1  <- obs$Y[obs$D == <span class="num">1</span>]; y0 <- obs$Y[obs$D == <span class="num">0</span>]
+
+<span class="com"># Trim do braço com mais respondentes (D=1)</span>
+qL <- quantile(y1, q);  qU <- quantile(y1, <span class="num">1</span> - q)
+
+upper <- mean(y1[y1 &gt;= qU]) - mean(y0)
+lower <- mean(y1[y1 &lt;= qL]) - mean(y0)
+c(lower = lower, upper = upper)</pre>
+      </div>
+      <div class="panel-viz">
+        <div id="plot-4" class="plot"></div>
+        <div class="stats" id="stats-4">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SNIPPETS -->
+  <section class="panel" id="snippets">
+    <div class="panel-head">
+      <div class="panel-num">★</div>
+      <div class="panel-title">Snippets úteis em R</div>
+    </div>
+    <p class="panel-q">Pedaços de código prontos para colar.</p>
+    <div class="snippet-grid">
+
+      <div class="snippet">
+        <div class="snippet-title">Inspecionar atrito rapidamente</div>
+<pre><span class="com"># Tabela com taxas e diferença</span>
+df %&gt;%
+  group_by(D) %&gt;%
+  summarise(N = n(),
+            obs = sum(S),
+            taxa_resp = mean(S)) %&gt;%
+  mutate(dif = taxa_resp - lag(taxa_resp))
+
+<span class="com"># Visual rápido</span>
+ggplot(df, aes(x = X, y = S, color = factor(D))) +
+  geom_smooth(method = <span class="str">"loess"</span>, se = FALSE) +
+  labs(y = <span class="str">"P(S=1)"</span>, color = <span class="str">"D"</span>)</pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-title">Lee bounds em uma função</div>
+<pre>lee_bounds <- function(df) {
+  p1 <- mean(df$S[df$D == <span class="num">1</span>])
+  p0 <- mean(df$S[df$D == <span class="num">0</span>])
+  trim_high <- p1 &gt; p0
+  q <- abs(p1 - p0) / max(p1, p0)
+
+  obs <- df[df$S == <span class="num">1</span>, ]
+  y_t <- if (trim_high) obs$Y[obs$D == <span class="num">1</span>] else obs$Y[obs$D == <span class="num">0</span>]
+  y_o <- if (trim_high) obs$Y[obs$D == <span class="num">0</span>] else obs$Y[obs$D == <span class="num">1</span>]
+
+  qL <- quantile(y_t, q); qU <- quantile(y_t, <span class="num">1</span> - q)
+  hi <- mean(y_t[y_t &gt;= qU])
+  lo <- mean(y_t[y_t &lt;= qL])
+  delta <- if (trim_high) c(lo, hi) - mean(y_o) else mean(y_o) - c(hi, lo)
+  c(lower = min(delta), upper = max(delta))
+}</pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-title">Teste de balanço composicional</div>
+<pre><span class="com"># H0: composição preservada após atrito</span>
+library(sandwich); library(lmtest)
+
+obs <- subset(df, S == <span class="num">1</span>)
+
+vars <- c(<span class="str">"X1"</span>, <span class="str">"X2"</span>, <span class="str">"baseline_y"</span>)
+res  <- lapply(vars, function(v) {
+  f <- as.formula(paste(v, <span class="str">"~ D"</span>))
+  fit <- lm(f, data = obs)
+  c(diff = coef(fit)[<span class="num">2</span>],
+    p    = coeftest(fit, vcovHC(fit, <span class="str">"HC1"</span>))[<span class="num">2</span>, <span class="num">4</span>])
+})
+do.call(rbind, res)</pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-title">Salvar plot de bounds</div>
+<pre>p <- ggplot(bnd_df,
+            aes(x = estimador, y = est)) +
+  geom_pointrange(aes(ymin = lo, ymax = hi),
+                  size = <span class="num">0.5</span>) +
+  geom_hline(yintercept = <span class="num">0</span>,
+             linetype = <span class="str">"dashed"</span>) +
+  labs(x = NULL, y = <span class="str">"Efeito (intervalo de bounds)"</span>) +
+  theme_minimal()
+
+ggsave(<span class="str">"figs/lee_bounds.pdf"</span>, p,
+       width = <span class="num">5</span>, height = <span class="num">3.5</span>)</pre>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  © 2026 Nícolas Goulart · Built with HTML & CSS · Aula 04
+</footer>
+
+<script>
+'use strict';
+
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function makeNormal(rng){let s=null;return function(){if(s!==null){const v=s;s=null;return v}let u,v,r;do{u=rng()*2-1;v=rng()*2-1;r=u*u+v*v}while(r===0||r>=1);const c=Math.sqrt(-2*Math.log(r)/r);s=v*c;return u*c}}
+function normCDF(x){return 0.5*(1+erf(x/Math.SQRT2))}
+function erf(x){const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;const sign=x<0?-1:1;x=Math.abs(x);const t=1/(1+p*x);const y=1-((((a5*t+a4)*t)+a3)*t+a2)*t*((Math.exp(-x*x))*(t));return sign*y}
+
+const C = { red:'#973B74', blue:'#46647B', green:'#507867', gray:'#8A8A8A', light:'#E6E6E6', dark:'#1A1A1A' };
+const PLOT_CFG = { displayModeBar:false, responsive:true };
+const FONT = { family:'DM Sans, sans-serif', size:11, color:'#3A3A3A' };
+
+const AX_Y = [40, 100];
+const AX_U = [-3, 3];
+
+let POP = null;
+
+function buildPop() {
+  const seed   = +document.getElementById('pop-seed').value || 20260428;
+  const N      = Math.max(2000, Math.min(100000, +document.getElementById('pop-N').value || 20000));
+  const aCtrl  = Math.max(0.1, Math.min(0.7, +document.getElementById('pop-attrit').value || 0.45));
+
+  const r    = mulberry32(seed);
+  const norm = makeNormal(r);
+
+  // Choose γ_0 so that P(S=1|D=0) ≈ 1 - aCtrl when γ_U=1 (Φ((γ_0+U)/√2) integrates to Φ(γ_0/√(1+1)))
+  // P(S=1|D=0) = Φ(γ_0 / sqrt(1+γ_U^2)) with U~N(0,1) and unit-noise probit (using normal latent)
+  const gammaU = 1.0;
+  const targetCtrl = 1 - aCtrl;
+  const k = Math.sqrt(1 + gammaU*gammaU);
+  const gamma0 = invNorm(targetCtrl) * k;
+  const gammaD = 0.6;   // treatment effect on selection latent
+
+  const U   = new Float64Array(N);
+  const Y0  = new Float64Array(N);
+  const Y1  = new Float64Array(N);
+  const D   = new Uint8Array(N);
+  const S   = new Uint8Array(N);
+  const Y   = new Float64Array(N);
+
+  for (let i = 0; i < N; i++) {
+    U[i]  = norm();
+    Y0[i] = 60 + 6*U[i] + 4*norm();
+    const tau = 5 + 1.5*U[i];     // heterogeneous effect
+    Y1[i] = Y0[i] + tau;
+    D[i]  = r() < 0.5 ? 1 : 0;
+    const latent = gamma0 + gammaD*D[i] + gammaU*U[i] + norm();
+    S[i]  = latent > 0 ? 1 : 0;
+    Y[i]  = D[i] ? Y1[i] : Y0[i];
+  }
+
+  let n1=0, s1=0, n0=0, s0=0;
+  for (let i = 0; i < N; i++) {
+    if (D[i]===1) { n1++; s1 += S[i]; } else { n0++; s0 += S[i]; }
+  }
+  const pS1 = s1/n1, pS0 = s0/n0;
+  const ATE = mean(sub(Y1, Y0));
+
+  POP = { seed, N, U, Y0, Y1, D, S, Y, pS1, pS0, ATE, gamma0, gammaU, gammaD };
+  document.getElementById('pop-status').textContent =
+    `população: N=${N}, P(S=1|D=1)=${pS1.toFixed(2)}, P(S=1|D=0)=${pS0.toFixed(2)}, ATE=${ATE.toFixed(2)}`;
+}
+
+function mean(a){let s=0;for(let i=0;i<a.length;i++)s+=a[i];return s/a.length}
+function sub(a,b){const o=new Float64Array(a.length);for(let i=0;i<a.length;i++)o[i]=a[i]-b[i];return o}
+function invNorm(p){
+  // Beasley-Springer/Moro
+  const a=[-3.969683028665376e+01,2.209460984245205e+02,-2.759285104469687e+02,1.383577518672690e+02,-3.066479806614716e+01,2.506628277459239e+00];
+  const b=[-5.447609879822406e+01,1.615858368580409e+02,-1.556989798598866e+02,6.680131188771972e+01,-1.328068155288572e+01];
+  const c=[-7.784894002430293e-03,-3.223964580411365e-01,-2.400758277161838e+00,-2.549732539343734e+00,4.374664141464968e+00,2.938163982698783e+00];
+  const d=[7.784695709041462e-03,3.224671290700398e-01,2.445134137142996e+00,3.754408661907416e+00];
+  const pl=0.02425, pu=1-pl;
+  let q,r;
+  if (p<pl) { q=Math.sqrt(-2*Math.log(p)); return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+  if (p<=pu) { q=p-0.5; r=q*q; return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q / (((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1); }
+  q=Math.sqrt(-2*Math.log(1-p)); return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);
+}
+function quantile(arr, p) {
+  const a = Array.from(arr).sort((x,y)=>x-y);
+  const idx = (a.length - 1) * p;
+  const lo = Math.floor(idx), hi = Math.ceil(idx);
+  return lo === hi ? a[lo] : a[lo] + (a[hi]-a[lo])*(idx-lo);
+}
+
+// ─── Panel 1 ────
+function renderP1() {
+  if (!POP) return;
+  const grid = []; for (let u=AX_U[0]; u<=AX_U[1]; u+=0.05) grid.push(u);
+  const k = Math.sqrt(1);
+  const pS_D0 = grid.map(u => normCDF((POP.gamma0 + POP.gammaU*u)/k));
+  const pS_D1 = grid.map(u => normCDF((POP.gamma0 + POP.gammaD + POP.gammaU*u)/k));
+
+  Plotly.newPlot('plot-1', [{
+    x: grid, y: pS_D0, type: 'scatter', mode: 'lines',
+    line: { color: C.blue, width: 2 }, name: 'P(S=1 | D=0, U)'
+  }, {
+    x: grid, y: pS_D1, type: 'scatter', mode: 'lines',
+    line: { color: C.red, width: 2 }, name: 'P(S=1 | D=1, U)'
+  }], {
+    title: { text: 'Probabilidade de completar o curso, por aptidão U', font: {...FONT, size: 12, color: C.dark }},
+    margin: { t: 36, r: 16, b: 36, l: 48 }, font: FONT,
+    xaxis: { title: 'aptidão latente U', range: AX_U },
+    yaxis: { title: 'P(S=1)', range: [0, 1] },
+    legend: { orientation: 'h', y: -0.18 }, plot_bgcolor: '#FAFAFA'
+  }, PLOT_CFG);
+
+  document.getElementById('stats-1').innerHTML =
+    `<span class="lbl">P(S=1|D=0):</span> <span class="v">${POP.pS0.toFixed(3)}</span> &nbsp;·&nbsp;
+     <span class="lbl">P(S=1|D=1):</span> <span class="v">${POP.pS1.toFixed(3)}</span> &nbsp;·&nbsp;
+     <span class="lbl">atrito diferencial:</span> <span class="v">${(POP.pS1 - POP.pS0).toFixed(3)}</span> p.p.`;
+}
+
+// ─── Panel 2 ────
+function renderP2() {
+  if (!POP) return;
+  let s1=0, n1=0, s0=0, n0=0;
+  for (let i = 0; i < POP.N; i++) {
+    if (POP.S[i]) {
+      if (POP.D[i]) { s1 += POP.Y[i]; n1++; } else { s0 += POP.Y[i]; n0++; }
+    }
+  }
+  const m1 = s1/n1, m0 = s0/n0;
+  const naive = m1 - m0;
+
+  // ATT and ATU using Y1, Y0 in observed sample:
+  let attY1=0, attY0=0, kATT=0;
+  for (let i = 0; i < POP.N; i++) if (POP.S[i] && POP.D[i]) { attY1 += POP.Y1[i]; attY0 += POP.Y0[i]; kATT++; }
+  const ATT_obs = (attY1 - attY0) / kATT;
+
+  Plotly.newPlot('plot-2', [{
+    x: ['ATE verdadeiro','τ̂ ingênuo (S=1)','ATT entre respondentes'],
+    y: [POP.ATE, naive, ATT_obs],
+    type: 'bar', marker: { color: [C.green, C.red, C.blue] },
+    text: [POP.ATE, naive, ATT_obs].map(v => v.toFixed(2)),
+    textposition: 'outside',
+    hovertemplate: '%{x}<br>%{y:.3f}<extra></extra>'
+  }], {
+    title: { text: 'O ingênuo recupera ATE? E ATT na subpopulação observada?', font: {...FONT, size: 12, color: C.dark }},
+    margin: { t: 36, r: 16, b: 36, l: 48 }, font: FONT,
+    yaxis: { title: 'efeito (pontos)', range: [Math.min(0, naive*1.2), Math.max(POP.ATE, naive)*1.3] },
+    showlegend: false, plot_bgcolor: '#FAFAFA'
+  }, PLOT_CFG);
+
+  document.getElementById('stats-2').innerHTML =
+    `<span class="lbl">ATE verdadeiro:</span> <span class="v">${POP.ATE.toFixed(3)}</span> &nbsp;·&nbsp;
+     <span class="lbl">τ̂<sub>obs</sub>:</span> <span class="v">${naive.toFixed(3)}</span> &nbsp;·&nbsp;
+     <span class="lbl">viés:</span> <span class="${Math.abs(naive-POP.ATE)<0.5?'ok':'no'}">${(naive-POP.ATE).toFixed(3)}</span>`;
+}
+
+// ─── Panel 3 ────
+function renderP3() {
+  if (!POP) return;
+  // Composition: mean U among S=1 by D
+  let u1=0, k1=0, u0=0, k0=0;
+  let y0obs=[], y1obs=[];
+  for (let i = 0; i < POP.N; i++) {
+    if (POP.S[i]) {
+      if (POP.D[i]) { u1 += POP.U[i]; k1++; y1obs.push(POP.Y[i]); }
+      else          { u0 += POP.U[i]; k0++; y0obs.push(POP.Y[i]); }
+    }
+  }
+  const meanU1 = u1/k1, meanU0 = u0/k0;
+  const dif    = meanU1 - meanU0;
+
+  // density of U among observed for each D
+  function kde(values, lo, hi, nGrid = 160) {
+    const n = values.length; if (!n) return {x:[],y:[]};
+    let m=0; for (const v of values) m+=v; m/=n;
+    let s2=0; for (const v of values) s2 += (v-m)**2; const sigma = Math.sqrt(s2/(n-1)) || 1;
+    const h = 1.06 * sigma * Math.pow(n, -1/5);
+    const x = new Array(nGrid), y = new Array(nGrid).fill(0);
+    for (let i = 0; i < nGrid; i++) x[i] = lo + (hi-lo)*i/(nGrid-1);
+    const k = 1/(Math.sqrt(2*Math.PI)*h*n);
+    for (const v of values) for (let i = 0; i < nGrid; i++) {
+      const z = (x[i]-v)/h; y[i] += k*Math.exp(-0.5*z*z);
+    }
+    return { x, y };
+  }
+  // build U arrays among observed by D
+  const u_obs_d0 = []; const u_obs_d1 = [];
+  for (let i = 0; i < POP.N; i++) if (POP.S[i]) (POP.D[i] ? u_obs_d1 : u_obs_d0).push(POP.U[i]);
+  const k0d = kde(u_obs_d0, AX_U[0], AX_U[1]);
+  const k1d = kde(u_obs_d1, AX_U[0], AX_U[1]);
+
+  Plotly.newPlot('plot-3', [{
+    x: k0d.x, y: k0d.y, type: 'scatter', mode: 'lines', fill: 'tozeroy',
+    line: { color: C.blue, width: 2 }, fillcolor: 'rgba(70,100,123,0.18)',
+    name: 'U | S=1, D=0'
+  }, {
+    x: k1d.x, y: k1d.y, type: 'scatter', mode: 'lines', fill: 'tozeroy',
+    line: { color: C.red, width: 2 }, fillcolor: 'rgba(151,59,116,0.18)',
+    name: 'U | S=1, D=1'
+  }], {
+    title: { text: 'Composição: distribuição de U entre os que respondem', font: {...FONT, size: 12, color: C.dark }},
+    margin: { t: 36, r: 16, b: 36, l: 48 }, font: FONT,
+    xaxis: { title: 'aptidão latente U', range: AX_U },
+    yaxis: { title: 'densidade' },
+    legend: { orientation: 'h', y: -0.18 }, plot_bgcolor: '#FAFAFA'
+  }, PLOT_CFG);
+
+  document.getElementById('stats-3').innerHTML =
+    `<span class="lbl">Ē[U | S=1, D=0]:</span> <span class="v">${meanU0.toFixed(3)}</span> &nbsp;·&nbsp;
+     <span class="lbl">Ē[U | S=1, D=1]:</span> <span class="v">${meanU1.toFixed(3)}</span> &nbsp;·&nbsp;
+     <span class="lbl">diferença:</span> <span class="${Math.abs(dif)<0.05?'ok':'no'}">${dif.toFixed(3)}</span>
+     &nbsp;<span class="lbl">(deveria ser ≈0 sob composição preservada)</span>`;
+}
+
+// ─── Panel 4 ────
+function renderP4() {
+  if (!POP) return;
+  const y1obs = []; const y0obs = [];
+  for (let i = 0; i < POP.N; i++) if (POP.S[i]) (POP.D[i] ? y1obs : y0obs).push(POP.Y[i]);
+
+  const p1 = POP.pS1, p0 = POP.pS0;
+  const trimHigh = p1 > p0;
+  const q = Math.abs(p1 - p0) / Math.max(p1, p0);
+
+  const yT = trimHigh ? y1obs : y0obs;
+  const yO = trimHigh ? y0obs : y1obs;
+  const qL = quantile(yT, q);
+  const qU = quantile(yT, 1 - q);
+
+  let hi=0, hN=0, lo=0, lN=0;
+  for (const v of yT) { if (v >= qU) { hi += v; hN++; } if (v <= qL) { lo += v; lN++; } }
+  hi /= hN; lo /= lN;
+  const oM = mean(yO);
+
+  const upper = trimHigh ? hi - oM : oM - lo;
+  const lower = trimHigh ? lo - oM : oM - hi;
+  const naive = mean(y1obs) - mean(y0obs);
+
+  Plotly.newPlot('plot-4', [{
+    x: ['Lee lower','τ̂ ingênuo','Lee upper'],
+    y: [lower, naive, upper],
+    type: 'bar', marker: { color: [C.gray, C.red, C.gray] },
+    text: [lower, naive, upper].map(v => v.toFixed(2)),
+    textposition: 'outside',
+    hovertemplate: '%{x}<br>%{y:.3f}<extra></extra>'
+  }, {
+    x: ['Lee lower','τ̂ ingênuo','Lee upper'],
+    y: [POP.ATE, POP.ATE, POP.ATE], type: 'scatter', mode: 'markers',
+    marker: { color: C.green, symbol: 'diamond', size: 12 },
+    name: 'ATE verdadeiro', hovertemplate: 'ATE = %{y:.3f}<extra></extra>'
+  }], {
+    title: { text: `Bounds de Lee — fração aparada q = ${q.toFixed(3)}`, font: {...FONT, size: 12, color: C.dark }},
+    margin: { t: 36, r: 16, b: 36, l: 48 }, font: FONT,
+    yaxis: { title: 'efeito (pontos)' },
+    showlegend: false, plot_bgcolor: '#FAFAFA'
+  }, PLOT_CFG);
+
+  const inside = (POP.ATE >= lower - 0.01) && (POP.ATE <= upper + 0.01);
+  document.getElementById('stats-4').innerHTML = `
+    <span class="lbl">[lower, upper]:</span> <span class="v">[${lower.toFixed(3)}, ${upper.toFixed(3)}]</span> &nbsp;·&nbsp;
+    <span class="lbl">largura:</span> <span class="v">${(upper-lower).toFixed(3)}</span> &nbsp;·&nbsp;
+    <span class="lbl">ATE dentro do intervalo?</span> <span class="${inside?'ok':'no'}">${inside?'sim':'não'}</span>`;
+}
+
+document.getElementById('regenerate').addEventListener('click', () => {
+  buildPop(); renderP1(); renderP2(); renderP3(); renderP4();
+});
+
+buildPop();
+renderP1(); renderP2(); renderP3(); renderP4();
+</script>
+
+</body>
+</html>

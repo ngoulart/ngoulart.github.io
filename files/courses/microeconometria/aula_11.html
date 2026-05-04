@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aula 11 — Staggered DiD · Microeconometria Aplicada</title>
+<meta name="description" content="Aula 11: tratamento escalonado, viés de TWFE, e estimadores robustos (Callaway-Sant'Anna, Sun-Abraham).">
+<link rel="icon" href="../../../favicon.ico" type="image/x-icon">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<link rel="stylesheet" href="aula_shared.css">
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="../../index.html" class="nav-name">Nícolas Goulart</a>
+    <div class="nav-links">
+      <a href="../../index.html">About</a>
+      <a href="../../cv.html">CV</a>
+      <a href="../../research.html">Research</a>
+      <a href="../../teaching.html" class="active">Teaching</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+
+  <div class="breadcrumb">
+    <a href="../../teaching.html">Teaching</a> ·
+    <a href="index.html">Applied Microeconometrics</a> · Aula 11
+  </div>
+
+  <div class="lecture-toc">
+    <span class="lecture-toc-label">Nesta aula</span>
+    <a href="#p1">1 · Estrutura escalonada</a>
+    <a href="#p2">2 · Trajetórias por coorte</a>
+    <a href="#p3">3 · Viés do TWFE</a>
+    <a href="#p4">4 · Event study honesto</a>
+    <a href="#snippets">Snippets R</a>
+  </div>
+
+  <div class="lecture-header">
+    <div class="lecture-kicker">Aula 11</div>
+    <h1 class="lecture-h1">DiD com Tratamento Escalonado</h1>
+    <p class="lecture-intro">
+      Quando unidades são tratadas em <em>momentos diferentes</em> e o efeito é
+      <em>heterogêneo</em>, TWFE deixa de identificar o ATT médio. O problema:
+      unidades já tratadas funcionam como controle para unidades recém-tratadas, gerando
+      <strong>comparações proibidas</strong>. Estimadores como Callaway-Sant'Anna (2021) e
+      Sun-Abraham (2021) corrigem isso comparando cada coorte só contra <em>nunca-tratados</em>
+      ou <em>ainda-não-tratados</em>.
+    </p>
+    <p class="lecture-intro">
+      DGP desta página: <em>adoção de telemedicina por hospitais</em>. <code>N</code> hospitais
+      observados em 8 anos (2016–2023). Coortes adotam em 2018, 2020, 2022, e o grupo
+      <em>never-treated</em>. Efeito dinâmico cresce no tempo e <em>diminui</em> em coortes
+      tardias (adoptantes precoces ganham mais por aprendizado acumulado).
+    </p>
+  </div>
+
+  <div class="global-controls">
+    <div class="control">
+      <label for="pop-seed">Seed</label>
+      <input type="number" id="pop-seed" value="20260428" step="1">
+    </div>
+    <div class="control">
+      <label for="pop-N">N (hospitais)</label>
+      <input type="number" id="pop-N" value="200" step="20" min="40" max="600">
+    </div>
+    <div class="control">
+      <label for="pop-het">Heterog. coorte</label>
+      <input type="number" id="pop-het" value="1" step="0.25" min="0" max="2">
+    </div>
+    <div class="control">
+      <label for="pop-dyn">Dinâmica (slope/ano)</label>
+      <input type="number" id="pop-dyn" value="0.5" step="0.1" min="0" max="2">
+    </div>
+    <button class="btn" id="regenerate">Regenerar população</button>
+    <span class="val" id="pop-status" style="margin-left:auto"></span>
+  </div>
+
+  <!-- PANEL 1 -->
+  <section class="panel" id="p1">
+    <div class="panel-head">
+      <div class="panel-num">1</div>
+      <div class="panel-title">Estrutura de adoção escalonada</div>
+    </div>
+    <p class="panel-q">
+      Coortes definidas pelo ano de adoção <code>g ∈ {2018, 2020, 2022, ∞}</code>. O heatmap
+      mostra cada hospital (linha) em cada ano (coluna) — branco se ainda não tratado,
+      colorido após adoção. Coortes mais escuras = adopção mais cedo.
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre><span class="com"># Variável "first treatment year" (G)</span>
+<span class="com"># 2018, 2020, 2022, ou Inf (never)</span>
+df <- df %&gt;%
+  group_by(hospital) %&gt;%
+  mutate(G = if (any(D == <span class="num">1</span>))
+                min(t[D == <span class="num">1</span>])
+              else Inf) %&gt;%
+  ungroup()
+
+table(df$G, df$t)</pre>
+      </div>
+      <div class="panel-viz">
+        <div id="plot-1" class="plot"></div>
+        <div class="stats" id="stats-1">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANEL 2 -->
+  <section class="panel" id="p2">
+    <div class="panel-head">
+      <div class="panel-num">2</div>
+      <div class="panel-title">Trajetórias médias por coorte</div>
+    </div>
+    <p class="panel-q">
+      Plotar <code>Ȳ<sub>g,t</sub></code> ao longo do tempo, uma linha por coorte. Pré-tratamento
+      todas devem ser paralelas. Pós-tratamento, cada coorte parte em momento diferente — note
+      que coortes precoces eventualmente atingem efeitos maiores (parâmetro <em>dinâmica</em>).
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre>library(dplyr); library(ggplot2)
+
+df %&gt;%
+  group_by(G, t) %&gt;%
+  summarise(Y = mean(Y), .groups = <span class="str">"drop"</span>) %&gt;%
+  mutate(coorte = ifelse(is.infinite(G),
+                         <span class="str">"never"</span>,
+                         as.character(G))) %&gt;%
+  ggplot(aes(t, Y, color = coorte)) +
+  geom_line(linewidth = <span class="num">1</span>) +
+  geom_point(size = <span class="num">2</span>)</pre>
+      </div>
+      <div class="panel-viz">
+        <div id="plot-2" class="plot"></div>
+        <div class="stats" id="stats-2">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANEL 3 -->
+  <section class="panel" id="p3">
+    <div class="panel-head">
+      <div class="panel-num">3</div>
+      <div class="panel-title">TWFE vs Callaway-Sant'Anna</div>
+    </div>
+    <p class="panel-q">
+      Compara <strong>TWFE estático</strong> (uma única dummy <code>D</code>),
+      <strong>ATT médio</strong> calculado só com <em>never-treated</em> como controle (estilo
+      CS), e o <strong>ATT verdadeiro</strong> ponderado igualmente entre tratados pós-adoção.
+      Aumente <em>heterogeneidade de coorte</em> e veja TWFE divergir.
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre>library(did)
+
+cs <- att_gt(
+  yname  = <span class="str">"Y"</span>,
+  tname  = <span class="str">"t"</span>,
+  idname = <span class="str">"hospital"</span>,
+  gname  = <span class="str">"G"</span>,         <span class="com"># cohort = first-treat</span>
+  data   = df,
+  control_group = <span class="str">"nevertreated"</span>
+)
+
+<span class="com"># ATT médio simples</span>
+aggte(cs, type = <span class="str">"simple"</span>)
+
+<span class="com"># Por evento (event study)</span>
+aggte(cs, type = <span class="str">"dynamic"</span>)</pre>
+      </div>
+      <div class="panel-viz">
+        <div id="plot-3" class="plot"></div>
+        <div class="stats" id="stats-3">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANEL 4 -->
+  <section class="panel" id="p4">
+    <div class="panel-head">
+      <div class="panel-num">4</div>
+      <div class="panel-title">Event study honesto (CS dinâmico)</div>
+    </div>
+    <p class="panel-q">
+      Para cada <code>k = t − G</code>, calcular ATT(<code>k</code>) como média (entre coortes)
+      das diferenças <code>(Ȳ<sub>g,g+k</sub> − Ȳ<sub>g,g−1</sub>) − (Ȳ<sub>∞,g+k</sub> − Ȳ<sub>∞,g−1</sub>)</code>.
+      A linha vermelha é o <em>τ verdadeiro</em> agregado nessa mesma forma. Pontos pré-evento
+      próximos a zero = pré-tendências sob controle.
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre><span class="com"># Sun-Abraham via fixest</span>
+library(fixest)
+
+es_sa <- feols(
+  Y ~ sunab(G, t) | hospital + t,
+  data    = df,
+  cluster = ~hospital
+)
+
+iplot(es_sa,
+      xlab = <span class="str">"Anos desde adoção"</span>,
+      main = <span class="str">"Event study (Sun-Abraham)"</span>)
+
+<span class="com"># Resumo agregado por k</span>
+summary(es_sa, agg = <span class="str">"att"</span>)</pre>
+      </div>
+      <div class="panel-viz">
+        <div id="plot-4" class="plot"></div>
+        <div class="stats" id="stats-4">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SNIPPETS -->
+  <section class="panel" id="snippets">
+    <div class="panel-head">
+      <div class="panel-num">★</div>
+      <div class="panel-title">Snippets úteis em R</div>
+    </div>
+    <div class="snippet-grid">
+
+      <div class="snippet">
+        <div class="snippet-title">Callaway-Sant'Anna (did package)</div>
+<pre>library(did)
+
+cs <- att_gt(
+  yname    = <span class="str">"Y"</span>,
+  tname    = <span class="str">"t"</span>,
+  idname   = <span class="str">"unit"</span>,
+  gname    = <span class="str">"G"</span>,
+  data     = df,
+  control_group = <span class="str">"nevertreated"</span>,
+  <span class="com"># ou "notyettreated" se não há nunca-tratados</span>
+  est_method    = <span class="str">"reg"</span>
+)
+
+<span class="com"># ATT global, dinâmico, por coorte</span>
+aggte(cs, type = <span class="str">"simple"</span>)
+aggte(cs, type = <span class="str">"dynamic"</span>)
+aggte(cs, type = <span class="str">"group"</span>)
+
+ggdid(aggte(cs, type = <span class="str">"dynamic"</span>))</pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-title">Sun-Abraham (fixest)</div>
+<pre>library(fixest)
+
+<span class="com"># sunab(cohort, time) gera todas as interações</span>
+es <- feols(
+  Y ~ sunab(G, t) | unit + t,
+  data    = df,
+  cluster = ~unit
+)
+
+<span class="com"># Plot pronto</span>
+iplot(es)
+
+<span class="com"># Agregar para ATT por k</span>
+summary(es, agg = <span class="str">"att"</span>)</pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-title">Definir variável de coorte</div>
+<pre>library(dplyr)
+
+<span class="com"># G = primeiro ano de tratamento</span>
+<span class="com"># Use Inf (ou NA, ou um inteiro grande)</span>
+<span class="com"># para never-treated</span>
+df <- df %&gt;%
+  group_by(unit) %&gt;%
+  mutate(G = if (any(D == <span class="num">1</span>))
+                min(t[D == <span class="num">1</span>])
+              else <span class="num">10000L</span>) %&gt;%   <span class="com"># did exige int</span>
+  ungroup()</pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-title">Goodman-Bacon decomposição</div>
+<pre>library(bacondecomp)
+
+bd <- bacon(
+  Y ~ D,
+  data    = df,
+  id_var  = <span class="str">"unit"</span>,
+  time_var = <span class="str">"t"</span>
+)
+
+<span class="com"># Mostra cada par 2x2 e seu peso</span>
+print(bd)
+ggplot(bd, aes(weight, estimate,
+               color = type)) +
+  geom_point()</pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-title">de Chaisemartin & D'Haultfœuille</div>
+<pre>library(DIDmultiplegt)
+
+dch <- did_multiplegt(
+  df  = df,
+  Y   = <span class="str">"Y"</span>,
+  G   = <span class="str">"unit"</span>,
+  T   = <span class="str">"t"</span>,
+  D   = <span class="str">"D"</span>,
+  brep = <span class="num">200</span>,    <span class="com"># bootstrap</span>
+  cluster = <span class="str">"unit"</span>,
+  placebo  = <span class="num">3</span>,
+  dynamic  = <span class="num">3</span>
+)</pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-title">Salvar event study</div>
+<pre>library(broom); library(ggplot2)
+
+es_df <- broom::tidy(es, conf.int = TRUE)
+
+p <- ggplot(es_df,
+            aes(x = term, y = estimate)) +
+  geom_pointrange(aes(ymin = conf.low,
+                      ymax = conf.high)) +
+  geom_hline(yintercept = <span class="num">0</span>,
+             linetype = <span class="str">"dashed"</span>) +
+  theme_minimal()
+
+ggsave(<span class="str">"figs/event_study.pdf"</span>, p,
+       width = <span class="num">7</span>, height = <span class="num">3.5</span>)</pre>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  © 2026 Nícolas Goulart · Built with HTML & CSS · Aula 11
+</footer>
+
+<script>
+'use strict';
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function makeNormal(rng){let s=null;return function(){if(s!==null){const v=s;s=null;return v}let u,v,r;do{u=rng()*2-1;v=rng()*2-1;r=u*u+v*v}while(r===0||r>=1);const c=Math.sqrt(-2*Math.log(r)/r);s=v*c;return u*c}}
+
+const C = { red:'#973B74', blue:'#46647B', green:'#507867', gray:'#8A8A8A', light:'#E6E6E6', dark:'#1A1A1A',
+            c2018:'#3D5A7A', c2020:'#507867', c2022:'#B57B45', cInf:'#9C9C9C' };
+const PLOT_CFG = { displayModeBar:false, responsive:true };
+const FONT = { family:'DM Sans, sans-serif', size:11, color:'#3A3A3A' };
+
+const Y0 = 2016;       // base year (t=1)
+const T  = 8;          // 2016..2023
+const COHORTS = [2018, 2020, 2022, Infinity];
+
+let POP = null;
+
+function buildPop() {
+  const seed = +document.getElementById('pop-seed').value || 20260428;
+  const N    = Math.max(40, Math.min(600, +document.getElementById('pop-N').value || 200));
+  const het  = Math.max(0, Math.min(2, +document.getElementById('pop-het').value || 1));
+  const dyn  = Math.max(0, Math.min(2, +document.getElementById('pop-dyn').value || 0.5));
+
+  const r    = mulberry32(seed);
+  const norm = makeNormal(r);
+
+  const NT      = N * T;
+  const unit    = new Int32Array(NT);
+  const tt      = new Int32Array(NT);   // calendar year
+  const G       = new Int32Array(NT);   // cohort year (Inf -> 9999)
+  const D       = new Uint8Array(NT);
+  const Y       = new Float64Array(NT);
+  const cohort  = new Int32Array(N);
+  const alpha   = new Float64Array(N);
+
+  // Assign cohort uniformly from {2018, 2020, 2022, Inf}
+  for (let i = 0; i < N; i++) {
+    const u = r();
+    cohort[i] = (u < 0.25) ? 2018 : (u < 0.5) ? 2020 : (u < 0.75) ? 2022 : 9999;
+    alpha[i]  = 30 + 5 * norm();
+  }
+  // common time shock (calendar trend)
+  const delta = new Float64Array(T);
+  for (let t = 0; t < T; t++) delta[t] = 0.5 * t + 1.2 * norm();
+
+  // Cohort-specific base ATT, kicker for early adopters
+  // base ATT for cohort g at k=0:  baseATT - het*(g-2018)/2  → 2018 has biggest, 2022 smallest
+  const baseATT = 4;
+  function tauGK(g, k) {
+    if (g >= 9999 || k < 0) return 0;
+    const cohortShift = -het * ((g - 2018) / 2.0);   // 2018:0, 2020:-het, 2022:-2het
+    return baseATT + cohortShift + dyn * k;
+  }
+
+  let kk = 0;
+  for (let i = 0; i < N; i++) {
+    for (let t = 0; t < T; t++) {
+      const cal = Y0 + t;                  // 2016..2023
+      const k   = cal - cohort[i];          // negative = pre, 0+ = post
+      const treated = (cohort[i] < 9999) && (cal >= cohort[i]);
+      unit[kk] = i;
+      tt[kk]   = cal;
+      G[kk]    = cohort[i];
+      D[kk]    = treated ? 1 : 0;
+      const tau = tauGK(cohort[i], k);
+      Y[kk] = alpha[i] + delta[t] + tau + 1.5 * norm();
+      kk++;
+    }
+  }
+
+  // True ATT: average tauGK over treated obs
+  let trueAtt = 0, nT = 0;
+  for (let kk2 = 0; kk2 < NT; kk2++) {
+    if (D[kk2]) {
+      const k = tt[kk2] - G[kk2];
+      trueAtt += tauGK(G[kk2], k); nT++;
+    }
+  }
+  trueAtt /= Math.max(1, nT);
+
+  POP = { seed, N, NT, T, het, dyn, unit, tt, G, D, Y, cohort, alpha, trueAtt, tauGK };
+  // count cohorts
+  const cnt = {2018:0, 2020:0, 2022:0, 9999:0};
+  for (let i = 0; i < N; i++) cnt[cohort[i]]++;
+  document.getElementById('pop-status').textContent =
+    `painel: N=${N}, T=${T}, NT=${NT}; coortes 2018/2020/2022/never = ${cnt[2018]}/${cnt[2020]}/${cnt[2022]}/${cnt[9999]}; ATT verdadeiro=${trueAtt.toFixed(2)}`;
+}
+
+// ─── Panel 1: heatmap of treatment status ─────
+function renderP1() {
+  if (!POP) return;
+  // Sort units by cohort (early first), then arbitrary
+  const idx = Array.from({length: POP.N}, (_, i) => i)
+    .sort((a, b) => POP.cohort[a] - POP.cohort[b]);
+  // Build matrix [N x T] of D
+  const Z = []; const cohorts = [];
+  for (let r = 0; r < POP.N; r++) {
+    const i = idx[r];
+    const row = [];
+    for (let t = 0; t < POP.T; t++) {
+      const cal = Y0 + t;
+      // 0 = untreated, 1 = treated 2018, 2 = treated 2020, 3 = treated 2022
+      if (POP.cohort[i] >= 9999) row.push(0);
+      else if (cal < POP.cohort[i]) row.push(0);
+      else if (POP.cohort[i] === 2018) row.push(1);
+      else if (POP.cohort[i] === 2020) row.push(2);
+      else row.push(3);
+    }
+    Z.push(row);
+    cohorts.push(POP.cohort[i] >= 9999 ? 'never' : POP.cohort[i].toString());
+  }
+  const xs = []; for (let t = 0; t < POP.T; t++) xs.push(Y0 + t);
+
+  Plotly.newPlot('plot-1', [{
+    z: Z,
+    x: xs,
+    type: 'heatmap',
+    showscale: false,
+    colorscale: [
+      [0,    '#FFFFFF'],
+      [0.25, '#FFFFFF'],
+      [0.25, C.c2018],
+      [0.50, C.c2018],
+      [0.50, C.c2020],
+      [0.75, C.c2020],
+      [0.75, C.c2022],
+      [1,    C.c2022]
+    ],
+    zmin: 0, zmax: 3,
+    hoverinfo: 'skip'
+  }], {
+    margin:{l:42,r:18,t:14,b:42},
+    xaxis:{title:'Ano', dtick:1},
+    yaxis:{title:'Hospital (ordenado por coorte)', showticklabels:false},
+    font: FONT
+  }, PLOT_CFG);
+
+  document.getElementById('stats-1').innerHTML =
+    `<span class="kv"><span style="color:${C.c2018}">■</span> coorte 2018</span>` +
+    `<span class="kv"><span style="color:${C.c2020}">■</span> coorte 2020</span>` +
+    `<span class="kv"><span style="color:${C.c2022}">■</span> coorte 2022</span>` +
+    `<span class="kv"><span style="color:#CCCCCC">■</span> ainda não tratado / never</span>`;
+}
+
+// ─── Panel 2: average Y by cohort over time ─────
+function renderP2() {
+  if (!POP) return;
+  const groups = [2018, 2020, 2022, 9999];
+  const colors = {2018:C.c2018, 2020:C.c2020, 2022:C.c2022, 9999:C.cInf};
+  const labels = {2018:'2018', 2020:'2020', 2022:'2022', 9999:'never'};
+  const traces = [];
+  for (const g of groups) {
+    const sum = new Float64Array(POP.T), cnt = new Int32Array(POP.T);
+    for (let k = 0; k < POP.NT; k++) {
+      if (POP.G[k] === g) { const t = POP.tt[k] - Y0; sum[t] += POP.Y[k]; cnt[t]++; }
+    }
+    if (cnt[0] === 0) continue;
+    const ys = []; const xs = [];
+    for (let t = 0; t < POP.T; t++) { ys.push(sum[t]/cnt[t]); xs.push(Y0 + t); }
+    traces.push({
+      x: xs, y: ys, type:'scatter', mode:'lines+markers',
+      name: labels[g],
+      line:{color: colors[g], width:2}, marker:{size:6}
+    });
+  }
+
+  Plotly.newPlot('plot-2', traces, {
+    margin:{l:50,r:18,t:14,b:42},
+    xaxis:{title:'Ano', dtick:1, gridcolor:C.light},
+    yaxis:{title:'Y médio', gridcolor:C.light},
+    font: FONT,
+    legend:{orientation:'h', y:-0.22, x:0.5, xanchor:'center'}
+  }, PLOT_CFG);
+
+  document.getElementById('stats-2').innerHTML =
+    `<span class="kv"><span>Heterogeneidade</span><b>${POP.het.toFixed(2)}</b></span>` +
+    `<span class="kv"><span>Dinâmica/ano</span><b>${POP.dyn.toFixed(2)}</b></span>`;
+}
+
+// ─── Panel 3: TWFE vs CS-style estimator ─────
+// CS-style ATT: for each (g, t) with g <= t and t <= maxT, compute
+//    ATT(g,t) = (Ȳ_{g,t} - Ȳ_{g,g-1}) - (Ȳ_{∞,t} - Ȳ_{∞,g-1})
+// Then average across (g,t) with t >= g
+function csAttSimple() {
+  // means by (cohort, calendar_year)
+  const cohorts = [2018, 2020, 2022, 9999];
+  const meanCT = {};
+  for (const g of cohorts) meanCT[g] = new Float64Array(POP.T);
+  const cntCT = {};
+  for (const g of cohorts) cntCT[g] = new Int32Array(POP.T);
+  for (let k = 0; k < POP.NT; k++) {
+    const t = POP.tt[k] - Y0;
+    meanCT[POP.G[k]][t] += POP.Y[k];
+    cntCT[POP.G[k]][t]++;
+  }
+  for (const g of cohorts) for (let t = 0; t < POP.T; t++) {
+    if (cntCT[g][t] > 0) meanCT[g][t] /= cntCT[g][t];
+  }
+
+  let attSum = 0, attCnt = 0;
+  for (const g of [2018, 2020, 2022]) {
+    const gIdx  = g - Y0;        // index in 0..T-1
+    const refIdx = gIdx - 1;     // pre-treatment year (g-1)
+    if (refIdx < 0) continue;
+    if (cntCT[g][refIdx] === 0) continue;
+    if (cntCT[9999][refIdx] === 0) continue;
+    for (let t = gIdx; t < POP.T; t++) {
+      if (cntCT[g][t] === 0 || cntCT[9999][t] === 0) continue;
+      const att = (meanCT[g][t] - meanCT[g][refIdx]) - (meanCT[9999][t] - meanCT[9999][refIdx]);
+      attSum += att; attCnt++;
+    }
+  }
+  return attSum / Math.max(1, attCnt);
+}
+
+function twfe() {
+  // FWL via alternating projections (unit FE + time FE)
+  const N = POP.N, NT = POP.NT, T = POP.T;
+  const Yd = new Float64Array(NT), Dd = new Float64Array(NT);
+  for (let k = 0; k < NT; k++) { Yd[k] = POP.Y[k]; Dd[k] = POP.D[k]; }
+  for (let it = 0; it < 30; it++) {
+    const sYi = new Float64Array(N), sDi = new Float64Array(N), ci = new Int32Array(N);
+    for (let k = 0; k < NT; k++) {
+      sYi[POP.unit[k]] += Yd[k]; sDi[POP.unit[k]] += Dd[k]; ci[POP.unit[k]]++;
+    }
+    for (let k = 0; k < NT; k++) {
+      Yd[k] -= sYi[POP.unit[k]] / ci[POP.unit[k]];
+      Dd[k] -= sDi[POP.unit[k]] / ci[POP.unit[k]];
+    }
+    const sYt = new Float64Array(T), sDt = new Float64Array(T), ct = new Int32Array(T);
+    for (let k = 0; k < NT; k++) {
+      const ti = POP.tt[k] - Y0;
+      sYt[ti] += Yd[k]; sDt[ti] += Dd[k]; ct[ti]++;
+    }
+    for (let k = 0; k < NT; k++) {
+      const ti = POP.tt[k] - Y0;
+      Yd[k] -= sYt[ti] / ct[ti];
+      Dd[k] -= sDt[ti] / ct[ti];
+    }
+  }
+  let num=0, den=0;
+  for (let k = 0; k < NT; k++) { num += Dd[k] * Yd[k]; den += Dd[k] * Dd[k]; }
+  return num / den;
+}
+
+function renderP3() {
+  if (!POP) return;
+  const tw = twfe();
+  const cs = csAttSimple();
+
+  Plotly.newPlot('plot-3', [{
+    x: ['TWFE', 'CS (never-treated)', 'ATT verdadeiro'],
+    y: [tw, cs, POP.trueAtt],
+    type: 'bar',
+    marker:{ color:[C.gray, C.green, C.red] },
+    text: [tw.toFixed(2), cs.toFixed(2), POP.trueAtt.toFixed(2)],
+    textposition: 'outside'
+  }], {
+    margin:{l:50,r:18,t:24,b:36},
+    yaxis:{title:'Estimativa', gridcolor:C.light, zerolinecolor:C.gray},
+    font: FONT
+  }, PLOT_CFG);
+
+  document.getElementById('stats-3').innerHTML =
+    `<span class="kv"><span>τ̂ TWFE</span><b>${tw.toFixed(3)}</b></span>` +
+    `<span class="kv"><span>τ̂ CS</span><b>${cs.toFixed(3)}</b></span>` +
+    `<span class="kv"><span>viés TWFE</span><b>${(tw - POP.trueAtt).toFixed(3)}</b></span>` +
+    `<span class="kv"><span>viés CS</span><b>${(cs - POP.trueAtt).toFixed(3)}</b></span>`;
+}
+
+// ─── Panel 4: aggregated event study ─────
+function eventStudyDynamic() {
+  // For each k = -3..5, average ATT(g, g+k) over treated cohorts
+  const cohorts = [2018, 2020, 2022];
+  const meanCT = {}, cntCT = {};
+  for (const g of [2018, 2020, 2022, 9999]) {
+    meanCT[g] = new Float64Array(POP.T);
+    cntCT[g]  = new Int32Array(POP.T);
+  }
+  for (let k = 0; k < POP.NT; k++) {
+    const t = POP.tt[k] - Y0;
+    meanCT[POP.G[k]][t] += POP.Y[k]; cntCT[POP.G[k]][t]++;
+  }
+  for (const g of [2018, 2020, 2022, 9999])
+    for (let t = 0; t < POP.T; t++)
+      if (cntCT[g][t] > 0) meanCT[g][t] /= cntCT[g][t];
+
+  const ks = []; const est = []; const tru = [];
+  for (let k = -3; k <= 5; k++) {
+    let sumE = 0, sumT = 0, n = 0;
+    for (const g of cohorts) {
+      const gIdx  = g - Y0;
+      const refIdx = gIdx - 1;
+      const tIdx  = gIdx + k;
+      if (tIdx < 0 || tIdx >= POP.T) continue;
+      if (refIdx < 0 || refIdx >= POP.T) continue;
+      if (cntCT[g][tIdx] === 0 || cntCT[g][refIdx] === 0) continue;
+      if (cntCT[9999][tIdx] === 0 || cntCT[9999][refIdx] === 0) continue;
+      const e = (meanCT[g][tIdx] - meanCT[g][refIdx]) - (meanCT[9999][tIdx] - meanCT[9999][refIdx]);
+      const t = POP.tauGK(g, k);
+      sumE += e; sumT += t; n++;
+    }
+    if (n > 0) { ks.push(k); est.push(sumE / n); tru.push(sumT / n); }
+  }
+  return { ks, est, tru };
+}
+
+function renderP4() {
+  if (!POP) return;
+  const es = eventStudyDynamic();
+
+  Plotly.newPlot('plot-4', [
+    { x: es.ks, y: es.est, type:'scatter', mode:'lines+markers',
+      name:'CS dinâmico (estimado)',
+      line:{color:C.dark, width:2}, marker:{size:7, color:C.dark} },
+    { x: es.ks, y: es.tru, type:'scatter', mode:'lines',
+      name:'τ verdadeiro (média de coortes)',
+      line:{color:C.red, width:1.5, dash:'dot'} }
+  ], {
+    margin:{l:50,r:18,t:14,b:42},
+    xaxis:{title:'k = ano − adoção', dtick:1, gridcolor:C.light, zerolinecolor:C.gray},
+    yaxis:{title:'ATT(k) (média entre coortes)', gridcolor:C.light, zerolinecolor:C.gray},
+    font: FONT,
+    legend:{orientation:'h', y:-0.22, x:0.5, xanchor:'center'},
+    shapes:[{type:'line', x0:-0.5, x1:-0.5, y0:0, y1:1, yref:'paper',
+             line:{color:C.gray, width:1.2, dash:'dash'}}]
+  }, PLOT_CFG);
+
+  // pre-period mean of |est_k| for k <= -1 (excluding -1 if used as base)
+  let pre = 0, npre = 0;
+  for (let i = 0; i < es.ks.length; i++) {
+    if (es.ks[i] < -1) { pre += Math.abs(es.est[i]); npre++; }
+  }
+  document.getElementById('stats-4').innerHTML =
+    `<span class="kv"><span>|τ̂_k|, k&lt;−1 (média)</span><b>${(pre/Math.max(1,npre)).toFixed(3)}</b></span>` +
+    `<span class="kv"><span>τ̂ em k=0</span><b>${es.est[es.ks.indexOf(0)].toFixed(3)}</b></span>` +
+    `<span class="kv"><span>τ̂ em k=3</span><b>${(es.ks.indexOf(3)>=0 ? es.est[es.ks.indexOf(3)].toFixed(3) : '—')}</b></span>`;
+}
+
+function renderAll() {
+  buildPop();
+  renderP1(); renderP2(); renderP3(); renderP4();
+}
+
+document.getElementById('regenerate').addEventListener('click', renderAll);
+document.querySelectorAll('.global-controls input').forEach(el =>
+  el.addEventListener('change', renderAll));
+renderAll();
+</script>
+
+</body>
+</html>

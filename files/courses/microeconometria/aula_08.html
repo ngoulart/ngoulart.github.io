@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aula 8 — Dados em Painel e Erro Padrão · Microeconometria Aplicada</title>
+<meta name="description" content="Aula 8: estrutura de painel, erros padrão clássicos vs robustos vs cluster, e cobertura empírica.">
+<link rel="icon" href="../../../favicon.ico" type="image/x-icon">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<link rel="stylesheet" href="aula_shared.css">
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="../../index.html" class="nav-name">Nícolas Goulart</a>
+    <div class="nav-links">
+      <a href="../../index.html">About</a>
+      <a href="../../cv.html">CV</a>
+      <a href="../../research.html">Research</a>
+      <a href="../../teaching.html" class="active">Teaching</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+
+  <div class="breadcrumb">
+    <a href="../../teaching.html">Teaching</a> ·
+    <a href="index.html">Applied Microeconometrics</a> · Aula 8
+  </div>
+
+  <div class="lecture-toc">
+    <span class="lecture-toc-label">Nesta aula</span>
+    <a href="#p1">1 · Estrutura</a>
+    <a href="#p2">2 · Variação</a>
+    <a href="#p3">3 · Cobertura</a>
+    <a href="#p4">4 · Two-way clusters</a>
+    <a href="#snippets">Snippets R</a>
+  </div>
+
+  <div class="lecture-header">
+    <div class="lecture-kicker">Aula 08</div>
+    <h1 class="lecture-h1">Dados em Painel e Erros Padrão</h1>
+    <p class="lecture-intro">
+      Em painel, observações da mesma unidade ao longo do tempo são <em>correlacionadas</em>.
+      Tratar cada linha como independente (OLS clássico ou <code>HC1</code>) subestima
+      <code>SE</code>, infla <code>t</code> e <strong>quebra o nível</strong> do teste. A solução
+      padrão é <strong>cluster-robust</strong> ao nível de atribuição (ou superior). Quando há
+      choques comuns ao tempo, <strong>two-way clustering</strong> (unidade + tempo) é apropriado.
+    </p>
+    <p class="lecture-intro">
+      A população desta página difere do workbook: <em>rede de farmácias</em> com 200 lojas
+      observadas mensalmente em 24 meses. Algumas lojas adotam um programa de fidelidade.
+      Cada loja tem efeito fixo <code>α<sub>i</sub></code>; choques mensais <code>δ<sub>t</sub></code>
+      atingem todas; resíduos são <code>AR(1)</code> dentro de cada loja.
+    </p>
+  </div>
+
+  <div class="global-controls">
+    <div class="control">
+      <label for="pop-seed">Seed</label>
+      <input type="number" id="pop-seed" value="20260428" step="1">
+    </div>
+    <div class="control">
+      <label for="pop-G">G (lojas)</label>
+      <input type="number" id="pop-G" value="200" step="20" min="40" max="500">
+    </div>
+    <div class="control">
+      <label for="pop-T">T (meses)</label>
+      <input type="number" id="pop-T" value="24" step="2" min="6" max="60">
+    </div>
+    <div class="control">
+      <label for="pop-rho">AR(1) ρ</label>
+      <input type="number" id="pop-rho" value="0.6" step="0.1" min="0" max="0.9">
+    </div>
+    <button class="btn" id="regenerate">Regenerar população</button>
+    <span class="val" id="pop-status" style="margin-left:auto"></span>
+  </div>
+
+  <!-- PANEL 1 -->
+  <section class="panel" id="p1">
+    <div class="panel-head">
+      <div class="panel-num">1</div>
+      <div class="panel-title">Estrutura do painel</div>
+    </div>
+    <p class="panel-q">
+      Cada linha do painel longo é <code>(i, t)</code>. Trajetórias por loja revelam
+      heterogeneidade <em>between</em> e correlação serial <em>within</em>. Sob ρ = 0.6,
+      um choque persiste por vários meses — observações dentro da mesma loja não são
+      independentes.
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre><span class="com"># Formato longo</span>
+head(data)
+<span class="com">#  loja  mes    Y    D</span>
+<span class="com">#   1    1    8.2   0</span>
+<span class="com">#   1    2    8.5   0</span>
+<span class="com">#   2    1    9.1   1   ...</span>
+
+<span class="com"># Visualizar séries</span>
+ggplot(subset(data, loja %in% sample(unique(loja), <span class="num">15</span>)),
+       aes(x = mes, y = Y, group = loja, color = factor(D))) +
+  geom_line(alpha = <span class="num">0.7</span>)</pre>
+      </div>
+      <div class="panel-viz">
+        <div id="plot-1" class="plot tall"></div>
+        <div class="stats" id="stats-1">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANEL 2 -->
+  <section class="panel" id="p2">
+    <div class="panel-head">
+      <div class="panel-num">2</div>
+      <div class="panel-title">Variação between vs within</div>
+    </div>
+    <p class="panel-q">
+      Decompondo <code>Y<sub>it</sub> = ȳ<sub>i</sub> + (Y<sub>it</sub> − ȳ<sub>i</sub>)</code>:
+      a primeira parte é <em>between</em> (ICC alta = lojas muito diferentes); a segunda é
+      <em>within</em>. Estimadores de FE usam só a variação within. O painel mostra as duas
+      distribuições.
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre><span class="com"># Decomposição within/between</span>
+data %&gt;%
+  group_by(loja) %&gt;%
+  mutate(Y_bar     = mean(Y),
+         Y_within  = Y - Y_bar) -&gt; data
+
+c(var_between = var(unique(data$Y_bar)),
+  var_within  = var(data$Y_within),
+  ICC         = var(unique(data$Y_bar)) /
+                (var(unique(data$Y_bar)) +
+                 var(data$Y_within)))</pre>
+      </div>
+      <div class="panel-viz">
+        <div id="plot-2" class="plot"></div>
+        <div class="stats" id="stats-2">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANEL 3 -->
+  <section class="panel" id="p3">
+    <div class="panel-head">
+      <div class="panel-num">3</div>
+      <div class="panel-title">Cobertura empírica de IC sob H<sub>0</sub>: τ = 0</div>
+    </div>
+    <p class="panel-q">
+      Sob a hipótese nula, um IC 95% deveria <em>cobrir</em> 0 em 95% das simulações. O painel
+      compara cobertura de quatro métodos: <code>vcov</code> clássico, <code>HC1</code>,
+      <code>CL1</code> (cluster por loja) e <code>CL1</code> (cluster por mês).
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre><span class="com"># Comparar cobertura via Monte Carlo</span>
+library(sandwich); library(lmtest)
+
+simula <- function(reps = <span class="num">500</span>) {
+  cobre <- matrix(<span class="num">0</span>, reps, <span class="num">4</span>)
+  for (b in seq_len(reps)) {
+    data$D <- bloco_aleatorio(data$loja)
+    fit <- lm(Y ~ D, data = data)
+    se_v <- list(
+      vcov(fit),
+      vcovHC(fit, <span class="str">"HC1"</span>),
+      vcovCL(fit, cluster = data$loja),
+      vcovCL(fit, cluster = data$mes))
+    for (k in <span class="num">1</span>:<span class="num">4</span>) {
+      ic <- coeftest(fit, vcov = se_v[[k]])[<span class="str">"D"</span>, <span class="num">1</span>:<span class="num">2</span>]
+      cobre[b, k] <- abs(ic[<span class="num">1</span>] / ic[<span class="num">2</span>]) &lt; <span class="num">1.96</span>
+    }
+  }
+  colMeans(cobre)
+}</pre>
+      </div>
+      <div class="panel-viz">
+        <div class="controls-row">
+          <label>Reps:</label>
+          <input type="range" id="r3-reps" min="100" max="1000" step="50" value="300">
+          <span class="val" id="r3-reps-v">300</span>
+          <button class="btn" id="run-3">Rodar Monte Carlo</button>
+        </div>
+        <div id="plot-3" class="plot"></div>
+        <div class="stats" id="stats-3">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANEL 4 -->
+  <section class="panel" id="p4">
+    <div class="panel-head">
+      <div class="panel-num">4</div>
+      <div class="panel-title">Choques comuns: por que cluster por tempo</div>
+    </div>
+    <p class="panel-q">
+      Quando um choque mensal afeta <em>todas</em> as lojas (ex.: feriado, política
+      monetária), há correlação entre lojas dentro do mesmo mês. Cluster por loja sozinho
+      não captura. Comparamos com <strong>two-way clustering</strong> (loja × tempo).
+    </p>
+    <div class="panel-grid">
+      <div class="panel-code">
+        <div class="panel-code-header">R</div>
+<pre><span class="com"># Two-way clustering</span>
+library(fixest)
+
+fit <- feols(Y ~ D | loja + mes,
+             data = data,
+             cluster = ~loja + mes)
+summary(fit)
+
+<span class="com"># Equivalente em sandwich:</span>
+seCL2 <- vcovCL(lm(Y ~ D + factor(loja) + factor(mes),
+                   data = data),
+                cluster = ~ loja + mes)</pre>
+      </div>
+      <div class="panel-viz">
+        <div id="plot-4" class="plot"></div>
+        <div class="stats" id="stats-4">…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SNIPPETS -->
+  <section class="panel" id="snippets">
+    <div class="panel-head">
+      <div class="panel-num">★</div>
+      <div class="panel-title">Snippets úteis em R</div>
+    </div>
+    <div class="snippet-grid">
+
+      <div class="snippet">
+        <div class="snippet-title">SEs robustos — quatro variantes</div>
+<pre>library(sandwich); library(lmtest)
+
+fit <- lm(Y ~ D + factor(unit) + factor(time), data = df)
+
+<span class="com"># Clássico (errado se houver heterocedasticidade)</span>
+coeftest(fit, vcov. = vcov(fit))
+
+<span class="com"># HC robusto</span>
+coeftest(fit, vcov. = vcovHC(fit, type = <span class="str">"HC1"</span>))
+
+<span class="com"># Cluster por unidade</span>
+coeftest(fit, vcov. = vcovCL(fit, cluster = ~ unit))
+
+<span class="com"># Two-way (unidade + tempo)</span>
+coeftest(fit, vcov. = vcovCL(fit, cluster = ~ unit + time))</pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-title">fixest::feols (rápido + bonito)</div>
+<pre>library(fixest)
+
+fit <- feols(Y ~ D | unit + time,
+             data    = df,
+             cluster = ~unit + time)
+
+summary(fit)
+etable(fit, fitstat = ~ n + r2 + ar2)
+<span class="com"># LaTeX direto:</span>
+etable(fit, tex = TRUE,
+       file = <span class="str">"tabelas/painel.tex"</span>)</pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-title">ICC empírico</div>
+<pre>icc_emp <- function(df, unit_col, y_col) {
+  bw <- df %&gt;%
+    group_by(.data[[unit_col]]) %&gt;%
+    summarise(ybar = mean(.data[[y_col]]),
+              n    = n())
+
+  vb <- var(bw$ybar)
+  vw <- mean((df[[y_col]] -
+              bw$ybar[match(df[[unit_col]],
+                            bw[[unit_col]])])^<span class="num">2</span>)
+  vb / (vb + vw)
+}</pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-title">Pairs bootstrap por cluster</div>
+<pre>boot_cluster <- function(df, B = <span class="num">1000</span>) {
+  units <- unique(df$unit)
+  taus  <- numeric(B)
+  for (b in seq_len(B)) {
+    pick <- sample(units, length(units),
+                   replace = TRUE)
+    bs   <- bind_rows(lapply(pick,
+              function(u) df[df$unit == u, ]))
+    taus[b] <- coef(lm(Y ~ D, bs))[<span class="str">"D"</span>]
+  }
+  c(media = mean(taus), sd = sd(taus),
+    q025 = quantile(taus, <span class="num">0.025</span>),
+    q975 = quantile(taus, <span class="num">0.975</span>))
+}</pre>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  © 2026 Nícolas Goulart · Built with HTML & CSS · Aula 08
+</footer>
+
+<script>
+'use strict';
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function makeNormal(rng){let s=null;return function(){if(s!==null){const v=s;s=null;return v}let u,v,r;do{u=rng()*2-1;v=rng()*2-1;r=u*u+v*v}while(r===0||r>=1);const c=Math.sqrt(-2*Math.log(r)/r);s=v*c;return u*c}}
+
+const C = { red:'#973B74', blue:'#46647B', green:'#507867', gray:'#8A8A8A', light:'#E6E6E6', dark:'#1A1A1A', orange:'#C8763C' };
+const PLOT_CFG = { displayModeBar:false, responsive:true };
+const FONT = { family:'DM Sans, sans-serif', size:11, color:'#3A3A3A' };
+
+let POP = null;
+
+function buildPop() {
+  const seed = +document.getElementById('pop-seed').value || 20260428;
+  const G    = Math.max(40, Math.min(500, +document.getElementById('pop-G').value || 200));
+  const T    = Math.max(6,  Math.min(60,  +document.getElementById('pop-T').value || 24));
+  const rho  = Math.max(0,  Math.min(0.9, +document.getElementById('pop-rho').value || 0.6));
+
+  const r    = mulberry32(seed);
+  const norm = makeNormal(r);
+
+  const N = G * T;
+  const unit = new Int32Array(N);
+  const time = new Int32Array(N);
+  const Y    = new Float64Array(N);
+
+  // store fixed effects α_i ~ N(0, 1.5)
+  const alpha = new Float64Array(G);
+  for (let g = 0; g < G; g++) alpha[g] = 1.5 * norm();
+
+  // time shocks δ_t ~ N(0, 0.4)
+  const delta = new Float64Array(T);
+  for (let t = 0; t < T; t++) delta[t] = 0.4 * norm();
+
+  // AR(1) errors per store
+  let i = 0;
+  for (let g = 0; g < G; g++) {
+    let prev = norm();
+    for (let t = 0; t < T; t++) {
+      const eps = norm();
+      const u = rho * prev + Math.sqrt(1 - rho*rho) * eps;
+      unit[i] = g; time[i] = t;
+      Y[i] = 8 + alpha[g] + delta[t] + 0.6 * u;
+      prev = u; i++;
+    }
+  }
+
+  POP = { seed, G, T, N, rho, unit, time, Y, alpha, delta };
+  document.getElementById('pop-status').textContent =
+    `painel: G=${G} lojas × T=${T} meses → N=${N}, AR(1) ρ=${rho.toFixed(2)}`;
+}
+
+function mean(a){let s=0;for(let i=0;i<a.length;i++)s+=a[i];return s/a.length}
+
+// ─── Panel 1 ────
+function renderP1() {
+  if (!POP) return;
+  // Pick 12 stores' trajectories
+  const r = mulberry32((POP.seed+1)>>>0);
+  const traces = [];
+  const picks = new Set();
+  while (picks.size < Math.min(12, POP.G)) picks.add(Math.floor(r() * POP.G));
+  for (const g of picks) {
+    const x = []; const y = [];
+    for (let t = 0; t < POP.T; t++) {
+      x.push(t + 1);
+      y.push(POP.Y[g * POP.T + t]);
+    }
+    traces.push({ x, y, type: 'scatter', mode: 'lines',
+      line: { color: C.blue, width: 1, opacity: 0.6 },
+      hovertemplate: `loja ${g+1}<br>mês %{x}<br>Y = %{y:.2f}<extra></extra>`,
+      showlegend: false });
+  }
+  // Mean trajectory across all stores
+  const meanTraj = new Array(POP.T).fill(0);
+  const cnt = new Array(POP.T).fill(0);
+  for (let i = 0; i < POP.N; i++) { meanTraj[POP.time[i]] += POP.Y[i]; cnt[POP.time[i]]++; }
+  const xMean = []; const yMean = [];
+  for (let t = 0; t < POP.T; t++) { xMean.push(t + 1); yMean.push(meanTraj[t] / cnt[t]); }
+  traces.push({ x: xMean, y: yMean, type: 'scatter', mode: 'lines',
+    line: { color: C.red, width: 3 }, name: 'média geral',
+    hovertemplate: 'mês %{x}<br>média = %{y:.2f}<extra></extra>', showlegend: false });
+
+  Plotly.newPlot('plot-1', traces, {
+    title: { text: '12 lojas + média geral', font: {...FONT, size: 12, color: C.dark }},
+    margin: { t: 36, r: 16, b: 36, l: 48 }, font: FONT,
+    xaxis: { title: 'mês', range: [1, POP.T] },
+    yaxis: { title: 'Y (vendas indexadas)' },
+    plot_bgcolor: '#FAFAFA'
+  }, PLOT_CFG);
+
+  document.getElementById('stats-1').innerHTML =
+    `<span class="lbl">G:</span> <span class="v">${POP.G}</span> &nbsp;·&nbsp;
+     <span class="lbl">T:</span> <span class="v">${POP.T}</span> &nbsp;·&nbsp;
+     <span class="lbl">N total:</span> <span class="v">${POP.N}</span> &nbsp;·&nbsp;
+     <span class="lbl">AR(1) ρ:</span> <span class="v">${POP.rho.toFixed(2)}</span>`;
+}
+
+// ─── Panel 2: between vs within ────
+function renderP2() {
+  if (!POP) return;
+  const ybar = new Float64Array(POP.G);
+  const cnt = new Int32Array(POP.G);
+  for (let i = 0; i < POP.N; i++) { ybar[POP.unit[i]] += POP.Y[i]; cnt[POP.unit[i]]++; }
+  for (let g = 0; g < POP.G; g++) ybar[g] /= cnt[g];
+
+  let varBet = 0; const grand = mean(POP.Y);
+  for (let g = 0; g < POP.G; g++) varBet += (ybar[g] - grand)**2;
+  varBet /= (POP.G - 1);
+  let varW = 0;
+  const within = new Float64Array(POP.N);
+  for (let i = 0; i < POP.N; i++) { within[i] = POP.Y[i] - ybar[POP.unit[i]]; varW += within[i]**2; }
+  varW /= (POP.N - 1);
+  const icc = varBet / (varBet + varW);
+
+  // KDE-ish histograms
+  function hist(values, lo, hi, nb) {
+    const w = (hi - lo) / nb;
+    const h = new Array(nb).fill(0);
+    for (const v of values) {
+      if (v < lo || v >= hi) continue;
+      h[Math.min(nb - 1, Math.floor((v - lo) / w))]++;
+    }
+    const x = new Array(nb);
+    for (let i = 0; i < nb; i++) x[i] = lo + (i + 0.5) * w;
+    return { x, h, w };
+  }
+
+  const ybarArr = Array.from(ybar);
+  const winArr  = Array.from(within);
+  const lo = -5, hi = 5;
+  const hb = hist(ybarArr.map(v => v - grand), lo, hi, 40);
+  const hw = hist(winArr, lo, hi, 40);
+
+  Plotly.newPlot('plot-2', [{
+    x: hb.x, y: hb.h, type: 'bar', name: 'between (ȳ_i − ȳ)',
+    marker: { color: C.blue, opacity: 0.7 }, width: hb.w * 0.9
+  }, {
+    x: hw.x, y: hw.h, type: 'bar', name: 'within (Y_it − ȳ_i)',
+    marker: { color: C.green, opacity: 0.7 }, width: hw.w * 0.9
+  }], {
+    title: { text: 'Variação between vs within', font: {...FONT, size: 12, color: C.dark }},
+    margin: { t: 36, r: 16, b: 36, l: 48 }, font: FONT,
+    xaxis: { title: 'desvio da média', range: [lo, hi] },
+    yaxis: { title: 'frequência' },
+    barmode: 'overlay', plot_bgcolor: '#FAFAFA',
+    legend: { orientation: 'h', y: -0.2 }
+  }, PLOT_CFG);
+
+  document.getElementById('stats-2').innerHTML =
+    `<span class="lbl">var between:</span> <span class="v">${varBet.toFixed(3)}</span> &nbsp;·&nbsp;
+     <span class="lbl">var within:</span> <span class="v">${varW.toFixed(3)}</span> &nbsp;·&nbsp;
+     <span class="lbl">ICC empírico:</span> <span class="v">${icc.toFixed(3)}</span>`;
+}
+
+// ─── Panel 3: coverage ────
+function olsTau(Y, D) {
+  let n=Y.length, sd=0, sy=0, sdy=0, sd2=0;
+  for (let i = 0; i < n; i++) { sd += D[i]; sy += Y[i]; sdy += D[i]*Y[i]; sd2 += D[i]*D[i]; }
+  const denom = n*sd2 - sd*sd; if (denom === 0) return { tau: NaN };
+  const tau = (n*sdy - sd*sy) / denom;
+  // residual variance
+  const p = sd / n;
+  let m1 = 0, m0 = 0;
+  for (let i = 0; i < n; i++) { if (D[i]) m1 += Y[i]; else m0 += Y[i]; }
+  const n1 = sd, n0 = n - n1;
+  m1 /= n1; m0 /= n0;
+  // RSS
+  let rss = 0;
+  for (let i = 0; i < n; i++) { const e = Y[i] - (D[i] ? m1 : m0); rss += e * e; }
+  const sigma2 = rss / (n - 2);
+  // classical SE
+  const seClass = Math.sqrt(sigma2 / (n * p * (1-p)));
+  return { tau, p, m1, m0, seClass, n, n1, n0 };
+}
+
+function hcSE(Y, D, fit) {
+  const { p, m1, m0, n } = fit;
+  let s1=0, s0=0;
+  for (let i = 0; i < n; i++) {
+    const e = Y[i] - (D[i] ? m1 : m0);
+    if (D[i]) s1 += e*e; else s0 += e*e;
+  }
+  const var0 = s1/(fit.n1*fit.n1) + s0/(fit.n0*fit.n0);
+  return Math.sqrt((n/(n-2)) * var0);
+}
+
+function clusterSE(Y, D, cluster, G, fit) {
+  const { p, m1, m0, n } = fit;
+  const u = new Float64Array(G);
+  for (let i = 0; i < n; i++) {
+    const e = Y[i] - (D[i] ? m1 : m0);
+    u[cluster[i]] += e * (D[i] - p);
+  }
+  let meat = 0; for (let g = 0; g < G; g++) meat += u[g]*u[g];
+  const bread = 1 / (n * p * (1 - p));
+  const cr0 = bread * meat * bread;
+  return Math.sqrt((G/(G-1)) * ((n-1)/(n-2)) * cr0);
+}
+
+function runP3() {
+  if (!POP) return;
+  const reps = +document.getElementById('r3-reps').value;
+  const r = mulberry32((POP.seed+11)>>>0);
+
+  let cov = [0,0,0,0]; // classic, HC1, CL_unit, CL_time
+  const Dg = new Uint8Array(POP.G);
+  const D  = new Uint8Array(POP.N);
+  for (let b = 0; b < reps; b++) {
+    for (let g = 0; g < POP.G; g++) Dg[g] = r() < 0.5 ? 1 : 0;
+    for (let i = 0; i < POP.N; i++) D[i] = Dg[POP.unit[i]];
+    const fit = olsTau(POP.Y, D);
+    const seClass = fit.seClass;
+    const seHC    = hcSE(POP.Y, D, fit);
+    const seClU   = clusterSE(POP.Y, D, POP.unit, POP.G, fit);
+    const seClT   = clusterSE(POP.Y, D, POP.time, POP.T, fit);
+    const t1 = Math.abs(fit.tau / seClass) < 1.96 ? 1 : 0;
+    const t2 = Math.abs(fit.tau / seHC)    < 1.96 ? 1 : 0;
+    const t3 = Math.abs(fit.tau / seClU)   < 1.96 ? 1 : 0;
+    const t4 = Math.abs(fit.tau / seClT)   < 1.96 ? 1 : 0;
+    cov[0] += t1; cov[1] += t2; cov[2] += t3; cov[3] += t4;
+  }
+  cov = cov.map(v => v / reps);
+
+  const labels = ['vcov (clássico)','HC1','CL — loja','CL — mês'];
+  const cols   = [C.gray, C.orange, C.green, C.blue];
+
+  Plotly.newPlot('plot-3', [{
+    x: labels, y: cov.map(v => v * 100), type: 'bar',
+    marker: { color: cols },
+    text: cov.map(v => `${(v*100).toFixed(1)}%`),
+    textposition: 'outside',
+    hovertemplate: '%{x}<br>cobertura = %{y:.1f}%<extra></extra>'
+  }, {
+    x: labels, y: [95, 95, 95, 95], type: 'scatter', mode: 'lines',
+    line: { color: C.red, dash: 'dash', width: 1.5 },
+    name: 'meta 95%', hoverinfo: 'skip'
+  }], {
+    title: { text: `Cobertura empírica de IC 95% — ${reps} simulações`, font: {...FONT, size: 12, color: C.dark }},
+    margin: { t: 36, r: 16, b: 36, l: 48 }, font: FONT,
+    yaxis: { title: 'cobertura (%)', range: [0, 100] },
+    showlegend: false, plot_bgcolor: '#FAFAFA'
+  }, PLOT_CFG);
+
+  document.getElementById('stats-3').innerHTML = labels.map((L,i) =>
+    `<span class="lbl">${L}:</span> <span class="${Math.abs(cov[i]-0.95)<0.02?'ok':'no'}">${(cov[i]*100).toFixed(1)}%</span>`
+  ).join(' &nbsp;·&nbsp; ');
+}
+
+// ─── Panel 4: 2-way comparison ────
+function renderP4() {
+  if (!POP) return;
+  // Compute SE estimates from a single sample (for visualization)
+  const r = mulberry32((POP.seed+19)>>>0);
+  const Dg = new Uint8Array(POP.G);
+  const D  = new Uint8Array(POP.N);
+  for (let g = 0; g < POP.G; g++) Dg[g] = r() < 0.5 ? 1 : 0;
+  for (let i = 0; i < POP.N; i++) D[i] = Dg[POP.unit[i]];
+  const fit = olsTau(POP.Y, D);
+  const ses = [
+    fit.seClass,
+    hcSE(POP.Y, D, fit),
+    clusterSE(POP.Y, D, POP.unit, POP.G, fit),
+    clusterSE(POP.Y, D, POP.time, POP.T, fit)
+  ];
+  // 2-way Cameron-Gelbach-Miller: V_2way = V_unit + V_time - V_intersection
+  // intersection = treat (i,t) as cluster (each obs)
+  const seInt = hcSE(POP.Y, D, fit);  // proxy
+  const v2w = ses[2]**2 + ses[3]**2 - seInt**2;
+  ses.push(Math.sqrt(Math.max(v2w, 1e-10)));
+
+  const labels = ['clássico','HC1','CL loja','CL mês','CL 2-way'];
+  const cols = [C.gray, C.orange, C.green, C.blue, C.red];
+  Plotly.newPlot('plot-4', [{
+    x: labels, y: ses, type: 'bar',
+    marker: { color: cols },
+    text: ses.map(v => v.toFixed(3)),
+    textposition: 'outside',
+    hovertemplate: '%{x}<br>SE = %{y:.4f}<extra></extra>'
+  }], {
+    title: { text: 'SE estimado em uma única amostra — 5 métodos', font: {...FONT, size: 12, color: C.dark }},
+    margin: { t: 36, r: 16, b: 36, l: 48 }, font: FONT,
+    yaxis: { title: 'SE(τ̂)' },
+    showlegend: false, plot_bgcolor: '#FAFAFA'
+  }, PLOT_CFG);
+
+  document.getElementById('stats-4').innerHTML = labels.map((L,i) =>
+    `<span class="lbl">${L}:</span> <span class="v">${ses[i].toFixed(4)}</span>`
+  ).join(' &nbsp;·&nbsp; ');
+}
+
+document.getElementById('regenerate').addEventListener('click', () => {
+  buildPop(); renderP1(); renderP2(); renderP4();
+  ['stats-3'].forEach(id => document.getElementById(id).textContent = '— rode novamente —');
+  Plotly.purge('plot-3');
+});
+
+document.getElementById('r3-reps').addEventListener('input', e => {
+  document.getElementById('r3-reps-v').textContent = e.target.value;
+});
+document.getElementById('run-3').addEventListener('click', runP3);
+
+buildPop(); renderP1(); renderP2(); renderP4(); runP3();
+</script>
+
+</body>
+</html>
