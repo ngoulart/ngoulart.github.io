@@ -39,6 +39,19 @@
   .pr-mini { background: none; border: none; color: var(--gray-mid); font-size: 0.75rem;
     cursor: pointer; text-decoration: underline; font-family: var(--font-body); padding: 0; }
   .pr-mini:hover { color: var(--red); }
+  /* filter chips (difficulty / skill) */
+  .pr-filters { display: flex; gap: 0.45rem; flex-wrap: wrap; }
+  .chip {
+    font-size: 0.76rem; font-weight: 600; font-family: var(--font-body);
+    padding: 0.32rem 0.7rem; border-radius: 999px; cursor: pointer;
+    border: 1px solid var(--gray-light); background: var(--white); color: var(--gray-mid);
+    transition: all 0.16s ease; user-select: none;
+  }
+  .chip:hover { border-color: var(--red); color: var(--red); }
+  .chip.on { background: rgba(204,0,0,0.08); border-color: var(--red); color: var(--red); }
+  .chip.on::before { content: '✓ '; }
+  .pr-avail { font-size: 0.78rem; color: var(--gray-mid); }
+  .pr-avail.warn { color: var(--red); }
   .pr-toolbar { display: flex; gap: 1rem; align-items: center; margin-top: 0.75rem; flex-wrap: wrap; }
   .pr-toolbar label { font-size: 0.8rem; color: var(--gray-mid); display: flex; align-items: center; gap: 0.4rem; }
   .pr-toolbar select { font-family: var(--font-body); font-size: 0.8rem; padding: 0.3rem 0.45rem;
@@ -152,6 +165,12 @@
   </div>
   <div class="pr-topics" id="topics"></div>
 
+  <div class="pr-section-label">Dificuldade</div>
+  <div class="pr-filters" id="diffs"></div>
+
+  <div class="pr-section-label">Tipo de questão</div>
+  <div class="pr-filters" id="skills"></div>
+
   <div class="pr-toolbar">
     <label>Nº de questões
       <select id="count">
@@ -161,6 +180,7 @@
         <option value="20">20</option>
       </select>
     </label>
+    <span class="pr-avail" id="avail"></span>
   </div>
 
   <div class="pr-actions">
@@ -186,7 +206,7 @@
 
 <script>
 /* ============ BANCO (gerado e testado) ============ */
-/* =====================================================================
+ /* =====================================================================
    Banco de exercícios paramétricos — Nícolas Goulart
    Cursos: Econometria Aplicada · Finanças Corporativas · Econometria II
    Cada gerador é chamado a cada prova => números mudam toda vez.
@@ -238,7 +258,7 @@ function mcText(correct, distractors) {
 function rout(lines) { return '<pre class="rout">' + lines.join('\n') + '</pre>'; }
 
 /* ---------- skills / difficulty labels ---------- */
-const SKILL = { teo: 'Teoria', calc: 'Cálculo', rout: 'Output R', interp: 'Interpretação' };
+const SKILL = { teo: 'Teoria', calc: 'Cálculo', rout: 'Output R', interp: 'Interpretação', formula: 'Fórmula', erro: 'Análise de erro' };
 const DIFF = { 1: 'Fácil', 2: 'Médio', 3: 'Difícil' };
 
 /* =====================================================================
@@ -837,6 +857,630 @@ BANK.push({ id: 'ser20', course: SER, topic: 'Cointegração', skill: 'teo', dif
       sol: 'Cointegração: séries I(1) cuja combinação linear βʹXₜ é I(0) — há uma relação de equilíbrio de longo prazo. Pelo teorema de representação de Granger, existe um ECM. Nesse caso a regressão em nível NÃO é espúria (é super-consistente).' });
 }});
 
+/* ============================================================
+   PARTE 2: +20 por curso (formula, analise de erro, interpretacao)
+   ============================================================ */
+
+/* ----- Econometria Aplicada (apl21 a apl40) ----- */
+BANK.push({ id: 'apl21', course: APL, topic: 'Experimentos (RCT)', skill: 'formula', diff: 2, build() {
+  const s1 = rf(2, 9, 1), s2 = rf(2, 9, 1), n1 = ri(80, 300), n2 = ri(80, 300);
+  return Object.assign(mcText(
+    `√(${fmt(s1,1)}/${n1} + ${fmt(s2,1)}/${n2})`,
+    [`√(${fmt(s1,1)}/${n1} − ${fmt(s2,1)}/${n2})`,
+     `(${fmt(s1,1)} + ${fmt(s2,1)})/(${n1} + ${n2})`,
+     `√(${fmt(s1,1)} + ${fmt(s2,1)})/(${n1}+${n2})`]),
+    { stem: `Em um RCT, a variância amostral do desfecho no tratamento é ${fmt(s1,1)} (n=${n1}) e no controle é ${fmt(s2,1)} (n=${n2}). Qual expressão dá o erro-padrão da diferença de médias?`,
+      sol: `Para médias independentes, Var(ȳ₁−ȳ₂)=s₁²/n₁+s₂²/n₂; o erro-padrão é a raiz: √(s₁²/n₁ + s₂²/n₂) = √(${fmt(s1,1)}/${n1} + ${fmt(s2,1)}/${n2}).` });
+}});
+
+BANK.push({ id: 'apl22', course: APL, topic: 'Experimentos (RCT)', skill: 'erro', diff: 2, build() {
+  return Object.assign(mcText(
+    'A aleatorização equilibra os grupos apenas EM EXPECTATIVA; em uma amostra finita ainda pode haver desbalanceamento por acaso.',
+    ['Está correto: a aleatorização iguala exatamente todas as médias amostrais.',
+     'O erro é que a aleatorização equilibra só as não-observáveis, nunca as observáveis.',
+     'O erro é que isso só vale se a amostra for não-aleatória.']),
+    { stem: 'Um colega afirma: "como o tratamento foi aleatorizado, as médias de todas as covariáveis são exatamente iguais entre tratados e controles nesta amostra." O que há de errado?',
+      sol: 'A independência vale em expectativa: E[X|D=1]=E[X|D=0]. Em uma amostra finita, diferenças por acaso são normais (por isso reportam-se testes de balanceamento). Igualdade exata não é garantida.' });
+}});
+
+BANK.push({ id: 'apl23', course: APL, topic: 'Interpretação de Coeficientes', skill: 'interp', diff: 2, build() {
+  const b = rf(0.04, 0.12, 2);
+  return Object.assign(mcText(
+    `Cada ano adicional de escolaridade associa-se a um salário aproximadamente ${fmt(b*100,0)}% maior, ceteris paribus.`,
+    [`Cada ano de escolaridade aumenta o salário em ${fmt(b,2)} reais.`,
+     `A escolaridade explica ${fmt(b*100,0)}% da variação do salário.`,
+     `Quem estuda tem salário ${fmt(b*100,0)}% maior no total.`]),
+    { stem: `Estimou-se log(salário) = α + β·educ + ε, com β̂ = ${fmt(b,2)}. Qual a interpretação correta?`,
+      sol: `Com o desfecho em log, β̂ é semielasticidade: ΔY% ≈ 100·β̂ por unidade de X. Logo, +1 ano de escolaridade ⇒ ~${fmt(b*100,0)}% no salário (aprox., ceteris paribus). Não é em reais nem é R².` });
+}});
+
+BANK.push({ id: 'apl24', course: APL, topic: 'Variáveis Instrumentais', skill: 'formula', diff: 2, build() {
+  return Object.assign(mcText(
+    '(Ȳ|Z=1 − Ȳ|Z=0) / (D̄|Z=1 − D̄|Z=0)',
+    ['(D̄|Z=1 − D̄|Z=0) / (Ȳ|Z=1 − Ȳ|Z=0)',
+     '(Ȳ|Z=1 − Ȳ|Z=0) · (D̄|Z=1 − D̄|Z=0)',
+     '(Ȳ|Z=1 − Ȳ|Z=0) / (Ȳ|Z=1 + Ȳ|Z=0)']),
+    { stem: 'Com um instrumento binário Z, qual expressão define o estimador de Wald (VI) do efeito de D sobre Y?',
+      sol: 'Wald = (efeito de Z em Y)/(efeito de Z em D) = forma reduzida / primeiro estágio = (Ȳ|Z=1−Ȳ|Z=0)/(D̄|Z=1−D̄|Z=0).' });
+}});
+
+BANK.push({ id: 'apl25', course: APL, topic: 'Variáveis Instrumentais', skill: 'erro', diff: 3, build() {
+  return Object.assign(mcText(
+    'Em um modelo exatamente identificado a restrição de exclusão NÃO é testável — é uma hipótese de identificação, não algo verificável nos dados.',
+    ['O procedimento está correto e prova a validade do instrumento.',
+     'O erro é regredir em Z; deveria regredir o resíduo em D.',
+     'O erro é não exigir F > 10 no primeiro estágio.']),
+    { stem: 'Para "provar" que seu instrumento é válido, um pesquisador propõe regredir o resíduo do 2º estágio contra Z e ver se o coeficiente é zero. Qual o problema com esse raciocínio?',
+      sol: 'Com instrumento exatamente identificado, a restrição de exclusão é inverificável: por construção da estimativa, não há teste que a confirme. (Com sobre-identificação existem testes como Sargan/Hansen, mas eles testam validade conjunta, não cada instrumento.)' });
+}});
+
+BANK.push({ id: 'apl26', course: APL, topic: 'Variáveis Instrumentais', skill: 'interp', diff: 3, build() {
+  const w = pick([['uma bolsa sorteada para incentivar a faculdade', 'matricular-se na faculdade'],
+                  ['uma carta de incentivo para abrir conta bancária', 'abrir a conta'],
+                  ['um voucher sorteado para treinamento', 'fazer o treinamento']]);
+  return Object.assign(mcText(
+    'O efeito médio entre os compliers — pessoas que passam a ' + w[1].replace('-se', '') + ' por causa do incentivo, mas não o fariam sem ele.',
+    ['O efeito médio sobre toda a população elegível (ATE).',
+     'O efeito sobre os always-takers, que fariam isso de qualquer forma.',
+     'O efeito apenas sobre os never-takers, que nunca aderem em nenhuma circunstância.']),
+    { stem: `Usa-se ${w[0]} (aleatório) como instrumento para ${w[1]}. Sob monotonicidade, o que o estimador de VI identifica?`,
+      sol: 'VI com efeitos heterogêneos identifica o LATE: o efeito médio entre os compliers (quem muda de comportamento por causa do instrumento). Nada se aprende sobre always-takers e never-takers.' });
+}});
+
+BANK.push({ id: 'apl27', course: APL, topic: 'Variáveis Instrumentais', skill: 'erro', diff: 3, build() {
+  return Object.assign(mcText(
+    "plim(Z'ε/n) = 0 (exogeneidade do instrumento) E plim(Z'X/n) ≠ 0 (relevância).",
+    ['Apenas que os erros sejam homocedásticos.',
+     "Apenas que Z seja correlacionado com ε (exogeneidade).",
+     'Que a amostra seja pequena para o TCL valer.']),
+    { stem: "Na prova de consistência do 2SLS, escreve-se plim β̂ = β + plim(Z'ε/n) / plim(Z'X/n). Qual condição (passo-chave) garante β̂ → β?",
+      sol: "Precisa-se de exogeneidade — plim(Z'ε/n)=0, fazendo o termo extra desaparecer — e relevância — plim(Z'X/n)≠0, para o denominador não anular. As duas juntas dão consistência." });
+}});
+
+BANK.push({ id: 'apl28', course: APL, topic: 'Diferença em Diferenças', skill: 'formula', diff: 2, build() {
+  return Object.assign(mcText(
+    '(Ȳ_T,pós − Ȳ_T,pré) − (Ȳ_C,pós − Ȳ_C,pré)',
+    ['(Ȳ_T,pós + Ȳ_T,pré) − (Ȳ_C,pós + Ȳ_C,pré)',
+     'Ȳ_T,pós − Ȳ_C,pré',
+     '(Ȳ_T,pós − Ȳ_C,pós) + (Ȳ_T,pré − Ȳ_C,pré)']),
+    { stem: 'Com as quatro médias de células (Tratado/Controle × pré/pós), qual expressão define o estimador de diferença em diferenças?',
+      sol: 'DiD = (variação dos tratados) − (variação dos controles) = (Ȳ_T,pós−Ȳ_T,pré) − (Ȳ_C,pós−Ȳ_C,pré).' });
+}});
+
+BANK.push({ id: 'apl29', course: APL, topic: 'Diferença em Diferenças', skill: 'interp', diff: 2, build() {
+  const b = rf(2, 6, 1), p = pick(['0.004', '0.012', '0.031']);
+  return Object.assign(mcText(
+    `O grupo tratado teve um aumento de ${fmt(b,1)} unidades a mais que o contrafactual (a variação que teria ocorrido sem tratamento), efeito significativo a 5%.`,
+    [`O nível do desfecho dos tratados é ${fmt(b,1)} unidades maior que o dos controles.`,
+     `O desfecho cresceu ${fmt(b,1)}% no grupo tratado.`,
+     `Os tratados e controles partiram do mesmo nível antes do tratamento.`]),
+    { stem: `Em uma regressão DiD, o coeficiente da interação Tratado×Pós foi ${fmt(b,1)} (p = ${p}). Qual a interpretação correta?`,
+      sol: `O coeficiente da interação é o efeito DiD: a variação adicional dos tratados além da tendência comum (contrafactual). É um efeito sobre a mudança, não sobre o nível, e em unidades do desfecho (não %). p=${p} ⇒ significativo a 5%.` });
+}});
+
+BANK.push({ id: 'apl30', course: APL, topic: 'Diferença em Diferenças', skill: 'erro', diff: 2, build() {
+  return Object.assign(mcText(
+    'Níveis iguais antes não é o mesmo que tendências paralelas; a hipótese é sobre a trajetória contrafactual, não sobre o nível inicial.',
+    ['O raciocínio está correto: níveis iguais antes garantem tendências paralelas.',
+     'O erro é que níveis iguais antes violam a hipótese de DiD.',
+     'O erro é que DiD não precisa de nenhuma hipótese de identificação.']),
+    { stem: 'Um aluno conclui: "como tratados e controles tinham o MESMO nível médio do desfecho antes do tratamento, a hipótese de tendências paralelas está satisfeita." O que há de errado?',
+      sol: 'DiD permite níveis diferentes (são diferenciados fora). A hipótese é de tendências paralelas: sem tratamento, as duas trajetórias evoluiriam em paralelo. Igualdade de níveis no pré não implica (nem é necessária para) isso.' });
+}});
+
+BANK.push({ id: 'apl31', course: APL, topic: 'Painel / Efeitos Fixos', skill: 'formula', diff: 2, build() {
+  return Object.assign(mcText(
+    'β̂ = Σ x̃ᵢₜ ỹᵢₜ / Σ x̃ᵢₜ²,  onde x̃ = x − x̄ᵢ (desvio da média individual)',
+    ['β̂ = Σ xᵢₜ yᵢₜ / Σ xᵢₜ²  (sem centrar nas médias individuais)',
+     'β̂ = Σ x̃ᵢₜ ỹᵢₜ / Σ ỹᵢₜ²',
+     'β̂ = Σ (xᵢₜ − x̄) (yᵢₜ − ȳ) / Σ (xᵢₜ − x̄)²  (centrando na média GERAL)']),
+    { stem: 'Qual expressão define o estimador within (efeitos fixos)?',
+      sol: 'O estimador within roda MQO nas variáveis centradas na média de cada indivíduo: β̂ = Σ x̃ỹ/Σ x̃², com x̃ᵢₜ = xᵢₜ − x̄ᵢ. Centrar na média geral (pooled) não remove o efeito fixo.' });
+}});
+
+BANK.push({ id: 'apl32', course: APL, topic: 'Painel / Efeitos Fixos', skill: 'interp', diff: 2, build() {
+  return Object.assign(mcText(
+    'A partir da variação DENTRO de cada unidade ao longo do tempo (within); características fixas da unidade não contribuem para a identificação.',
+    ['A partir das diferenças de nível ENTRE unidades (between).',
+     'A partir tanto da variação within quanto das características fixas das unidades.',
+     'A partir apenas do último período observado.']),
+    { stem: 'No estimador de efeitos fixos, de qual fonte de variação o coeficiente é identificado?',
+      sol: 'Efeitos fixos absorvem tudo o que é constante na unidade; o coeficiente vem só da variação within (ao longo do tempo dentro de cada unidade). Por isso variáveis invariantes no tempo não podem ser estimadas em FE.' });
+}});
+
+BANK.push({ id: 'apl33', course: APL, topic: 'Painel / Efeitos Fixos', skill: 'erro', diff: 3, build() {
+  return Object.assign(mcText(
+    'É necessária exogeneidade estrita: E[εᵢₜ | xᵢ₁,…,x_{iT}, αᵢ] = 0 — o regressor não pode ser correlacionado com erros de NENHUM período.',
+    ['Basta exogeneidade contemporânea: E[εᵢₜ | xᵢₜ] = 0.',
+     'Basta que não haja heterocedasticidade.',
+     'Não é necessária hipótese alguma sobre o erro além de média zero.']),
+    { stem: 'Para que o estimador de efeitos fixos (within / primeira diferença) seja não-viesado, qual hipótese sobre o erro é necessária — passo frequentemente esquecido?',
+      sol: 'A transformação within/FD mistura todos os períodos, então é preciso exogeneidade estrita (não correlação com x de qualquer período). Exogeneidade só contemporânea não basta (ex.: regressores dinâmicos geram viés de Nickell).' });
+}});
+
+BANK.push({ id: 'apl34', course: APL, topic: 'Inferência com Clusters', skill: 'erro', diff: 3, build() {
+  return Object.assign(mcText(
+    'O que governa a inferência com cluster é o NÚMERO de clusters, não o N total; com poucos clusters a aproximação assintótica falha.',
+    ['Está correto: só o N total importa para os erros-padrão com cluster.',
+     'O erro é que clusters grandes sempre invalidam a inferência.',
+     'O erro é que o número de clusters não tem qualquer papel.']),
+    { stem: 'Afirma-se: "tenho apenas 5 municípios (clusters), mas milhares de observações por município, então a inferência com erros clusterizados é confiável." Qual o problema?',
+      sol: 'A consistência do estimador de variância clusterizado depende de o número de clusters → ∞. Com poucos clusters (regra prática <~30–40), os erros-padrão são viesados para baixo e os testes super-rejeitam; usam-se correções (wild cluster bootstrap, etc.).' });
+}});
+
+BANK.push({ id: 'apl35', course: APL, topic: 'Regressão Descontínua (RDD)', skill: 'interp', diff: 2, build() {
+  const c = ri(40, 70);
+  return Object.assign(mcText(
+    `Um efeito LOCAL, válido para unidades próximas ao corte (nota ≈ ${c}); não se pode extrapolá-lo para unidades longe do corte.`,
+    [`O efeito médio para toda a população (ATE), pois usa todos os dados.`,
+     `Um efeito válido apenas para quem está exatamente acima do corte, nunca abaixo.`,
+     `Um efeito que só existe se o tratamento for aleatorizado.`]),
+    { stem: `Em um RDD com corte em ${c} pontos, o que o estimador identifica e qual sua principal limitação de validade externa?`,
+      sol: 'RDD identifica o efeito do tratamento na vizinhança do corte (LATE no limiar). Sua fraqueza é a validade externa: nada garante que o mesmo efeito valha longe do corte.' });
+}});
+
+BANK.push({ id: 'apl36', course: APL, topic: 'Regressão Descontínua (RDD)', skill: 'formula', diff: 2, build() {
+  return Object.assign(mcText(
+    'τ = limₓ↓c E[Y|X=x] − limₓ↑c E[Y|X=x]',
+    ['τ = E[Y|X>c] − E[Y|X<c]  (média de todos os pontos de cada lado)',
+     'τ = limₓ↑c E[Y|X=x] − limₓ↓c E[Y|X=x]',
+     'τ = E[Y|X=c]']),
+    { stem: 'No RDD nítido (sharp), qual expressão define o efeito do tratamento no corte c?',
+      sol: 'O efeito é o salto na função de regressão no corte: o limite pela direita menos o limite pela esquerda. Usar a média de TODOS os pontos de cada lado (não só perto do corte) gera viés.' });
+}});
+
+BANK.push({ id: 'apl37', course: APL, topic: 'Matching / Pareamento', skill: 'interp', diff: 2, build() {
+  return Object.assign(mcText(
+    'Que, condicional ao escore, a distribuição das covariáveis fica igual entre tratados e controles — removendo o desbalanceamento observável.',
+    ['Que o escore de propensão seja igual a 0,5 para todos.',
+     'Que o tratamento passe a ser aleatório também nas não-observáveis.',
+     'Que a variável de desfecho fique igual nos dois grupos.']),
+    { stem: 'Diz-se que o escore de propensão "balanceia" as covariáveis. O que isso significa?',
+      sol: 'Propriedade de balanceamento: X ⫫ D | p(X). Condicionando no escore, observáveis ficam balanceadas entre grupos. Não corrige seleção em NÃO-observáveis (a hipótese-chave continua sendo unconfoundedness).' });
+}});
+
+BANK.push({ id: 'apl38', course: APL, topic: 'Matching / Pareamento', skill: 'erro', diff: 3, build() {
+  return Object.assign(mcText(
+    'Controlar por uma variável afetada PELO tratamento (controle ruim / pós-tratamento) introduz viés, em vez de removê-lo.',
+    ['Está correto: quanto mais controles, menor sempre o viés.',
+     'O erro é que pareamento nunca deve usar covariáveis.',
+     'O erro é que só se pode parear por uma variável de cada vez.']),
+    { stem: 'Para "melhorar" o pareamento, um analista inclui entre as covariáveis uma variável que é, ela própria, consequência do tratamento. Qual o problema?',
+      sol: 'Condicionar em um "bad control" (variável pós-tratamento / mediador / colisor) viesa a estimativa: pode bloquear parte do efeito causal ou abrir caminhos espúrios. Só se deve parear por covariáveis pré-tratamento.' });
+}});
+
+BANK.push({ id: 'apl39', course: APL, topic: 'Variáveis Instrumentais', skill: 'calc', diff: 2, build() {
+  const dz1 = rf(0.6, 0.9, 2), dz0 = rf(0.1, 0.35, 2), share = dz1 - dz0;
+  return { type: 'num',
+    stem: `Com instrumento binário aleatório Z, observa-se P(D=1|Z=1) = ${fmt(dz1)} e P(D=1|Z=0) = ${fmt(dz0)}. Qual a proporção de compliers na população?`,
+    answer: share, tol: 0.01, unit: '',
+    sol: `Sob monotonicidade, a fração de compliers = P(D=1|Z=1) − P(D=1|Z=0) = ${fmt(dz1)} − ${fmt(dz0)} = <b>${fmt(share)}</b> (é exatamente o primeiro estágio).` };
+}});
+
+BANK.push({ id: 'apl40', course: APL, topic: 'Interpretação de Coeficientes', skill: 'erro', diff: 3, build() {
+  return Object.assign(mcText(
+    'Pode introduzir viés: condicionar em um colisor (variável causada por X e por Y) abre uma associação espúria entre eles.',
+    ['Nunca há problema: adicionar controles só pode reduzir o viés.',
+     'O único risco é perder graus de liberdade.',
+     'O problema é apenas multicolinearidade, que não viesa estimativas.']),
+    { stem: 'Afirma-se: "para reduzir o viés, devo sempre adicionar o máximo de controles possível." Por que esse raciocínio é falho?',
+      sol: 'Nem todo controle ajuda. Controlar por um colisor (ou por um mediador / variável pós-tratamento) pode CRIAR viés (viés de colisor/seleção). A escolha de controles deve seguir a estrutura causal, não "quanto mais, melhor".' });
+}});
+
+/* ----- Financas Corporativas (fin21 a fin40) ----- */
+BANK.push({ id: 'fin21', course: FIN, topic: 'VPL', skill: 'formula', diff: 1, build() {
+  const r = ri(8, 14);
+  return Object.assign(mcText(
+    `−C₀ + Σₜ CFₜ / (1 + ${r/100})ᵗ`,
+    [`−C₀ + Σₜ CFₜ · (1 + ${r/100})ᵗ`,
+     `C₀ + Σₜ CFₜ / (1 + ${r/100})ᵗ`,
+     `−C₀ + Σₜ CFₜ / (${r/100})ᵗ`]),
+    { stem: `Com taxa de desconto de ${r}%, qual expressão define o VPL de um projeto com investimento inicial C₀ e fluxos CFₜ?`,
+      sol: `VPL = −C₀ + Σ CFₜ/(1+r)ᵗ: descontam-se (divide) os fluxos futuros pela taxa composta e subtrai-se o investimento. Multiplicar por (1+r)ᵗ seria capitalizar, não descontar.` });
+}});
+
+BANK.push({ id: 'fin22', course: FIN, topic: 'VPL', skill: 'interp', diff: 1, build() {
+  const v = ri(50, 400);
+  return Object.assign(mcText(
+    `O projeto cria ${money(v,0)} de valor hoje, acima do retorno exigido pelo capital.`,
+    [`O projeto renderá exatamente ${money(v,0)} de lucro contábil no primeiro ano.`,
+     `A TIR do projeto é de ${money(v,0)}.`,
+     `O projeto recupera o investimento em ${v} anos.`]),
+    { stem: `Um projeto tem VPL = ${money(v,0)} à taxa apropriada. O que esse número significa?`,
+      sol: `O VPL é o valor (em R$ de hoje) criado ALÉM do custo de oportunidade do capital. VPL = ${money(v,0)} significa enriquecimento de ${money(v,0)} hoje; não é lucro contábil, TIR nem payback.` });
+}});
+
+BANK.push({ id: 'fin23', course: FIN, topic: 'WACC / Custo de Capital', skill: 'formula', diff: 2, build() {
+  return Object.assign(mcText(
+    '(E/V)·r_E + (D/V)·r_D·(1 − τ)',
+    ['(E/V)·r_E + (D/V)·r_D   (sem o benefício fiscal)',
+     '(D/V)·r_E + (E/V)·r_D·(1 − τ)   (pesos trocados)',
+     '(E/V)·r_E · (D/V)·r_D·(1 − τ)']),
+    { stem: 'Qual expressão define o WACC (V = E + D)?',
+      sol: 'WACC = (E/V)r_E + (D/V)r_D(1−τ). A dívida entra após imposto, pois os juros são dedutíveis; os pesos são E/V para equity e D/V para dívida (não trocados).' });
+}});
+
+BANK.push({ id: 'fin24', course: FIN, topic: 'WACC / Custo de Capital', skill: 'erro', diff: 2, build() {
+  return Object.assign(mcText(
+    'Misturou as taxas: fluxo de caixa LIVRE da firma (FCFF) deve ser descontado pelo WACC; o custo do equity desconta fluxos AO ACIONISTA (FCFE).',
+    ['Está correto: qualquer fluxo pode ser descontado pelo custo do equity.',
+     'O erro é usar WACC em vez do custo do equity — deveria ser sempre o custo do equity.',
+     'O erro é não somar a inflação ao custo do equity.']),
+    { stem: 'Um analista desconta o fluxo de caixa livre da firma (FCFF) usando o custo do capital próprio (r_E). Qual o problema?',
+      sol: 'Consistência fluxo–taxa: FCFF (pertence a credores + acionistas) ⇒ desconta-se pelo WACC. FCFE (só acionistas) ⇒ desconta-se por r_E. Usar r_E no FCFF subavalia a firma (r_E > WACC, em geral).' });
+}});
+
+BANK.push({ id: 'fin25', course: FIN, topic: 'TIR', skill: 'interp', diff: 2, build() {
+  const irr = rf(11, 20, 1), wacc = rf(6, 10, 1);
+  return Object.assign(mcText(
+    `Aceitar (em geral): a TIR de ${pct(irr,1)} supera o custo de capital de ${pct(wacc,1)}, indicando criação de valor para um fluxo convencional.`,
+    [`Rejeitar: TIR acima do custo de capital indica risco excessivo.`,
+     `Indiferente: a TIR não pode ser comparada ao custo de capital.`,
+     `Aceitar apenas se a TIR for menor que o custo de capital.`]),
+    { stem: `Um projeto (fluxos convencionais: uma saída seguida de entradas) tem TIR = ${pct(irr,1)} e o custo de capital é ${pct(wacc,1)}. Qual a leitura correta?`,
+      sol: `Para fluxos convencionais, aceita-se quando TIR > custo de capital (equivale a VPL>0). ${pct(irr,1)} > ${pct(wacc,1)} ⇒ aceitar. A regra inverte-se em fluxos de financiamento e pode falhar com múltiplas TIRs.` });
+}});
+
+BANK.push({ id: 'fin26', course: FIN, topic: 'TIR', skill: 'erro', diff: 2, build() {
+  return Object.assign(mcText(
+    'Para fluxos com mais de uma mudança de sinal pode haver MÚLTIPLAS TIRs (ou nenhuma); a regra "TIR > custo de capital" deixa de ser confiável.',
+    ['Está correto: toda série de fluxos tem uma única TIR.',
+     'O erro é que a TIR só existe para perpetuidades.',
+     'O erro é que a TIR ignora completamente os fluxos de caixa.']),
+    { stem: 'Um analista diz: "basta achar a TIR e compará-la ao custo de capital — sempre funciona." Em que situação esse raciocínio falha?',
+      sol: 'Pela regra de sinais de Descartes, fluxos com várias inversões de sinal podem ter múltiplas TIRs (ou nenhuma real). Nesses casos a TIR não ordena bem; o VPL é o critério seguro.' });
+}});
+
+BANK.push({ id: 'fin27', course: FIN, topic: 'Avaliação por Perpetuidade', skill: 'formula', diff: 2, build() {
+  return Object.assign(mcText(
+    'CF₁ / (r − g)',
+    ['CF₁ / (r + g)',
+     'CF₁ · (r − g)',
+     'CF₁ / r   (ignorando o crescimento)']),
+    { stem: 'Qual expressão dá o valor presente de uma perpetuidade que paga CF₁ no próximo ano e cresce à taxa g (com r > g)?',
+      sol: 'Perpetuidade crescente (Gordon): VP = CF₁/(r−g). Exige r > g; sem crescimento (g=0) reduz-se a CF₁/r.' });
+}});
+
+BANK.push({ id: 'fin28', course: FIN, topic: 'Fluxos de Caixa Relevantes', skill: 'erro', diff: 2, build() {
+  return Object.assign(mcText(
+    'Depreciação NÃO é saída de caixa; ela só afeta o fluxo indiretamente, via redução do imposto (escudo fiscal = depreciação × alíquota).',
+    ['Está correto: depreciação é uma saída de caixa e deve ser subtraída integralmente.',
+     'O erro é somar (em vez de subtrair) a depreciação inteira ao fluxo.',
+     'O erro é que depreciação deve ser ignorada inclusive no cálculo do imposto.']),
+    { stem: 'No cálculo do fluxo de caixa de um projeto, um aluno subtrai a depreciação inteira como se fosse um desembolso. Qual o erro?',
+      sol: 'Depreciação é despesa contábil, não caixa. Entra apenas pelo efeito tributário: reduz o lucro tributável e, portanto, o imposto. O relevante é o escudo fiscal (dep × τ), não o valor cheio.' });
+}});
+
+BANK.push({ id: 'fin29', course: FIN, topic: 'Fluxos de Caixa Relevantes', skill: 'interp', diff: 2, build() {
+  const dep = ri(100, 300), tax = ri(20, 34);
+  return Object.assign(mcText(
+    `A depreciação reduz o imposto a pagar, economizando ${money(dep*tax/100,0)} de caixa no ano.`,
+    [`A depreciação gera uma entrada de caixa de ${money(dep,0)}.`,
+     `A depreciação não tem qualquer efeito sobre o caixa.`,
+     `A depreciação aumenta o imposto pago em ${money(dep*tax/100,0)}.`]),
+    { stem: `Com depreciação de ${money(dep,0)} e alíquota de ${tax}%, qual a leitura econômica do "escudo fiscal"?`,
+      sol: `O escudo fiscal = dep × τ = ${money(dep*tax/100,0)}: é o imposto que se DEIXA de pagar por causa da despesa de depreciação. Logo, é uma economia (entrada relativa) de caixa, não uma saída.` });
+}});
+
+BANK.push({ id: 'fin30', course: FIN, topic: 'CAPM / Custo do Equity', skill: 'formula', diff: 1, build() {
+  return Object.assign(mcText(
+    'r_f + β·(r_m − r_f)',
+    ['r_f + β·r_m',
+     'r_f · β·(r_m − r_f)',
+     '(r_m − r_f) + β·r_f']),
+    { stem: 'Qual expressão define o custo do capital próprio pelo CAPM?',
+      sol: 'CAPM: r_E = r_f + β·(r_m − r_f). O termo (r_m − r_f) é o prêmio de risco de mercado, multiplicado pelo β (risco sistemático) e somado à taxa livre de risco.' });
+}});
+
+BANK.push({ id: 'fin31', course: FIN, topic: 'CAPM / Custo do Equity', skill: 'interp', diff: 2, build() {
+  const beta = rf(1.1, 1.8, 2);
+  return Object.assign(mcText(
+    `A ação tem mais risco sistemático que o mercado: tende a variar ${fmt(beta,2)}% para cada 1% de variação do mercado, exigindo retorno maior.`,
+    [`A ação tem risco TOTAL ${fmt(beta,2)} vezes maior, incluindo o risco diversificável.`,
+     `Beta > 1 garante retorno realizado maior que o mercado em qualquer ano.`,
+     `Beta mede o risco específico da empresa, que não é remunerado.`]),
+    { stem: `Uma ação tem β = ${fmt(beta,2)}. O que isso significa?`,
+      sol: `Beta mede risco SISTEMÁTICO (não diversificável): β=${fmt(beta,2)} ⇒ sensibilidade ${fmt(beta,2)} aos movimentos do mercado e, por isso, maior retorno EXIGIDO. Não é risco total, não é garantia de retorno realizado, e não é o risco específico (esse não é remunerado).` });
+}});
+
+BANK.push({ id: 'fin32', course: FIN, topic: 'Estrutura de Capital (MM)', skill: 'erro', diff: 2, build() {
+  return Object.assign(mcText(
+    'Ignora que mais dívida eleva o risco — e o custo — do capital próprio (MM-II); sem impostos, o WACC e o valor da firma não mudam.',
+    ['Está correto: como dívida é mais barata, alavancar sempre cria valor.',
+     'O erro é que dívida é, na verdade, mais cara que equity.',
+     'O erro é que a firma deveria usar 100% de equity para minimizar o WACC.']),
+    { stem: 'Afirmação: "como a dívida custa menos que o equity, aumentar a alavancagem sempre reduz o WACC e aumenta o valor da firma." Por que está errado (no mundo MM sem impostos)?',
+      sol: 'MM-II: r_E sobe linearmente com D/E, compensando exatamente a maior fatia de dívida barata. Sem impostos/fricções, o WACC fica constante e o valor independe da estrutura (MM-I). O ganho aparente da dívida barata é ilusório.' });
+}});
+
+BANK.push({ id: 'fin33', course: FIN, topic: 'Estrutura de Capital (MM)', skill: 'formula', diff: 2, build() {
+  return Object.assign(mcText(
+    'r_U + (D/E)·(r_U − r_D)',
+    ['r_U + (D/E)·(r_D − r_U)',
+     'r_U + (E/D)·(r_U − r_D)',
+     'r_U · (1 + D/E)']),
+    { stem: 'Pela Proposição II de MM (sem impostos), qual expressão dá o custo do capital próprio alavancado r_E?',
+      sol: 'r_E = r_U + (D/E)(r_U − r_D). O prêmio por alavancagem é proporcional a D/E e ao spread (r_U − r_D). Inverter o spread ou usar E/D estaria errado.' });
+}});
+
+BANK.push({ id: 'fin34', course: FIN, topic: 'Avaliação com Alavancagem (APV)', skill: 'erro', diff: 3, build() {
+  return Object.assign(mcText(
+    'Falta somar o valor presente dos efeitos colaterais do financiamento — principalmente o escudo fiscal da dívida: V_L = V_U + VP(escudo fiscal).',
+    ['Nada falta: V_L = V_U sempre, mesmo com impostos.',
+     'Falta subtrair o escudo fiscal, pois a dívida destrói valor.',
+     'Falta multiplicar V_U pela alíquota de imposto.']),
+    { stem: 'Um aluno escreve, no método APV, que o valor da firma alavancada é V_L = V_U e para por aí. Qual o passo faltante?',
+      sol: 'APV = valor sem alavancagem + VP dos efeitos do financiamento. O principal é o escudo fiscal da dívida (com dívida permanente, τ·D). Pode incluir custos de dificuldades financeiras, etc. Com impostos, V_L > V_U.' });
+}});
+
+BANK.push({ id: 'fin35', course: FIN, topic: 'Avaliação por Perpetuidade', skill: 'calc', diff: 2, build() {
+  const cf = ri(80, 200), r = rf(9, 14, 1) / 100, g = rf(2, 5, 1) / 100, v = cf / (r - g);
+  return { type: 'num',
+    stem: `Uma empresa pagará um fluxo de ${money(cf,0)} no próximo ano, crescendo ${pct(g*100,1)} ao ano para sempre. À taxa de ${pct(r*100,1)}, qual o valor presente (modelo de Gordon, em R$)?`,
+    answer: v, tol: Math.max(1, v * 0.01), unit: 'R$',
+    sol: `VP = CF₁/(r − g) = ${cf}/(${fmt(r)} − ${fmt(g)}) = ${cf}/${fmt(r-g)} = <b>${money(v)}</b>.` };
+}});
+
+BANK.push({ id: 'fin36', course: FIN, topic: 'Payback', skill: 'interp', diff: 2, build() {
+  return Object.assign(mcText(
+    'O Projeto A: o payback ignora tudo após a recuperação, podendo descartar um projeto de maior VPL só por demorar a se pagar.',
+    ['O Projeto B sempre, pois payback menor é critério suficiente de valor.',
+     'São equivalentes, pois payback e VPL sempre coincidem.',
+     'Nenhum, pois projetos com payback longo nunca criam valor.']),
+    { stem: 'O Projeto A tem payback de 4 anos e VPL alto (gera muitos fluxos depois); o Projeto B tem payback de 2 anos e VPL baixo. Por que escolher só pelo payback pode levar à decisão errada?',
+      sol: 'O payback ignora valor do dinheiro no tempo e, sobretudo, todos os fluxos após o ponto de recuperação. Pode preferir B (recupera rápido) e perder o valor superior de A. O critério de valor é o VPL.' });
+}});
+
+BANK.push({ id: 'fin37', course: FIN, topic: 'Capital de Giro', skill: 'formula', diff: 1, build() {
+  return Object.assign(mcText(
+    'DIO + DSO − DPO',
+    ['DIO − DSO + DPO',
+     'DIO + DSO + DPO',
+     'DSO + DPO − DIO']),
+    { stem: 'Qual expressão define o ciclo de conversão de caixa? (DIO=prazo de estoques, DSO=prazo de recebimento, DPO=prazo de pagamento)',
+      sol: 'CCC = DIO + DSO − DPO: tempo para girar estoque e receber, menos o prazo que se leva para pagar fornecedores. Maior DPO encurta o ciclo (por isso entra com sinal negativo).' });
+}});
+
+BANK.push({ id: 'fin38', course: FIN, topic: 'TIR', skill: 'erro', diff: 2, build() {
+  return Object.assign(mcText(
+    'TIR positiva não basta: é preciso comparar à taxa de desconto (custo de capital). Um projeto com TIR positiva mas abaixo do custo de capital destrói valor (VPL<0).',
+    ['Está correto: TIR positiva sempre significa VPL positivo.',
+     'O erro é que projetos com TIR positiva nunca devem ser aceitos.',
+     'O erro é que a TIR deve ser comparada à inflação, não ao custo de capital.']),
+    { stem: 'Afirmação: "a TIR deste projeto é positiva (8%), então ele deve ser aceito." Por que o raciocínio é incompleto?',
+      sol: 'O critério é TIR vs. custo de capital. Se o custo de capital for, digamos, 12%, uma TIR de 8% implica VPL<0 ⇒ rejeitar. TIR positiva apenas indica que se recupera o principal com algum retorno, não que se supera o custo de oportunidade.' });
+}});
+
+BANK.push({ id: 'fin39', course: FIN, topic: 'Opções Reais', skill: 'interp', diff: 2, build() {
+  return Object.assign(mcText(
+    'A flexibilidade de esperar por mais informação tem valor; com VPL ligeiramente positivo hoje, pode valer mais adiar e exercer só se as condições melhorarem.',
+    ['Como o VPL é positivo, deve-se sempre investir imediatamente, sem exceção.',
+     'A opção de esperar só tem valor se o VPL já for negativo.',
+     'Maior incerteza reduz o valor de esperar.']),
+    { stem: 'Um projeto irreversível tem VPL ligeiramente positivo, mas há grande incerteza que se resolverá no próximo ano. Por que adiar pode ser melhor que investir já?',
+      sol: 'Há valor de opção em esperar: investir é irreversível, então aguardar resolve incerteza e evita perdas no cenário ruim. Com incerteza alta, esse valor de espera pode exceder o VPL de investir agora.' });
+}});
+
+BANK.push({ id: 'fin40', course: FIN, topic: 'VPL', skill: 'calc', diff: 2, build() {
+  const inv = ri(800, 1500), pv = Number((inv * rf(1.05, 1.4, 2)).toFixed(0)), pi = pv / inv;
+  return { type: 'num',
+    stem: `Um projeto exige investimento de ${money(inv,0)} e o valor presente dos seus fluxos futuros é ${money(pv,0)}. Qual o índice de lucratividade (PI)?`,
+    answer: pi, tol: 0.02, unit: '',
+    sol: `PI = VP dos fluxos / Investimento = ${pv}/${inv} = <b>${fmt(pi)}</b>. PI > 1 equivale a VPL > 0 (aqui VPL = ${money(pv-inv,0)}).` };
+}});
+
+/* ----- Econometria II (ser21 a ser40) ----- */
+BANK.push({ id: 'ser21', course: SER, topic: 'AR / ARMA', skill: 'formula', diff: 1, build() {
+  const c = rf(1, 4, 1), phi = rf(0.3, 0.7, 2);
+  return Object.assign(mcText(
+    `${fmt(c,1)} / (1 − ${fmt(phi)})`,
+    [`${fmt(c,1)} / (1 + ${fmt(phi)})`,
+     `${fmt(c,1)} · (1 − ${fmt(phi)})`,
+     `${fmt(phi)} / (1 − ${fmt(c,1)})`]),
+    { stem: `Para o AR(1) Yₜ = ${fmt(c,1)} + ${fmt(phi)}·Yₜ₋₁ + εₜ, qual expressão dá a média incondicional?`,
+      sol: `E[Y] = c/(1−φ) = ${fmt(c,1)}/(1−${fmt(phi)}). Vem de E[Y]=c+φE[Y] ⇒ E[Y](1−φ)=c.` });
+}});
+
+BANK.push({ id: 'ser22', course: SER, topic: 'AR / ARMA', skill: 'formula', diff: 2, build() {
+  const phi = rf(0.3, 0.7, 2);
+  return Object.assign(mcText(
+    `σ² / (1 − ${fmt(phi)}²)`,
+    [`σ² / (1 − ${fmt(phi)})`,
+     `σ² · (1 − ${fmt(phi)}²)`,
+     `σ² / (${fmt(phi)}² − 1)`]),
+    { stem: `Para o AR(1) com φ = ${fmt(phi)} e Var(εₜ)=σ², qual expressão dá a variância incondicional de Yₜ?`,
+      sol: `γ₀ = σ²/(1−φ²). De Var(Y)=φ²Var(Y)+σ² ⇒ Var(Y)(1−φ²)=σ². Atenção: é φ AO QUADRADO no denominador.` });
+}});
+
+BANK.push({ id: 'ser23', course: SER, topic: 'Estacionariedade / FAC', skill: 'interp', diff: 2, build() {
+  const phi = pick([0.2, 0.45, 0.9]);
+  const lvl = phi < 0.35 ? 'baixa' : (phi < 0.7 ? 'moderada' : 'alta');
+  return Object.assign(mcText(
+    `Persistência ${lvl}: choques se dissipam ${phi<0.35?'rápido':(phi<0.7?'em ritmo intermediário':'lentamente')}, e a FAC decai como ${fmt(phi,2)}ᵏ.`,
+    [`Persistência sempre máxima, independentemente de φ.`,
+     `A série é não-estacionária porque φ > 0.`,
+     `A FAC é constante e igual a ${fmt(phi,2)} em todos os lags.`]),
+    { stem: `Em um AR(1) estima-se φ = ${fmt(phi,2)}. Como interpretar essa magnitude?`,
+      sol: `Em AR(1) estacionário, φ governa a persistência: ρ(k)=φᵏ decai geometricamente. φ=${fmt(phi,2)} ⇒ persistência ${lvl}; quanto mais próximo de 1, mais lenta a reversão à média.` });
+}});
+
+BANK.push({ id: 'ser24', course: SER, topic: 'AR / ARMA', skill: 'erro', diff: 2, build() {
+  return Object.assign(mcText(
+    'Esqueceu de elevar φ ao quadrado: o correto é σ²/(1 − φ²), não σ²/(1 − φ).',
+    ['Não há erro; a expressão está correta.',
+     'O erro é o numerador: deveria ser σ⁴.',
+     'O erro é o sinal: deveria ser σ²/(φ² − 1).']),
+    { stem: 'Ao derivar a variância de um AR(1), um aluno escreve Var(Yₜ) = σ²/(1 − φ). Qual o erro?',
+      sol: 'De Yₜ−μ = φ(Yₜ₋₁−μ)+εₜ, tomando variâncias (e usando independência de εₜ): Var(Y)=φ²Var(Y)+σ². Logo Var(Y)=σ²/(1−φ²). O aluno omitiu o quadrado de φ.' });
+}});
+
+BANK.push({ id: 'ser25', course: SER, topic: 'Ruído Branco / MA', skill: 'erro', diff: 3, build() {
+  return Object.assign(mcText(
+    'Dividir a autocovariância γ(1) = θσ² pela variância γ(0) = (1+θ²)σ² — o passo de normalização que dá ρ(1)=θ/(1+θ²).',
+    ['Elevar θ ao cubo no numerador.',
+     'Assumir que εₜ não é ruído branco.',
+     'Somar as autocovariâncias de todos os lags.']),
+    { stem: 'Para mostrar que, num MA(1), ρ(1) = θ/(1+θ²), qual é o passo essencial da derivação?',
+      sol: 'γ(0)=Var(Y)=(1+θ²)σ² e γ(1)=Cov(Yₜ,Yₜ₋₁)=θσ². A autocorrelação é a razão: ρ(1)=γ(1)/γ(0)=θσ²/[(1+θ²)σ²]=θ/(1+θ²). A normalização pela variância é o passo-chave.' });
+}});
+
+BANK.push({ id: 'ser26', course: SER, topic: 'Ruído Branco / MA', skill: 'formula', diff: 2, build() {
+  const th = rf(0.3, 0.8, 2);
+  return Object.assign(mcText(
+    `${fmt(th)} / (1 + ${fmt(th)}²)`,
+    [`${fmt(th)} / (1 − ${fmt(th)}²)`,
+     `${fmt(th)}² / (1 + ${fmt(th)})`,
+     `(1 + ${fmt(th)}²) / ${fmt(th)}`]),
+    { stem: `Para o MA(1) Yₜ = εₜ + ${fmt(th)}·εₜ₋₁, qual expressão dá ρ(1)?`,
+      sol: `ρ(1) = θ/(1+θ²) = ${fmt(th)}/(1+${fmt(th)}²). E ρ(k)=0 para k≥2 — a FAC "corta" após o lag 1.` });
+}});
+
+BANK.push({ id: 'ser27', course: SER, topic: 'Ruído Branco / MA', skill: 'interp', diff: 2, build() {
+  return Object.assign(mcText(
+    'Não: por definição não tem autocorrelação, então o passado não ajuda a prever o futuro — a melhor previsão é a média (0).',
+    ['Sim: como a variância é constante, é fácil prever o próximo valor.',
+     'Sim: ruído branco é sempre crescente, então basta extrapolar a tendência.',
+     'Não: porque ruído branco é necessariamente não-estacionário.']),
+    { stem: 'É possível prever (melhor que a média) o próximo valor de um processo de ruído branco a partir de seu passado?',
+      sol: 'Ruído branco tem Cov(εₜ,εₜ₋ₖ)=0: nenhuma estrutura temporal explorável. A previsão ótima de εₜ₊₁ dado o passado é sua média (0). É estacionário, não tem tendência.' });
+}});
+
+BANK.push({ id: 'ser28', course: SER, topic: 'Raiz Unitária / Regressão Espúria', skill: 'erro', diff: 2, build() {
+  return Object.assign(mcText(
+    'Com séries I(1), R² alto e t "significativos" podem ser espúrios; é preciso checar a ordem de integração (e a autocorrelação dos resíduos / DW) antes de concluir.',
+    ['Está correto: R² alto sempre indica boa especificação.',
+     'O erro é que R² baixo, e não alto, indicaria regressão espúria.',
+     'O erro é que séries temporais não têm R².']),
+    { stem: 'Um aluno regride duas séries macroeconômicas em nível, obtém R² = 0,97 e t enormes, e conclui "excelente modelo". Por que isso pode ser um erro?',
+      sol: 'Se as séries forem I(1) e não cointegradas, a regressão é espúria: R² e t altos são artefatos da tendência estocástica comum (DW costuma ser baixíssimo). Deve-se testar raiz unitária/cointegração ou estimar em diferenças.' });
+}});
+
+BANK.push({ id: 'ser29', course: SER, topic: 'GARCH / Volatilidade', skill: 'formula', diff: 2, build() {
+  const w = rf(0.2, 1, 2), a = rf(0.05, 0.2, 2), b = rf(0.6, 0.8, 2);
+  return Object.assign(mcText(
+    `${fmt(w)} / (1 − ${fmt(a)} − ${fmt(b)})`,
+    [`${fmt(w)} / (1 − ${fmt(a)}·${fmt(b)})`,
+     `${fmt(w)} / (${fmt(a)} + ${fmt(b)})`,
+     `${fmt(w)} · (1 − ${fmt(a)} − ${fmt(b)})`]),
+    { stem: `Para o GARCH(1,1) σ²ₜ = ${fmt(w)} + ${fmt(a)}·ε²ₜ₋₁ + ${fmt(b)}·σ²ₜ₋₁, qual expressão dá a variância incondicional?`,
+      sol: `σ² = ω/(1−α−β) = ${fmt(w)}/(1−${fmt(a)}−${fmt(b)}). Requer α+β<1 para ser positiva e finita.` });
+}});
+
+BANK.push({ id: 'ser30', course: SER, topic: 'GARCH / Volatilidade', skill: 'interp', diff: 2, build() {
+  const a = 0.1, b = 0.88;
+  return Object.assign(mcText(
+    'Volatilidade muito persistente: choques na variância demoram a se dissipar, gerando longos períodos de alta (e de baixa) volatilidade (clustering).',
+    ['Volatilidade constante no tempo, sem clustering.',
+     'A variância incondicional é negativa.',
+     'A série do retorno tem média explosiva.']),
+    { stem: `Em um GARCH(1,1) estima-se α = ${fmt(a)} e β = ${fmt(b)} (α+β = ${fmt(a+b)}). Como interpretar?`,
+      sol: `α+β mede a persistência da volatilidade. ${fmt(a+b)} é próximo de 1 ⇒ choques de variância decaem devagar: clusters de volatilidade duradouros. Ainda <1, então há variância incondicional finita (estacionária em covariância).` });
+}});
+
+BANK.push({ id: 'ser31', course: SER, topic: 'Raiz Unitária / Regressão Espúria', skill: 'erro', diff: 3, build() {
+  return Object.assign(mcText(
+    'Usa-se que os incrementos εₜ são não-correlacionados, de modo que a variância da soma é a soma das variâncias: Var(Σₛ₌₁ᵗ εₛ) = t·σ².',
+    ['Usa-se que os εₜ têm média crescente no tempo.',
+     'Usa-se que φ < 1, garantindo estacionariedade.',
+     'Usa-se que Yₜ tem variância constante.']),
+    { stem: 'Na derivação de que, no passeio aleatório Yₜ = Y₀ + Σₛ εₛ, vale Var(Yₜ) = t·σ², qual é o passo/hipótese essencial?',
+      sol: 'Como Yₜ = Y₀ + Σₛ₌₁ᵗ εₛ e os εₛ são não-correlacionados, Var(Σεₛ) = Σ Var(εₛ) = t·σ². A variância cresce com t — daí a não-estacionariedade do passeio aleatório.' });
+}});
+
+BANK.push({ id: 'ser32', course: SER, topic: 'Raiz Unitária / Regressão Espúria', skill: 'erro', diff: 2, build() {
+  return Object.assign(mcText(
+    'Inverteu a hipótese nula: no ADF, H₀ É a existência de raiz unitária. Rejeitar H₀ aponta ESTACIONARIEDADE, não raiz unitária.',
+    ['Está correto: rejeitar H₀ no ADF indica raiz unitária.',
+     'O erro é que o ADF testa cointegração, não raiz unitária.',
+     'O erro é que o ADF nunca permite rejeitar H₀.']),
+    { stem: 'Afirmação: "no teste ADF, rejeitar a hipótese nula indica que a série tem raiz unitária." Qual o problema?',
+      sol: 'No ADF, H₀: existe raiz unitária (não-estacionária) vs. H₁: estacionária. Logo, rejeitar H₀ (estatística mais negativa que o valor crítico) é evidência de ESTACIONARIEDADE — o oposto do afirmado.' });
+}});
+
+BANK.push({ id: 'ser33', course: SER, topic: 'ARDL / Multiplicadores', skill: 'formula', diff: 2, build() {
+  const a1 = rf(0.4, 0.7, 2);
+  return Object.assign(mcText(
+    `(β₀ + β₁) / (1 − ${fmt(a1)})`,
+    [`β₀ / (1 − ${fmt(a1)})`,
+     `(β₀ + β₁) · (1 − ${fmt(a1)})`,
+     `(β₀ + β₁) / (1 + ${fmt(a1)})`]),
+    { stem: `No ARDL(1,1) Yₜ = α₀ + ${fmt(a1)}·Yₜ₋₁ + β₀Xₜ + β₁Xₜ₋₁ + εₜ, qual expressão dá o multiplicador de LONGO PRAZO de X?`,
+      sol: `No estado estacionário (Y e X constantes), Y* = α₀ + α₁Y* + (β₀+β₁)X* ⇒ multiplicador = (β₀+β₁)/(1−α₁). O multiplicador de IMPACTO é apenas β₀.` });
+}});
+
+BANK.push({ id: 'ser34', course: SER, topic: 'ARDL / Multiplicadores', skill: 'interp', diff: 2, build() {
+  const lr = rf(0.6, 1.6, 2);
+  return Object.assign(mcText(
+    `Um aumento permanente de 1 unidade em X eleva Y, no novo equilíbrio de longo prazo, em ${fmt(lr,2)} unidades (somando todos os efeitos defasados).`,
+    [`X explica ${fmt(lr*100,0)}% da variância de Y.`,
+     `O efeito instantâneo (no mesmo período) de X sobre Y é ${fmt(lr,2)}.`,
+     `Y converge para ${fmt(lr,2)} independentemente de X.`]),
+    { stem: `Em um ARDL, estimou-se um multiplicador de longo prazo de ${fmt(lr,2)}. O que ele significa?`,
+      sol: `O multiplicador de longo prazo é o efeito acumulado total sobre Y de uma mudança PERMANENTE unitária em X, após todos os ajustes dinâmicos. Difere do efeito de impacto (instantâneo) e não é um R².` });
+}});
+
+BANK.push({ id: 'ser35', course: SER, topic: 'Cointegração', skill: 'erro', diff: 3, build() {
+  return Object.assign(mcText(
+    'Cointegração é um conceito para séries I(1) (não-estacionárias): exige que cada série seja I(1) mas exista uma combinação linear I(0). Séries já I(0) não "cointegram".',
+    ['Está correto: quaisquer duas séries estacionárias são cointegradas.',
+     'O erro é que cointegração exige que as séries sejam ruído branco.',
+     'O erro é que cointegração só vale para uma única série.']),
+    { stem: 'Afirmação: "minhas duas séries são estacionárias (I(0)) e muito correlacionadas, logo são cointegradas." Qual o problema conceitual?',
+      sol: 'Cointegração pressupõe variáveis I(1) cuja combinação linear é I(0) (relação de equilíbrio de longo prazo entre séries com tendência estocástica). Se já são I(0), o conceito não se aplica — correlação alta é só correlação.' });
+}});
+
+BANK.push({ id: 'ser36', course: SER, topic: 'Estacionariedade / FAC', skill: 'formula', diff: 1, build() {
+  const phi = rf(0.4, 0.8, 2);
+  return Object.assign(mcText(
+    `${fmt(phi)}ᵏ`,
+    [`k · ${fmt(phi)}`,
+     `${fmt(phi)} / k`,
+     `${fmt(phi)}⁻ᵏ`]),
+    { stem: `Para um AR(1) estacionário com φ = ${fmt(phi)}, qual expressão dá a função de autocorrelação ρ(k)?`,
+      sol: `Em AR(1), ρ(k) = φᵏ: decaimento geométrico com o lag. Por isso a FAC decai (não corta) e a FACP corta após o lag 1.` });
+}});
+
+BANK.push({ id: 'ser37', course: SER, topic: 'VAR / Granger', skill: 'interp', diff: 2, build() {
+  return Object.assign(mcText(
+    'Apenas que o passado de X ajuda a prever Y; é um conceito preditivo, que NÃO implica causalidade estrutural/econômica.',
+    ['Que X é a causa econômica de Y, comprovadamente.',
+     'Que X e Y são contemporaneamente independentes.',
+     'Que Y tem raiz unitária e X não.']),
+    { stem: 'Em um VAR, conclui-se que "X Granger-causa Y". O que (não) se pode afirmar?',
+      sol: 'Granger-causalidade = poder preditivo do passado de X sobre Y, controlando o passado de Y. Não estabelece mecanismo causal: pode haver variável omitida, antecipação, ou causalidade reversa contemporânea.' });
+}});
+
+BANK.push({ id: 'ser38', course: SER, topic: 'Previsão', skill: 'erro', diff: 3, build() {
+  return Object.assign(mcText(
+    'Tomar a esperança condicional ao passado e usar E[εₜ₊₁ | Iₜ] = 0, o que elimina o choque futuro da previsão.',
+    ['Substituir εₜ₊₁ pelo seu maior valor histórico.',
+     'Assumir que Yₜ₊₁ = Yₜ (passeio aleatório).',
+     'Ignorar a média μ do processo.']),
+    { stem: 'Para obter a previsão ótima Ŷₜ₊₁ = μ + φ(Yₜ − μ) de um AR(1), qual passo é essencial?',
+      sol: 'Aplica-se E[·|Iₜ] em Yₜ₊₁ = μ + φ(Yₜ−μ) + εₜ₊₁. Como E[εₜ₊₁|Iₜ]=0, o choque futuro some e resta Ŷₜ₊₁ = μ + φ(Yₜ−μ). A esperança condicional é a previsão de erro quadrático mínimo.' });
+}});
+
+BANK.push({ id: 'ser39', course: SER, topic: 'Previsão', skill: 'formula', diff: 3, build() {
+  const phi = rf(0.4, 0.8, 2);
+  return Object.assign(mcText(
+    `σ²·(1 − ${fmt(phi)}^{2h}) / (1 − ${fmt(phi)}²)`,
+    [`σ²·(1 − ${fmt(phi)}^{h}) / (1 − ${fmt(phi)})`,
+     `σ² / (1 − ${fmt(phi)}²)`,
+     `h·σ²`]),
+    { stem: `Para um AR(1) com φ = ${fmt(phi)} e Var(εₜ)=σ², qual expressão dá a variância do erro de previsão h passos à frente?`,
+      sol: `Var(eₜ₊ₕ) = σ²(1−φ^{2h})/(1−φ²) = σ²Σⱼ₌₀^{h−1} φ^{2j}. Para h=1 dá σ²; quando h→∞ tende a σ²/(1−φ²), a variância incondicional.` });
+}});
+
+BANK.push({ id: 'ser40', course: SER, topic: 'Raiz Unitária / Regressão Espúria', skill: 'erro', diff: 3, build() {
+  return Object.assign(mcText(
+    'Sobre-diferenciação: diferenciar uma série já estacionária introduz uma raiz unitária no componente MA (não-invertível) e infla a variância — piora o modelo.',
+    ['Está correto: diferenciar sempre melhora qualquer série.',
+     'O problema é que diferenciar muda a média, mas nunca a variância.',
+     'O problema é que a diferença de uma série estacionária deixa de ter média zero.']),
+    { stem: 'Afirmação: "na dúvida, sempre diferencie a série — nunca faz mal." Por que isso é falho?',
+      sol: 'Diferenciar uma série I(0) gera sobre-diferenciação: aparece uma raiz MA unitária (não-invertível), a estrutura de autocorrelação fica distorcida e a variância aumenta. Diferencia-se apenas quando há raiz unitária (série I(1)).' });
+}});
+
 /* ---------- meta ---------- */
 const COURSES = {
   aplicada: 'Econometria Aplicada',
@@ -851,9 +1495,15 @@ if (typeof module !== 'undefined' && module.exports) {
 /* ============ UI ============ */
 (function () {
   const $ = (s) => document.querySelector(s);
-  const state = { course: 'aplicada', topics: new Set(), test: [], graded: false };
+  const state = {
+    course: 'aplicada', topics: new Set(),
+    diffs: new Set([1, 2, 3]),
+    skills: new Set(Object.keys(SKILL)),
+    test: [], graded: false,
+  };
 
   const coursesEl = $('#courses'), topicsEl = $('#topics');
+  const diffsEl = $('#diffs'), skillsEl = $('#skills'), availEl = $('#avail');
   const examWrap = $('#examWrap'), examEl = $('#exam'), scoreBox = $('#scoreBox');
 
   function topicsOf(course) {
@@ -867,7 +1517,7 @@ if (typeof module !== 'undefined' && module.exports) {
       const b = document.createElement('button');
       b.className = 'pr-pill' + (c === state.course ? ' active' : '');
       b.textContent = COURSES[c];
-      b.onclick = () => { state.course = c; state.topics = new Set(topicsOf(c)); renderCourses(); renderTopics(); };
+      b.onclick = () => { state.course = c; state.topics = new Set(topicsOf(c)); renderCourses(); renderTopics(); updateAvail(); };
       coursesEl.appendChild(b);
     });
   }
@@ -875,25 +1525,56 @@ if (typeof module !== 'undefined' && module.exports) {
   function renderTopics() {
     topicsEl.innerHTML = '';
     topicsOf(state.course).forEach((t) => {
-      const id = 'tp_' + btoa(unescape(encodeURIComponent(t))).replace(/=/g, '');
       const lab = document.createElement('label'); lab.className = 'pr-topic';
-      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = t; cb.id = id;
+      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = t;
       cb.checked = state.topics.has(t);
-      cb.onchange = () => { cb.checked ? state.topics.add(t) : state.topics.delete(t); };
+      cb.onchange = () => { cb.checked ? state.topics.add(t) : state.topics.delete(t); updateAvail(); };
       lab.appendChild(cb); lab.appendChild(document.createTextNode(t));
       topicsEl.appendChild(lab);
     });
   }
 
-  $('#selAll').onclick = () => { state.topics = new Set(topicsOf(state.course)); renderTopics(); };
-  $('#selNone').onclick = () => { state.topics = new Set(); renderTopics(); };
+  $('#selAll').onclick = () => { state.topics = new Set(topicsOf(state.course)); renderTopics(); updateAvail(); };
+  $('#selNone').onclick = () => { state.topics = new Set(); renderTopics(); updateAvail(); };
+
+  function renderDiffs() {
+    diffsEl.innerHTML = '';
+    [1, 2, 3].forEach((d) => {
+      const c = document.createElement('span');
+      c.className = 'chip' + (state.diffs.has(d) ? ' on' : '');
+      c.textContent = DIFF[d];
+      c.onclick = () => { state.diffs.has(d) ? state.diffs.delete(d) : state.diffs.add(d); renderDiffs(); updateAvail(); };
+      diffsEl.appendChild(c);
+    });
+  }
+
+  function renderSkills() {
+    skillsEl.innerHTML = '';
+    Object.keys(SKILL).forEach((s) => {
+      const c = document.createElement('span');
+      c.className = 'chip' + (state.skills.has(s) ? ' on' : '');
+      c.textContent = SKILL[s];
+      c.onclick = () => { state.skills.has(s) ? state.skills.delete(s) : state.skills.add(s); renderSkills(); updateAvail(); };
+      skillsEl.appendChild(c);
+    });
+  }
+
+  function pool() {
+    return BANK.filter((it) => it.course === state.course && state.topics.has(it.topic) &&
+      state.diffs.has(it.diff) && state.skills.has(it.skill));
+  }
+
+  function updateAvail() {
+    const n = pool().length;
+    availEl.textContent = n + ' exercicio(s) disponivel(is) com os filtros atuais';
+    availEl.classList.toggle('warn', n === 0);
+  }
 
   function buildTest() {
     const n = parseInt($('#count').value, 10);
-    const pool = BANK.filter((it) => it.course === state.course && state.topics.has(it.topic));
-    if (!pool.length) return null;
-    // distinct generators first, then allow reuse (different random params)
-    const order = shuffle(pool.slice());
+    const p = pool();
+    if (!p.length) return null;
+    const order = shuffle(p.slice());
     const chosen = [];
     let i = 0;
     while (chosen.length < n) {
@@ -912,30 +1593,29 @@ if (typeof module !== 'undefined' && module.exports) {
   function renderExam() {
     examEl.innerHTML = '';
     state.test.forEach((entry, idx) => {
-      const { it, q } = entry;
+      const it = entry.it, q = entry.q;
       const card = document.createElement('div'); card.className = 'q'; card.dataset.idx = idx;
-      let html = `<div class="q-head">
-        <span class="q-num">${idx + 1}.</span>
-        <span class="badge topic">${it.topic}</span>
-        <span class="badge skill">${skillBadge(it.skill)}</span>
-        <span class="badge d${it.diff}">${DIFF[it.diff]}</span>
-      </div>
-      <div class="q-stem">${q.stem}</div>`;
-
+      let html = '<div class="q-head">' +
+        '<span class="q-num">' + (idx + 1) + '.</span>' +
+        '<span class="badge topic">' + it.topic + '</span>' +
+        '<span class="badge skill">' + skillBadge(it.skill) + '</span>' +
+        '<span class="badge d' + it.diff + '">' + DIFF[it.diff] + '</span>' +
+        '</div>' +
+        '<div class="q-stem">' + q.stem + '</div>';
       if (q.type === 'mc') {
         html += '<div class="opts">';
         q.choices.forEach((ch, ci) => {
-          html += `<label class="opt" data-ci="${ci}">
-            <input type="radio" name="q${idx}" value="${ci}"> <span>${ch}</span></label>`;
+          html += '<label class="opt" data-ci="' + ci + '">' +
+            '<input type="radio" name="q' + idx + '" value="' + ci + '"> <span>' + ch + '</span></label>';
         });
         html += '</div>';
       } else {
-        const unit = q.unit ? ` <span class="hint">(${q.unit})</span>` : '';
-        html += `<div class="num-in">
-          <input type="text" inputmode="decimal" autocomplete="off" data-num="${idx}" placeholder="sua resposta">
-          ${unit}<span class="hint">arredonde p/ 2 casas — aceita vírgula ou ponto</span></div>`;
+        const unit = q.unit ? ' <span class="hint">(' + q.unit + ')</span>' : '';
+        html += '<div class="num-in">' +
+          '<input type="text" inputmode="decimal" autocomplete="off" data-num="' + idx + '" placeholder="sua resposta">' +
+          unit + '<span class="hint">arredonde p/ 2 casas (aceita virgula ou ponto)</span></div>';
       }
-      html += `<div class="sol hidden"><div class="sol-title">Resolução</div>${q.sol}</div>`;
+      html += '<div class="sol hidden"><div class="sol-title">Resolucao</div>' + q.sol + '</div>';
       card.innerHTML = html;
       examEl.appendChild(card);
     });
@@ -959,7 +1639,7 @@ if (typeof module !== 'undefined' && module.exports) {
   function grade() {
     let score = 0;
     state.test.forEach((entry, idx) => {
-      const { q } = entry; const card = examEl.querySelector(`.q[data-idx="${idx}"]`);
+      const q = entry.q; const card = examEl.querySelector('.q[data-idx="' + idx + '"]');
       let ok = false;
       if (q.type === 'mc') {
         ok = entry.user === q.correct;
@@ -978,15 +1658,14 @@ if (typeof module !== 'undefined' && module.exports) {
       card.classList.add(ok ? 'correct' : 'wrong');
       const res = document.createElement('span');
       res.className = 'badge res ' + (ok ? 'ok' : 'no');
-      res.textContent = ok ? '✓ certo' : '✗ errado';
+      res.textContent = ok ? 'certo' : 'errado';
       card.querySelector('.q-head').appendChild(res);
-      // reveal solution: errors auto-open; corrects keep available
       if (!ok) card.querySelector('.sol').classList.remove('hidden');
     });
     state.graded = true;
     const n = state.test.length, pctv = Math.round((score / n) * 100);
-    scoreBox.innerHTML = `<div class="pr-score">Nota: ${score}/${n} &nbsp;(${pctv}%)
-      <small>As questões erradas já mostram a resolução. Clique em “Mostrar resoluções” para ver todas, ou em “Novos números” para refazer com outros valores.</small></div>`;
+    scoreBox.innerHTML = '<div class="pr-score">Nota: ' + score + '/' + n + ' (' + pctv + '%)' +
+      '<small>As questoes erradas ja mostram a resolucao. Use "Mostrar resolucoes" para ver todas, ou "Novos numeros" para refazer com outros valores.</small></div>';
     scoreBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
@@ -996,7 +1675,7 @@ if (typeof module !== 'undefined' && module.exports) {
 
   $('#gen').onclick = () => {
     const t = buildTest();
-    if (!t) { alert('Selecione ao menos um tópico.'); return; }
+    if (!t) { alert('Nenhum exercicio corresponde aos filtros. Selecione ao menos um topico e afrouxe os filtros.'); return; }
     state.test = t; state.graded = false;
     scoreBox.innerHTML = '';
     renderExam();
@@ -1004,7 +1683,6 @@ if (typeof module !== 'undefined' && module.exports) {
     examWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
   $('#redo').onclick = () => {
-    // rebuild same generators with new params
     state.test = state.test.map((e) => { const q = e.it.build(); return { it: e.it, q, user: q.type === 'mc' ? null : '' }; });
     state.graded = false; scoreBox.innerHTML = '';
     renderExam();
@@ -1013,9 +1691,8 @@ if (typeof module !== 'undefined' && module.exports) {
   $('#grade').onclick = () => { if (!state.graded) grade(); };
   $('#reveal').onclick = revealAll;
 
-  // init
   state.topics = new Set(topicsOf(state.course));
-  renderCourses(); renderTopics();
+  renderCourses(); renderTopics(); renderDiffs(); renderSkills(); updateAvail();
 })();
 </script>
 
