@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prática — Simulados | Nícolas Goulart</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.ico" type="image/x-icon">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="/files/style.css">
+<style>
+  .pr-wrap { max-width: 760px; }
+  .pr-lead { font-size: 0.92rem; color: var(--gray-dark); max-width: 620px; }
+
+  /* course pills */
+  .pr-courses { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 1.25rem 0 0.5rem; }
+  .pr-pill {
+    font-family: var(--font-body); font-size: 0.8rem; font-weight: 600;
+    padding: 0.5rem 0.9rem; border: 1px solid var(--gray-light); border-radius: 999px;
+    background: var(--white); color: var(--gray-dark); cursor: pointer; transition: all 0.18s ease;
+  }
+  .pr-pill:hover { border-color: var(--red); color: var(--red); }
+  .pr-pill.active { background: var(--red); border-color: var(--red); color: var(--white); }
+
+  /* topic checkboxes */
+  .pr-section-label {
+    font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--red); margin: 1.5rem 0 0.6rem;
+  }
+  .pr-topics { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.4rem 1rem; }
+  .pr-topic {
+    display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--black);
+    padding: 0.3rem 0.4rem; border-radius: 5px; cursor: pointer;
+  }
+  .pr-topic:hover { background: var(--gray-bg); }
+  .pr-topic input { accent-color: var(--red); width: 15px; height: 15px; }
+  .pr-mini { background: none; border: none; color: var(--gray-mid); font-size: 0.75rem;
+    cursor: pointer; text-decoration: underline; font-family: var(--font-body); padding: 0; }
+  .pr-mini:hover { color: var(--red); }
+  .pr-toolbar { display: flex; gap: 1rem; align-items: center; margin-top: 0.75rem; flex-wrap: wrap; }
+  .pr-toolbar label { font-size: 0.8rem; color: var(--gray-mid); display: flex; align-items: center; gap: 0.4rem; }
+  .pr-toolbar select { font-family: var(--font-body); font-size: 0.8rem; padding: 0.3rem 0.45rem;
+    border: 1px solid rgba(0,0,0,0.12); border-radius: 6px; }
+
+  /* primary/outline buttons (site idiom) */
+  .pr-btn {
+    font-family: var(--font-body); font-size: 0.78rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--red); background: none; padding: 0.55rem 1rem;
+    border: 1px solid var(--red); border-radius: 3px; cursor: pointer; transition: all 0.2s ease;
+  }
+  .pr-btn:hover { background: var(--red); color: var(--white); }
+  .pr-btn.solid { background: var(--red); color: var(--white); }
+  .pr-btn.solid:hover { background: var(--red-dark); }
+  .pr-btn.muted { color: var(--gray-dark); border-color: var(--gray-light); }
+  .pr-btn.muted:hover { background: var(--gray-bg); color: var(--red); border-color: var(--red); }
+  .pr-btn:disabled { opacity: 0.4; cursor: default; }
+  .pr-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 1.5rem; }
+
+  /* score banner */
+  .pr-score {
+    margin: 1.5rem 0; padding: 1rem 1.25rem; border-radius: 6px;
+    background: var(--gray-bg); border-left: 3px solid var(--red);
+    font-family: var(--font-display); font-size: 1.05rem; font-weight: 700; color: var(--black);
+  }
+  .pr-score small { display: block; font-family: var(--font-body); font-weight: 400;
+    font-size: 0.82rem; color: var(--gray-mid); margin-top: 0.25rem; }
+
+  /* question cards */
+  .q {
+    margin-bottom: 1.1rem; padding: 1.1rem 1.25rem; background: var(--white);
+    border: 1px solid rgba(0,0,0,0.08); border-left: 3px solid var(--gray-light);
+    border-radius: 6px; transition: border-color 0.2s ease;
+  }
+  .q.correct { border-left-color: #1a8f3c; }
+  .q.wrong { border-left-color: var(--red); }
+  .q-head { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
+  .q-num { font-family: var(--font-display); font-weight: 700; font-size: 1rem; color: var(--black); }
+  .badge { font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    padding: 0.15rem 0.45rem; border-radius: 3px; }
+  .badge.topic { background: rgba(204,0,0,0.08); color: var(--red); }
+  .badge.skill { background: var(--gray-bg); color: var(--gray-dark); }
+  .badge.d1 { background: #e8f5ec; color: #1a8f3c; }
+  .badge.d2 { background: #fff4e0; color: #b5790a; }
+  .badge.d3 { background: #fdeaea; color: var(--red); }
+  .badge.res { margin-left: auto; }
+  .badge.res.ok { background: #e8f5ec; color: #1a8f3c; }
+  .badge.res.no { background: #fdeaea; color: var(--red); }
+  .q-stem { font-size: 0.92rem; color: var(--black); line-height: 1.6; margin-bottom: 0.75rem; }
+  .q-stem b { color: var(--black); }
+  pre.rout {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; line-height: 1.45;
+    background: #1e1e1e; color: #e6e6e6; padding: 0.7rem 0.9rem; border-radius: 5px;
+    overflow-x: auto; margin: 0.6rem 0; white-space: pre;
+  }
+  .opt { display: flex; align-items: flex-start; gap: 0.55rem; font-size: 0.88rem; color: var(--black);
+    padding: 0.4rem 0.5rem; border-radius: 5px; cursor: pointer; line-height: 1.45; }
+  .opt:hover { background: var(--gray-bg); }
+  .opt input { accent-color: var(--red); margin-top: 0.2rem; }
+  .opt.opt-correct { background: #e8f5ec; }
+  .opt.opt-chosen-wrong { background: #fdeaea; }
+  .num-in { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+  .num-in input {
+    font-family: var(--font-body); font-size: 0.9rem; padding: 0.45rem 0.6rem; width: 160px;
+    border: 1px solid rgba(0,0,0,0.15); border-radius: 6px;
+  }
+  .num-in input:focus { outline: none; border-color: var(--red); }
+  .num-in .hint { font-size: 0.78rem; color: var(--gray-mid); }
+  .sol {
+    margin-top: 0.8rem; font-size: 0.86rem; color: var(--gray-dark); line-height: 1.6;
+    padding: 0.7rem 0.9rem; background: var(--gray-bg); border-left: 2px solid var(--red); border-radius: 4px;
+  }
+  .sol-title { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--red); margin-bottom: 0.35rem; }
+  .hidden { display: none; }
+  .pr-empty { font-size: 0.86rem; color: var(--gray-mid); font-style: italic; margin-top: 1rem; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="/files/index.html" class="nav-name">Nícolas Goulart</a>
+    <div class="nav-links">
+      <a href="/files/index.html">About</a>
+      <a href="/files/cv.html">CV</a>
+      <a href="/files/research.html">Research</a>
+      <a href="/files/teaching.html">Teaching</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+
+<div class="section pr-wrap">
+  <h2>Prática — Simulados</h2>
+  <p class="pr-lead">
+    Escolha a disciplina e os tópicos; gere um simulado de questões com números
+    aleatórios (mudam a cada prova). Responda, corrija e veja a resolução das que errar.
+    O banco tem 60 exercícios — teoria, cálculo, leitura de output do R e interpretação.
+  </p>
+
+  <div class="pr-courses" id="courses"></div>
+
+  <div class="pr-section-label">Tópicos
+    <span style="float:right; font-weight:400; text-transform:none; letter-spacing:0;">
+      <button class="pr-mini" id="selAll">selecionar todos</button> ·
+      <button class="pr-mini" id="selNone">limpar</button>
+    </span>
+  </div>
+  <div class="pr-topics" id="topics"></div>
+
+  <div class="pr-toolbar">
+    <label>Nº de questões
+      <select id="count">
+        <option value="5">5</option>
+        <option value="10" selected>10</option>
+        <option value="15">15</option>
+        <option value="20">20</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="pr-actions">
+    <button class="pr-btn solid" id="gen">Gerar simulado</button>
+  </div>
+</div>
+
+<div class="section pr-wrap hidden" id="examWrap">
+  <div id="scoreBox"></div>
+  <div id="exam"></div>
+  <div class="pr-actions">
+    <button class="pr-btn solid" id="grade">Corrigir prova</button>
+    <button class="pr-btn" id="redo">Novos números (mesmos tópicos)</button>
+    <button class="pr-btn muted" id="reveal">Mostrar resoluções</button>
+  </div>
+</div>
+
+</main>
+
+<footer>
+  © 2026 Nícolas Goulart · Banco de exercícios paramétricos
+</footer>
+
+<script>
+/* ============ BANCO (gerado e testado) ============ */
+/* =====================================================================
+   Banco de exercícios paramétricos — Nícolas Goulart
+   Cursos: Econometria Aplicada · Finanças Corporativas · Econometria II
+   Cada gerador é chamado a cada prova => números mudam toda vez.
+   ===================================================================== */
+
+/* ---------- helpers ---------- */
+function ri(a, b) { return Math.floor(Math.random() * (b - a + 1)) + a; }            // int [a,b]
+function rf(a, b, d) { const x = Math.random() * (b - a) + a; return d == null ? x : Number(x.toFixed(d)); }
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[a[i], a[j]] = [a[j], a[i]]; } return a; }
+function fmt(x, d = 2) { if (!isFinite(x)) return String(x); return Number(x).toFixed(d); }
+function money(x, d = 2) { return 'R$ ' + Number(x).toFixed(d).replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
+function pct(x, d = 2) { return fmt(x, d) + '%'; }
+
+// Monta múltipla escolha a partir de valores numéricos.
+function mcNum(correct, distractors, opt = {}) {
+  const d = opt.d == null ? 2 : opt.d;
+  const fm = opt.fmt || ((v) => fmt(v, d));
+  const key = (v) => Number(v).toFixed(d);
+  const used = new Set([key(correct)]);
+  const opts = [];
+  for (const dv of distractors) {
+    if (opts.length >= 3) break;
+    if (dv == null || !isFinite(dv)) continue;
+    if (used.has(key(dv))) continue;
+    used.add(key(dv)); opts.push(dv);
+  }
+  let m = 1;
+  while (opts.length < 3 && m < 80) {
+    const sign = m % 2 ? 1 : -1;
+    let cand = correct === 0 ? sign * m : correct * (1 + sign * 0.08 * m);
+    if (Math.abs(cand - correct) < Math.pow(10, -d)) cand = correct + sign * m;
+    if (!used.has(key(cand)) && isFinite(cand)) { used.add(key(cand)); opts.push(cand); }
+    m++;
+  }
+  const arr = [{ v: correct, c: true }].concat(opts.map((v) => ({ v, c: false })));
+  shuffle(arr);
+  return { type: 'mc', choices: arr.map((o) => fm(o.v)), correct: arr.findIndex((o) => o.c) };
+}
+
+// Monta múltipla escolha a partir de textos (1 correto + distratores).
+function mcText(correct, distractors) {
+  const arr = [{ t: correct, c: true }].concat(distractors.map((t) => ({ t, c: false })));
+  shuffle(arr);
+  return { type: 'mc', choices: arr.map((o) => o.t), correct: arr.findIndex((o) => o.c) };
+}
+
+// Bloco de "saída do R"
+function rout(lines) { return '<pre class="rout">' + lines.join('\n') + '</pre>'; }
+
+/* ---------- skills / difficulty labels ---------- */
+const SKILL = { teo: 'Teoria', calc: 'Cálculo', rout: 'Output R', interp: 'Interpretação' };
+const DIFF = { 1: 'Fácil', 2: 'Médio', 3: 'Difícil' };
+
+/* =====================================================================
+   BANCO
+   Cada item: {id, course, topic, skill, diff, build()}
+   build() retorna:
+     - {type:'num', stem, answer, tol, unit, sol}
+     - {type:'mc',  stem, choices, correct, sol}   (correct = índice)
+   ===================================================================== */
+const BANK = [];
+
+/* ===================== ECONOMETRIA APLICADA ===================== */
+const APL = 'aplicada';
+
+BANK.push({ id: 'apl01', course: APL, topic: 'Experimentos (RCT)', skill: 'calc', diff: 1, build() {
+  const yc = rf(8, 20, 1), eff = rf(1.5, 6, 1), yt = Number((yc + eff).toFixed(1));
+  return { type: 'num',
+    stem: `Em um experimento aleatorizado, a média do desfecho no grupo tratado foi <b>${fmt(yt,1)}</b> e no grupo de controle foi <b>${fmt(yc,1)}</b>. Qual a estimativa do efeito médio do tratamento (ATE)?`,
+    answer: eff, tol: 0.05, unit: '',
+    sol: `Com aleatorização, o ATE é estimado pela diferença de médias: ATE = ȳ<sub>T</sub> − ȳ<sub>C</sub> = ${fmt(yt,1)} − ${fmt(yc,1)} = <b>${fmt(eff,1)}</b>.` };
+}});
+
+BANK.push({ id: 'apl02', course: APL, topic: 'Experimentos (RCT)', skill: 'calc', diff: 2, build() {
+  const d = rf(0.8, 4, 2), se = rf(0.3, 1.2, 2), t = d / se;
+  return { type: 'num',
+    stem: `A diferença de médias estimada foi <b>${fmt(d)}</b> com erro-padrão <b>${fmt(se)}</b>. Qual a estatística t para H₀: ATE = 0?`,
+    answer: t, tol: 0.05, unit: '',
+    sol: `t = estimativa / erro-padrão = ${fmt(d)} / ${fmt(se)} = <b>${fmt(t)}</b>. Em amostra grande, |t| > 1,96 rejeita H₀ a 5%.` };
+}});
+
+BANK.push({ id: 'apl03', course: APL, topic: 'Experimentos (RCT)', skill: 'teo', diff: 1, build() {
+  return Object.assign(mcText(
+    'Em expectativa, torna os grupos comparáveis em características observáveis E não observáveis, eliminando o viés de seleção.',
+    ['Garante que a amostra seja representativa da população, assegurando validade externa.',
+     'Elimina o erro de medida na variável de desfecho.',
+     'Faz com que o estimador de MQO seja não-viesado mesmo com erro correlacionado ao tratamento por construção.']),
+    { stem: 'Qual é a principal razão pela qual a aleatorização do tratamento identifica o efeito causal?',
+      sol: 'A aleatorização garante independência entre o tratamento e os resultados potenciais; assim, em expectativa, tratados e controles são comparáveis em tudo (observável e não observável), zerando o viés de seleção. Ela não assegura, por si só, validade externa.' });
+}});
+
+BANK.push({ id: 'apl04', course: APL, topic: 'Experimentos (RCT)', skill: 'teo', diff: 2, build() {
+  return Object.assign(mcText(
+    'O atrito (attrition) pode reintroduzir viés se a saída de unidades do estudo for correlacionada com tratamento e desfecho.',
+    ['O atrito sempre é inofensivo porque o tratamento já foi aleatorizado.',
+     'O atrito afeta apenas a validade externa, nunca a interna.',
+     'O atrito aumenta mecanicamente o tamanho do efeito estimado.']),
+    { stem: 'Sobre o atrito (perda de unidades) em um experimento, qual afirmação está correta?',
+      sol: 'Se a probabilidade de sair do estudo depende do tratamento e/ou do desfecho potencial, a amostra remanescente deixa de ser balanceada e o estimador volta a ser viesado — uma ameaça à validade interna.' });
+}});
+
+BANK.push({ id: 'apl05', course: APL, topic: 'Variáveis Instrumentais', skill: 'calc', diff: 2, build() {
+  const yz1 = rf(10, 18, 2), yz0 = rf(4, 9, 2), dz1 = rf(0.6, 0.9, 2), dz0 = rf(0.1, 0.4, 2);
+  const wald = (yz1 - yz0) / (dz1 - dz0);
+  return { type: 'num',
+    stem: `Em um desenho de incentivo (encouragement), o instrumento Z é aleatório. Observa-se: E[Y|Z=1]=${fmt(yz1)}, E[Y|Z=0]=${fmt(yz0)}, E[D|Z=1]=${fmt(dz1)}, E[D|Z=0]=${fmt(dz0)}, onde D é o tratamento. Qual a estimativa de Wald (VI)?`,
+    answer: wald, tol: 0.05, unit: '',
+    sol: `Estimador de Wald = (forma reduzida)/(primeiro estágio) = (E[Y|Z=1]−E[Y|Z=0])/(E[D|Z=1]−E[D|Z=0]) = (${fmt(yz1)}−${fmt(yz0)})/(${fmt(dz1)}−${fmt(dz0)}) = ${fmt(yz1-yz0)}/${fmt(dz1-dz0)} = <b>${fmt(wald)}</b>.` };
+}});
+
+BANK.push({ id: 'apl06', course: APL, topic: 'Variáveis Instrumentais', skill: 'rout', diff: 2, build() {
+  const F = pick([3.1, 5.4, 7.2, 8.9]);
+  return Object.assign(mcText(
+    'O instrumento é fraco: F < 10, então o estimador de VI pode ser severamente viesado e a inferência pouco confiável.',
+    ['O instrumento é forte e válido, pois qualquer F positivo basta.',
+     'F mede a validade da exclusão; F < 10 confirma que a restrição de exclusão vale.',
+     'F < 10 indica que o segundo estágio é não-viesado por construção.']),
+    { stem: `No primeiro estágio de um 2SLS, a estatística F do instrumento excluído foi ${rout(['First-stage F-statistic: '+F.toFixed(1)])} Como interpretar?`,
+      sol: 'A regra prática (Staiger–Stock) é F > 10 para descartar instrumento fraco. Com F = '+F.toFixed(1)+' < 10, o instrumento é fraco: viés em direção ao MQO e intervalos de confiança não confiáveis. O F NÃO testa a restrição de exclusão (que é não-testável com instrumento exatamente identificado).' });
+}});
+
+BANK.push({ id: 'apl07', course: APL, topic: 'Variáveis Instrumentais', skill: 'teo', diff: 3, build() {
+  return Object.assign(mcText(
+    'O efeito médio local do tratamento (LATE): o efeito para os compliers — quem muda de status de tratamento em resposta ao instrumento.',
+    ['O efeito médio do tratamento sobre toda a população (ATE).',
+     'O efeito médio sobre os tratados (ATT), independentemente do instrumento.',
+     'O efeito sobre os never-takers, que nunca tomam o tratamento.']),
+    { stem: 'Sob monotonicidade e as demais hipóteses de VI com efeitos heterogêneos, o que o estimador de VI identifica?',
+      sol: 'Com efeitos heterogêneos, VI identifica o LATE — o efeito médio entre os compliers. Não identifica o ATE/ATT em geral, e nada se aprende sobre never-takers/always-takers (que não respondem ao instrumento).' });
+}});
+
+BANK.push({ id: 'apl08', course: APL, topic: 'Variáveis Instrumentais', skill: 'rout', diff: 3, build() {
+  const rfm = rf(0.4, 1.2, 3), fs = rf(0.35, 0.7, 3), iv = rfm / fs;
+  return { type: 'num',
+    stem: `Duas regressões por MQO foram estimadas (Z é o instrumento aleatório):` +
+      rout([
+        'Forma reduzida:  Y ~ Z',
+        '  Z   '+fmt(rfm,3)+'   (s.e. '+fmt(rf(0.05,0.15,3),3)+')',
+        'Primeiro estágio: D ~ Z',
+        '  Z   '+fmt(fs,3)+'   (s.e. '+fmt(rf(0.04,0.1,3),3)+')']) +
+      `Qual a estimativa de VI do efeito de D sobre Y?`,
+    answer: iv, tol: 0.03, unit: '',
+    sol: `VI = coef. da forma reduzida / coef. do primeiro estágio = ${fmt(rfm,3)} / ${fmt(fs,3)} = <b>${fmt(iv,3)}</b>.` , solDec: 3 };
+}});
+
+BANK.push({ id: 'apl09', course: APL, topic: 'Matching / Pareamento', skill: 'calc', diff: 2, build() {
+  const a = rf(20, 35, 2), eff = rf(2, 8, 2), b = Number((a - eff).toFixed(2));
+  return { type: 'num',
+    stem: `Após pareamento exato, a média do desfecho dos tratados é <b>${fmt(a)}</b> e a média dos controles pareados é <b>${fmt(b)}</b>. Qual a estimativa do efeito sobre os tratados (ATT)?`,
+    answer: eff, tol: 0.05, unit: '',
+    sol: `Com bom pareamento (seleção em observáveis), ATT = ȳ<sub>tratados</sub> − ȳ<sub>controles pareados</sub> = ${fmt(a)} − ${fmt(b)} = <b>${fmt(eff)}</b>.` };
+}});
+
+BANK.push({ id: 'apl10', course: APL, topic: 'Matching / Pareamento', skill: 'teo', diff: 2, build() {
+  return Object.assign(mcText(
+    'Suporte comum (overlap): para cada valor das covariáveis deve haver tratados e controles (0 < P(D=1|X) < 1).',
+    ['Exogeneidade do instrumento, isto é, Cov(Z, erro) = 0.',
+     'Que o tratamento tenha sido aleatorizado dentro de cada bloco automaticamente.',
+     'Tendências paralelas entre tratados e controles ao longo do tempo.']),
+    { stem: 'Além da hipótese de seleção em observáveis (unconfoundedness), de que outra condição o matching precisa para identificar o efeito?',
+      sol: 'Precisa-se de suporte comum/overlap: 0 < P(D=1|X) < 1. Sem isso, há regiões de X sem comparáveis e o efeito não é identificado ali. Tendências paralelas é hipótese de DiD; exogeneidade do instrumento é de VI.' });
+}});
+
+BANK.push({ id: 'apl11', course: APL, topic: 'Regressão Descontínua (RDD)', skill: 'calc', diff: 3, build() {
+  const lim = rf(40, 60, 2), eff = rf(3, 10, 2), right = Number((lim + eff).toFixed(2));
+  return { type: 'num',
+    stem: `Em um RDD nítido (sharp), ajustando regressões lineares locais de cada lado do corte, o valor previsto do desfecho logo à direita do corte é <b>${fmt(right)}</b> e logo à esquerda é <b>${fmt(lim)}</b>. Qual a estimativa do efeito do tratamento no corte?`,
+    answer: eff, tol: 0.05, unit: '',
+    sol: `No RDD nítido o efeito é o salto na função no corte: τ = lim<sub>x↓c</sub> E[Y|x] − lim<sub>x↑c</sub> E[Y|x] = ${fmt(right)} − ${fmt(lim)} = <b>${fmt(eff)}</b>.` };
+}});
+
+BANK.push({ id: 'apl12', course: APL, topic: 'Regressão Descontínua (RDD)', skill: 'teo', diff: 2, build() {
+  return Object.assign(mcText(
+    'No RDD fuzzy a probabilidade de tratamento salta (mas não de 0 para 1) no corte; estima-se por VI usando "cruzar o corte" como instrumento.',
+    ['No RDD fuzzy não há nenhuma mudança na probabilidade de tratamento no corte.',
+     'O RDD fuzzy identifica o ATE para toda a população, não apenas perto do corte.',
+     'No RDD nítido (sharp) a probabilidade de tratamento muda apenas parcialmente no corte.']),
+    { stem: 'Sobre a diferença entre RDD nítido (sharp) e difuso (fuzzy), qual afirmação é correta?',
+      sol: 'No sharp, P(D=1) salta de 0 para 1 no corte. No fuzzy, a probabilidade salta parcialmente; usa-se o indicador de cruzar o corte como instrumento (VI), identificando um efeito local entre compliers na vizinhança do corte.' });
+}});
+
+BANK.push({ id: 'apl13', course: APL, topic: 'Painel / Efeitos Fixos', skill: 'teo', diff: 1, build() {
+  return Object.assign(mcText(
+    'Elimina o efeito fixo individual α_i, removendo viés de variáveis omitidas invariantes no tempo.',
+    ['Elimina choques agregados (efeitos de tempo) comuns a todas as unidades.',
+     'Resolve a endogeneidade causada por variáveis omitidas que variam no tempo.',
+     'Elimina o erro idiossincrático, tornando a regressão determinística.']),
+    { stem: 'Em um painel, a transformação de primeira diferença (ou o "within"/demeaning) serve para:',
+      sol: 'Diferenciar ou centrar na média individual elimina α_i (componente fixo invariante no tempo), controlando confundidores constantes. Não resolve omitidas que variam no tempo, nem remove choques de tempo (para isso precisaríamos de efeitos de tempo / TWFE).' });
+}});
+
+BANK.push({ id: 'apl14', course: APL, topic: 'Painel / Efeitos Fixos', skill: 'calc', diff: 2, build() {
+  const sxy = rf(40, 120, 1), sxx = rf(20, 60, 1), b = sxy / sxx;
+  return { type: 'num',
+    stem: `No estimador within (efeitos fixos), após centrar as variáveis na média de cada indivíduo, obteve-se Σ x̃ỹ = <b>${fmt(sxy,1)}</b> e Σ x̃² = <b>${fmt(sxx,1)}</b>. Qual o estimador β̂ de efeitos fixos?`,
+    answer: b, tol: 0.02, unit: '',
+    sol: `β̂<sub>FE</sub> = Σ x̃ỹ / Σ x̃² = ${fmt(sxy,1)} / ${fmt(sxx,1)} = <b>${fmt(b)}</b>, onde x̃, ỹ são os desvios em relação à média individual.` };
+}});
+
+BANK.push({ id: 'apl15', course: APL, topic: 'Painel / Efeitos Fixos', skill: 'teo', diff: 2, build() {
+  return Object.assign(mcText(
+    'Controla simultaneamente efeitos fixos de unidade (α_i) e de tempo (λ_t), absorvendo confundidores invariantes no tempo e choques comuns a cada período.',
+    ['Controla apenas características que variam no tempo dentro de cada unidade.',
+     'Substitui a necessidade de tendências paralelas em diferença em diferenças.',
+     'É equivalente a MQO agrupado (pooled) quando há mais de dois períodos.']),
+    { stem: 'O que o estimador de efeitos fixos bidirecionais (TWFE) controla?',
+      sol: 'TWFE inclui dummies de unidade e de tempo: absorve tudo que é fixo por unidade e tudo que é comum a todas as unidades em cada período. Não é o mesmo que pooled OLS, e a leitura causal de TWFE em DiD ainda depende de hipóteses (ex.: tendências paralelas / ausência de efeitos dinâmicos heterogêneos).' });
+}});
+
+BANK.push({ id: 'apl16', course: APL, topic: 'Diferença em Diferenças', skill: 'calc', diff: 2, build() {
+  const tp = rf(10, 20, 1), cp = rf(10, 20, 1);
+  const cgrow = rf(1, 4, 1), eff = rf(2, 7, 1);
+  const cq = Number((cp + cgrow).toFixed(1)), tq = Number((tp + cgrow + eff).toFixed(1));
+  return { type: 'num',
+    stem: `Médias do desfecho:<br>Tratados — antes: ${fmt(tp,1)}, depois: ${fmt(tq,1)}.<br>Controle — antes: ${fmt(cp,1)}, depois: ${fmt(cq,1)}.<br>Qual a estimativa de diferença em diferenças (DiD)?`,
+    answer: eff, tol: 0.05, unit: '',
+    sol: `DiD = (ΔTratados) − (ΔControle) = (${fmt(tq,1)}−${fmt(tp,1)}) − (${fmt(cq,1)}−${fmt(cp,1)}) = ${fmt(tq-tp,1)} − ${fmt(cq-cp,1)} = <b>${fmt(eff,1)}</b>.` };
+}});
+
+BANK.push({ id: 'apl17', course: APL, topic: 'Diferença em Diferenças', skill: 'teo', diff: 2, build() {
+  return Object.assign(mcText(
+    'Tendências paralelas: na ausência do tratamento, tratados e controles teriam evoluído com a mesma trajetória média.',
+    ['Os níveis do desfecho de tratados e controles devem ser iguais antes do tratamento.',
+     'O tratamento deve ter sido aleatorizado entre as unidades.',
+     'As variâncias do desfecho devem ser iguais nos dois grupos.']),
+    { stem: 'Qual é a hipótese de identificação central da diferença em diferenças?',
+      sol: 'DiD exige tendências paralelas: sem o tratamento, a diferença média entre os grupos permaneceria constante. Os níveis podem diferir antes (a DiD diferencia isso fora); o que não pode diferir é a trajetória contrafactual.' });
+}});
+
+BANK.push({ id: 'apl18', course: APL, topic: 'Diferença em Diferenças', skill: 'rout', diff: 3, build() {
+  const b0 = rf(8, 14, 2), bt = rf(1, 3, 2), bp = rf(0.5, 2.5, 2), bint = rf(2, 6, 2);
+  const p = pick(['0.003', '0.011', '0.021', '0.045']);
+  return { type: 'num',
+    stem: `Estimou-se Y = β₀ + β₁·Tratado + β₂·Pós + β₃·(Tratado×Pós) + erro:` +
+      rout([
+        '                Estimate  Std.Err   p-value',
+        '(Intercept)      '+fmt(b0)+'    '+fmt(rf(0.5,1,2))+'    0.000',
+        'Tratado          '+fmt(bt)+'    '+fmt(rf(0.4,0.9,2))+'    '+pick(['0.020','0.040']),
+        'Pos              '+fmt(bp)+'    '+fmt(rf(0.4,0.9,2))+'    '+pick(['0.060','0.120']),
+        'Tratado:Pos      '+fmt(bint)+'    '+fmt(rf(0.6,1.1,2))+'    '+p]) +
+      `Qual é a estimativa do efeito causal (DiD) do tratamento?`,
+    answer: bint, tol: 0.02, unit: '',
+    sol: `Em uma regressão DiD, o efeito é o coeficiente da interação Tratado×Pós = <b>${fmt(bint)}</b> (p = ${p}, significativo a 5%). β₁ capta diferença fixa de nível entre grupos; β₂ capta a tendência comum no tempo.` };
+}});
+
+BANK.push({ id: 'apl19', course: APL, topic: 'Inferência com Clusters', skill: 'teo', diff: 2, build() {
+  return Object.assign(mcText(
+    'Subestimar os erros-padrão e superestimar a significância (t inflado), porque há correlação dos resíduos dentro dos clusters.',
+    ['Superestimar os erros-padrão, tornando o teste conservador demais.',
+     'Viesar a estimativa pontual do coeficiente para cima.',
+     'Não ter efeito algum sobre a inferência, apenas sobre o R².']),
+    { stem: 'Se o tratamento é atribuído ao nível do cluster (ex.: município) mas a inferência ignora o clustering, qual a consequência mais provável?',
+      sol: 'Resíduos correlacionados dentro do cluster reduzem a informação efetiva. Ignorar isso subestima os erros-padrão e infla as estatísticas t, gerando excesso de rejeições falsas. A estimativa pontual em geral não é viesada por isso — o problema é a inferência.' });
+}});
+
+BANK.push({ id: 'apl20', course: APL, topic: 'Inferência com Clusters', skill: 'rout', diff: 2, build() {
+  const b = rf(1.2, 3.5, 2), sc = rf(0.9, 1.6, 2), t = b / sc;
+  const sr = Number((sc * rf(0.4, 0.6, 2)).toFixed(2));
+  return { type: 'num',
+    stem: `Um coeficiente é estimado em <b>${fmt(b)}</b>. O erro-padrão robusto é ${fmt(sr)}, mas o erro-padrão com cluster (correto, dado o desenho) é <b>${fmt(sc)}</b>. Usando o erro com cluster, qual a estatística t?`,
+    answer: t, tol: 0.05, unit: '',
+    sol: `t<sub>cluster</sub> = ${fmt(b)} / ${fmt(sc)} = <b>${fmt(t)}</b>. Note que com o erro robusto (${fmt(sr)}) o t seria ${fmt(b/sr)} — maior — ilustrando como ignorar o cluster infla artificialmente a significância.` };
+}});
+
+/* ===================== FINANÇAS CORPORATIVAS ===================== */
+const FIN = 'financas';
+
+BANK.push({ id: 'fin01', course: FIN, topic: 'VPL', skill: 'calc', diff: 2, build() {
+  const c0 = ri(800, 1500), cf = [ri(300, 700), ri(300, 700), ri(300, 700)], r = rf(8, 14, 0) / 100;
+  let npv = -c0; cf.forEach((c, i) => npv += c / Math.pow(1 + r, i + 1));
+  return { type: 'num',
+    stem: `Um projeto exige investimento de ${money(c0,0)} hoje e gera fluxos de ${money(cf[0],0)}, ${money(cf[1],0)} e ${money(cf[2],0)} nos anos 1, 2 e 3. À taxa de desconto de ${pct(r*100,0)}, qual o VPL? (em R$, 2 casas)`,
+    answer: npv, tol: Math.max(1, Math.abs(npv) * 0.01), unit: 'R$',
+    sol: `VPL = −C₀ + Σ CFₜ/(1+r)ᵗ, com r = ${pct(r*100,0)}.<br>VPL = −${c0} + ${fmt(cf[0]/(1+r))} + ${fmt(cf[1]/Math.pow(1+r,2))} + ${fmt(cf[2]/Math.pow(1+r,3))} = <b>${money(npv)}</b>.` };
+}});
+
+BANK.push({ id: 'fin02', course: FIN, topic: 'VPL', skill: 'interp', diff: 1, build() {
+  const positive = Math.random() < 0.5; const v = rf(20, 200, 0) * (positive ? 1 : -1);
+  return Object.assign(mcText(
+    positive ? 'Aceitar o projeto, pois VPL > 0 cria valor para os acionistas.' : 'Rejeitar o projeto, pois VPL < 0 destrói valor.',
+    positive ? ['Rejeitar, pois VPL positivo indica risco excessivo.',
+                'Indiferente, pois o VPL não informa sobre criação de valor.',
+                'Aceitar somente se a TIR for negativa.']
+             : ['Aceitar, pois qualquer projeto com fluxos positivos vale a pena.',
+                'Aceitar, pois VPL negativo indica recuperação rápida do capital.',
+                'Indiferente, pois VPL negativo é equivalente a VPL zero.']),
+    { stem: `Um projeto tem VPL = ${money(v,0)}. Pela regra do VPL, qual a decisão?`,
+      sol: `A regra do VPL: aceitar se VPL > 0 (cria valor), rejeitar se VPL < 0. Aqui VPL = ${money(v,0)} ⇒ ${positive ? 'aceitar' : 'rejeitar'}.` });
+}});
+
+BANK.push({ id: 'fin03', course: FIN, topic: 'TIR', skill: 'calc', diff: 2, build() {
+  const c0 = ri(1000, 2000), cf = ri(120, 300), irr = cf / c0 * 100;
+  return { type: 'num',
+    stem: `Um investimento de ${money(c0,0)} hoje gera um fluxo perpétuo anual de ${money(cf,0)}. Qual a TIR (em %)?`,
+    answer: irr, tol: 0.1, unit: '%',
+    sol: `Para uma perpetuidade, VPL = −C₀ + CF/r. Fazendo VPL = 0 ⇒ TIR = CF/C₀ = ${cf}/${c0} = <b>${pct(irr)}</b>.` };
+}});
+
+BANK.push({ id: 'fin04', course: FIN, topic: 'TIR', skill: 'teo', diff: 2, build() {
+  return Object.assign(mcText(
+    'Preferir o VPL: a TIR pode dar múltiplas soluções (fluxos com mudanças de sinal) e pode ordenar mal projetos mutuamente exclusivos de escalas diferentes.',
+    ['Preferir a TIR sempre, pois independe da taxa de desconto.',
+     'Os dois critérios sempre coincidem, então a escolha é irrelevante.',
+     'Preferir a TIR porque sempre existe e é única para qualquer fluxo.']),
+    { stem: 'Ao comparar projetos mutuamente exclusivos, por que o VPL é geralmente preferível à TIR?',
+      sol: 'A TIR tem problemas: múltiplas TIRs quando há várias mudanças de sinal nos fluxos, e ranqueamento equivocado por ignorar escala/escala temporal. O VPL mede diretamente valor criado e é aditivo. Por isso, em conflito, prevalece o VPL.' });
+}});
+
+BANK.push({ id: 'fin05', course: FIN, topic: 'Payback', skill: 'calc', diff: 1, build() {
+  const cf = ri(200, 500); const c0 = cf * rf(2.2, 4.5, 0) | 0; const pay = c0 / cf;
+  return { type: 'num',
+    stem: `Um projeto custa ${money(c0,0)} e gera fluxos anuais constantes de ${money(cf,0)}. Qual o período de payback simples (em anos)?`,
+    answer: pay, tol: 0.05, unit: 'anos',
+    sol: `Payback simples = Investimento / fluxo anual = ${c0} / ${cf} = <b>${fmt(pay)} anos</b>.` };
+}});
+
+BANK.push({ id: 'fin06', course: FIN, topic: 'Payback', skill: 'teo', diff: 1, build() {
+  return Object.assign(mcText(
+    'Ignora o valor do dinheiro no tempo e os fluxos de caixa após o período de payback.',
+    ['Exige estimar a taxa de desconto correta, ao contrário do VPL.',
+     'Penaliza projetos de recuperação rápida do capital.',
+     'É inválido sempre que os fluxos forem constantes.']),
+    { stem: 'Qual é a principal limitação do critério de payback simples?',
+      sol: 'O payback simples não desconta fluxos (ignora o valor do dinheiro no tempo) e descarta tudo o que ocorre após a recuperação do investimento, podendo rejeitar bons projetos de maturação longa.' });
+}});
+
+BANK.push({ id: 'fin07', course: FIN, topic: 'Fluxos de Caixa Relevantes', skill: 'calc', diff: 2, build() {
+  const ebit = ri(400, 900), tax = rf(20, 34, 0) / 100, dep = ri(80, 200), capex = ri(100, 250), dnwc = ri(20, 120);
+  const fcf = ebit * (1 - tax) + dep - capex - dnwc;
+  return { type: 'num',
+    stem: `Dados (em R$): EBIT = ${ebit}, alíquota = ${pct(tax*100,0)}, depreciação = ${dep}, CAPEX = ${capex}, variação no capital de giro (ΔNWC) = ${dnwc}. Qual o fluxo de caixa livre (FCF) do período?`,
+    answer: fcf, tol: Math.max(1, Math.abs(fcf) * 0.01), unit: 'R$',
+    sol: `FCF = EBIT·(1−τ) + Depreciação − CAPEX − ΔNWC = ${ebit}·${fmt(1-tax)} + ${dep} − ${capex} − ${dnwc} = ${fmt(ebit*(1-tax))} + ${dep} − ${capex} − ${dnwc} = <b>${money(fcf)}</b>.` };
+}});
+
+BANK.push({ id: 'fin08', course: FIN, topic: 'Fluxos de Caixa Relevantes', skill: 'teo', diff: 2, build() {
+  return Object.assign(mcText(
+    'Custos afundados (sunk costs) são ignorados; custos de oportunidade e externalidades sobre outros produtos da firma devem ser incluídos.',
+    ['Custos afundados devem ser sempre incluídos por já terem sido pagos.',
+     'Custos de oportunidade nunca entram, pois não envolvem desembolso de caixa.',
+     'Despesas de depreciação são fluxos de caixa e entram diretamente como saída.']),
+    { stem: 'Ao estimar os fluxos de caixa incrementais de um projeto, qual prática é correta?',
+      sol: 'Relevante é o fluxo incremental. Custos afundados já ocorreram e não mudam com a decisão ⇒ ignorar. Custos de oportunidade e efeitos colaterais (canibalização) são incrementais ⇒ incluir. Depreciação não é caixa, entra só via escudo fiscal.' });
+}});
+
+BANK.push({ id: 'fin09', course: FIN, topic: 'Fluxos de Caixa Relevantes', skill: 'calc', diff: 1, build() {
+  const dep = ri(100, 400), tax = rf(20, 34, 0) / 100, shield = dep * tax;
+  return { type: 'num',
+    stem: `A depreciação anual é de ${money(dep,0)} e a alíquota de imposto é ${pct(tax*100,0)}. Qual o valor do escudo fiscal (tax shield) da depreciação no ano?`,
+    answer: shield, tol: Math.max(0.5, shield * 0.01), unit: 'R$',
+    sol: `Escudo fiscal da depreciação = Depreciação × alíquota = ${dep} × ${fmt(tax)} = <b>${money(shield)}</b>. A depreciação não é caixa, mas reduz o imposto pago.` };
+}});
+
+BANK.push({ id: 'fin10', course: FIN, topic: 'WACC / Custo de Capital', skill: 'calc', diff: 2, build() {
+  const E = ri(400, 800), D = ri(200, 600), re = rf(10, 18, 1), rd = rf(5, 10, 1), tax = rf(20, 34, 0) / 100;
+  const V = E + D, wacc = (E / V) * re + (D / V) * rd * (1 - tax);
+  return { type: 'num',
+    stem: `Uma firma tem capital próprio E = ${money(E,0)} e dívida D = ${money(D,0)}. O custo do capital próprio é ${pct(re,1)}, o da dívida ${pct(rd,1)} e a alíquota ${pct(tax*100,0)}. Qual o WACC (em %)?`,
+    answer: wacc, tol: 0.05, unit: '%',
+    sol: `WACC = (E/V)·r<sub>E</sub> + (D/V)·r<sub>D</sub>·(1−τ), V = ${V}.<br>= (${E}/${V})·${fmt(re,1)} + (${D}/${V})·${fmt(rd,1)}·${fmt(1-tax)} = ${fmt(E/V*re)} + ${fmt(D/V*rd*(1-tax))} = <b>${pct(wacc)}</b>.` };
+}});
+
+BANK.push({ id: 'fin11', course: FIN, topic: 'WACC / Custo de Capital', skill: 'interp', diff: 2, build() {
+  return Object.assign(mcText(
+    'É a taxa para descontar os fluxos de caixa livres da firma (FCFF); reflete o custo médio de financiar os ativos, ponderado por dívida e capital próprio.',
+    ['É a taxa para descontar apenas os fluxos pagos aos acionistas (dividendos).',
+     'É sempre igual ao custo do capital próprio, pois a dívida não tem custo.',
+     'É a taxa livre de risco ajustada apenas pela inflação esperada.']),
+    { stem: 'O que o WACC representa e para que serve?',
+      sol: 'O WACC é o custo médio ponderado de capital (dívida + equity, com benefício fiscal da dívida). Serve para descontar os fluxos de caixa livres da firma (FCFF) em avaliações pelo método WACC. Para fluxos aos acionistas, usa-se o custo do equity.' });
+}});
+
+BANK.push({ id: 'fin12', course: FIN, topic: 'CAPM / Custo do Equity', skill: 'calc', diff: 1, build() {
+  const rf_ = rf(3, 7, 1), beta = rf(0.7, 1.6, 2), mrp = rf(4, 8, 1), re = rf_ + beta * mrp;
+  return { type: 'num',
+    stem: `Pelo CAPM, a taxa livre de risco é ${pct(rf_,1)}, o beta da ação é ${fmt(beta)} e o prêmio de risco de mercado é ${pct(mrp,1)}. Qual o custo do capital próprio (em %)?`,
+    answer: re, tol: 0.05, unit: '%',
+    sol: `r<sub>E</sub> = r<sub>f</sub> + β·(prêmio de mercado) = ${fmt(rf_,1)} + ${fmt(beta)}·${fmt(mrp,1)} = ${fmt(rf_,1)} + ${fmt(beta*mrp)} = <b>${pct(re)}</b>.` };
+}});
+
+BANK.push({ id: 'fin13', course: FIN, topic: 'Estrutura de Capital (MM)', skill: 'teo', diff: 2, build() {
+  return Object.assign(mcText(
+    'O valor da firma independe da estrutura de capital; alavancagem só reorganiza o fluxo entre credores e acionistas.',
+    ['A firma deve usar 100% de dívida para maximizar seu valor.',
+     'A firma deve usar 100% de capital próprio para minimizar o risco.',
+     'A estrutura de capital ótima é sempre 50% dívida e 50% equity.']),
+    { stem: 'Pela Proposição I de Modigliani–Miller (sem impostos, sem fricções), qual afirmação é correta?',
+      sol: 'Sem impostos e fricções, MM-I diz que o valor da firma é independente de como ela se financia: V<sub>L</sub> = V<sub>U</sub>. A alavancagem apenas redivide o bolo entre credores e acionistas, sem alterar seu tamanho.' });
+}});
+
+BANK.push({ id: 'fin14', course: FIN, topic: 'Estrutura de Capital (MM)', skill: 'calc', diff: 3, build() {
+  const ru = rf(10, 16, 1), rd = rf(5, 9, 1), de = rf(0.3, 1.5, 2), re = ru + de * (ru - rd);
+  return { type: 'num',
+    stem: `Pela Proposição II de MM (sem impostos), o custo do capital não alavancado é ${pct(ru,1)}, o custo da dívida é ${pct(rd,1)} e a razão dívida/capital próprio (D/E) é ${fmt(de)}. Qual o custo do capital próprio alavancado (em %)?`,
+    answer: re, tol: 0.05, unit: '%',
+    sol: `r<sub>E</sub> = r<sub>U</sub> + (D/E)·(r<sub>U</sub> − r<sub>D</sub>) = ${fmt(ru,1)} + ${fmt(de)}·(${fmt(ru,1)} − ${fmt(rd,1)}) = ${fmt(ru,1)} + ${fmt(de*(ru-rd))} = <b>${pct(re)}</b>. A alavancagem eleva o custo do equity por aumentar o risco dos acionistas.` };
+}});
+
+BANK.push({ id: 'fin15', course: FIN, topic: 'Avaliação com Alavancagem (APV)', skill: 'calc', diff: 3, build() {
+  const vu = ri(2000, 5000), tc = rf(20, 34, 0) / 100, D = ri(500, 1500), vl = vu + tc * D;
+  return { type: 'num',
+    stem: `Pelo método APV, o valor da firma não alavancada é ${money(vu,0)}. Com dívida permanente de ${money(D,0)} e alíquota de ${pct(tc*100,0)}, qual o valor da firma alavancada (em R$)?`,
+    answer: vl, tol: Math.max(1, vl * 0.005), unit: 'R$',
+    sol: `Com dívida permanente, o VP do escudo fiscal é τ·D. APV: V<sub>L</sub> = V<sub>U</sub> + τ·D = ${vu} + ${fmt(tc)}·${D} = ${vu} + ${fmt(tc*D)} = <b>${money(vl)}</b>.` };
+}});
+
+BANK.push({ id: 'fin16', course: FIN, topic: 'Avaliação com Alavancagem (APV)', skill: 'calc', diff: 2, build() {
+  const tc = rf(20, 34, 0) / 100, rd = rf(5, 10, 1) / 100, D = ri(500, 2000), shield = tc * rd * D;
+  return { type: 'num',
+    stem: `A firma tem dívida de ${money(D,0)} a um custo de ${pct(rd*100,1)} ao ano, com alíquota de ${pct(tc*100,0)}. Qual o escudo fiscal dos juros no ano (em R$)?`,
+    answer: shield, tol: Math.max(0.5, shield * 0.01), unit: 'R$',
+    sol: `Escudo fiscal dos juros = τ × (juros) = τ × r<sub>D</sub> × D = ${fmt(tc)} × ${fmt(rd)} × ${D} = <b>${money(shield)}</b>.` };
+}});
+
+BANK.push({ id: 'fin17', course: FIN, topic: 'Opções Reais', skill: 'teo', diff: 2, build() {
+  return Object.assign(mcText(
+    'A flexibilidade de esperar/adiar tem valor; o VPL estático pode subestimar o projeto ao ignorar essa opção.',
+    ['Opções reais sempre reduzem o valor do projeto frente ao VPL estático.',
+     'A opção de adiar só tem valor se o VPL estático já for negativo.',
+     'Incerteza maior sempre diminui o valor de uma opção real.']),
+    { stem: 'Qual afirmação sobre opções reais (ex.: opção de adiar um investimento) é correta?',
+      sol: 'Opções reais agregam flexibilidade gerencial (adiar, expandir, abandonar) e têm valor não-negativo. O VPL tradicional ignora essa flexibilidade e pode subestimar o projeto. Como toda opção, maior incerteza tende a aumentar (não reduzir) seu valor.' });
+}});
+
+BANK.push({ id: 'fin18', course: FIN, topic: 'Opções Reais', skill: 'calc', diff: 3, build() {
+  const base = ri(-200, 200), exp = ri(300, 800), p = rf(0.3, 0.7, 2), total = base + p * exp;
+  return { type: 'num',
+    stem: `Um projeto-base tem VPL de ${money(base,0)}. Ele inclui a opção de expandir, que, se exercida no cenário favorável (probabilidade ${fmt(p)}), agrega um VPL adicional de ${money(exp,0)} (0 no cenário desfavorável, quando a opção não é exercida). Qual o VPL total com a opção (em R$)?`,
+    answer: total, tol: Math.max(1, Math.abs(total) * 0.01), unit: 'R$',
+    sol: `VPL com opção = VPL-base + valor esperado da opção = ${base} + ${fmt(p)}×${exp} = ${base} + ${fmt(p*exp)} = <b>${money(total)}</b>. Como a opção só é exercida no cenário bom, seu payoff no cenário ruim é 0.` };
+}});
+
+BANK.push({ id: 'fin19', course: FIN, topic: 'Capital de Giro', skill: 'calc', diff: 2, build() {
+  const dio = ri(30, 90), dso = ri(20, 70), dpo = ri(20, 60), ccc = dio + dso - dpo;
+  return { type: 'num',
+    stem: `Uma empresa tem prazo médio de estoques (DIO) = ${dio} dias, prazo médio de recebimento (DSO) = ${dso} dias e prazo médio de pagamento (DPO) = ${dpo} dias. Qual o ciclo de conversão de caixa (em dias)?`,
+    answer: ccc, tol: 0.5, unit: 'dias',
+    sol: `Ciclo de conversão de caixa = DIO + DSO − DPO = ${dio} + ${dso} − ${dpo} = <b>${ccc} dias</b>. É o tempo entre pagar fornecedores e receber dos clientes.` };
+}});
+
+BANK.push({ id: 'fin20', course: FIN, topic: 'Capital de Giro', skill: 'calc', diff: 1, build() {
+  const ca = ri(500, 1200), cl = ri(200, 700), nwc = ca - cl;
+  return { type: 'num',
+    stem: `O ativo circulante é ${money(ca,0)} e o passivo circulante é ${money(cl,0)}. Qual o capital de giro líquido (NWC) (em R$)?`,
+    answer: nwc, tol: 0.5, unit: 'R$',
+    sol: `Capital de giro líquido = Ativo circulante − Passivo circulante = ${ca} − ${cl} = <b>${money(nwc)}</b>.` };
+}});
+
+/* ===================== ECONOMETRIA II — SÉRIES TEMPORAIS ===================== */
+const SER = 'series';
+
+BANK.push({ id: 'ser01', course: SER, topic: 'AR / ARMA', skill: 'calc', diff: 1, build() {
+  const c = rf(0.5, 4, 1), phi = rf(0.2, 0.8, 2), mu = c / (1 - phi);
+  return { type: 'num',
+    stem: `Considere o processo AR(1): Yₜ = ${fmt(c,1)} + ${fmt(phi)}·Yₜ₋₁ + εₜ, com εₜ ruído branco. Qual a média (incondicional) de Yₜ?`,
+    answer: mu, tol: 0.02, unit: '',
+    sol: `Para um AR(1) estacionário, E[Y] = c/(1−φ) = ${fmt(c,1)}/(1−${fmt(phi)}) = ${fmt(c,1)}/${fmt(1-phi)} = <b>${fmt(mu)}</b>.` };
+}});
+
+BANK.push({ id: 'ser02', course: SER, topic: 'AR / ARMA', skill: 'calc', diff: 2, build() {
+  const phi = rf(0.3, 0.8, 2), s2 = rf(1, 5, 1), g0 = s2 / (1 - phi * phi);
+  return { type: 'num',
+    stem: `Em um AR(1) Yₜ = c + ${fmt(phi)}·Yₜ₋₁ + εₜ com Var(εₜ) = ${fmt(s2,1)}, qual a variância (incondicional) de Yₜ?`,
+    answer: g0, tol: 0.03, unit: '',
+    sol: `γ₀ = Var(Y) = σ²/(1−φ²) = ${fmt(s2,1)}/(1−${fmt(phi)}²) = ${fmt(s2,1)}/${fmt(1-phi*phi)} = <b>${fmt(g0)}</b>.` };
+}});
+
+BANK.push({ id: 'ser03', course: SER, topic: 'Estacionariedade / FAC', skill: 'calc', diff: 1, build() {
+  const phi = rf(0.4, 0.85, 2), k = ri(2, 4), rho = Math.pow(phi, k);
+  return { type: 'num',
+    stem: `Para um AR(1) com φ = ${fmt(phi)}, qual o valor da função de autocorrelação no lag ${k}, ρ(${k})?`,
+    answer: rho, tol: 0.01, unit: '',
+    sol: `Em um AR(1), ρ(k) = φᵏ. Logo ρ(${k}) = ${fmt(phi)}^${k} = <b>${fmt(rho)}</b>.` };
+}});
+
+BANK.push({ id: 'ser04', course: SER, topic: 'Estacionariedade / FAC', skill: 'teo', diff: 1, build() {
+  return Object.assign(mcText(
+    '|φ| < 1.',
+    ['φ > 1.', 'φ = 1.', 'φ < 0 apenas.']),
+    { stem: 'Qual a condição para que o processo AR(1) Yₜ = c + φ·Yₜ₋₁ + εₜ seja (covariância-)estacionário?',
+      sol: 'O AR(1) é estacionário sse a raiz do polinômio (1−φL)=0 estiver fora do círculo unitário, ou seja |φ| < 1. Se φ = 1 temos passeio aleatório (raiz unitária); |φ| > 1 é explosivo.' });
+}});
+
+BANK.push({ id: 'ser05', course: SER, topic: 'Ruído Branco / MA', skill: 'calc', diff: 2, build() {
+  const th = rf(0.3, 0.9, 2), rho1 = th / (1 + th * th);
+  return { type: 'num',
+    stem: `Considere um MA(1): Yₜ = εₜ + ${fmt(th)}·εₜ₋₁, com εₜ ruído branco. Qual a autocorrelação no lag 1, ρ(1)?`,
+    answer: rho1, tol: 0.01, unit: '',
+    sol: `Em um MA(1), ρ(1) = θ/(1+θ²) = ${fmt(th)}/(1+${fmt(th)}²) = ${fmt(th)}/${fmt(1+th*th)} = <b>${fmt(rho1)}</b>. E ρ(k)=0 para k≥2.` };
+}});
+
+BANK.push({ id: 'ser06', course: SER, topic: 'Ruído Branco / MA', skill: 'calc', diff: 1, build() {
+  const th = rf(0.3, 0.9, 2), s2 = rf(1, 4, 1), g0 = s2 * (1 + th * th);
+  return { type: 'num',
+    stem: `Para um MA(1) Yₜ = εₜ + ${fmt(th)}·εₜ₋₁ com Var(εₜ) = ${fmt(s2,1)}, qual a variância de Yₜ?`,
+    answer: g0, tol: 0.02, unit: '',
+    sol: `γ₀ = Var(Y) = σ²(1+θ²) = ${fmt(s2,1)}·(1+${fmt(th)}²) = ${fmt(s2,1)}·${fmt(1+th*th)} = <b>${fmt(g0)}</b>.` };
+}});
+
+BANK.push({ id: 'ser07', course: SER, topic: 'Ruído Branco / MA', skill: 'teo', diff: 1, build() {
+  return Object.assign(mcText(
+    'Média zero, variância constante e ausência de autocorrelação (Cov(εₜ, εₜ₋ₖ) = 0 para k ≠ 0).',
+    ['Média zero e distribuição necessariamente normal.',
+     'Autocorrelação que decai exponencialmente com o lag.',
+     'Independência completa entre as observações em todos os momentos.']),
+    { stem: 'Quais propriedades definem um ruído branco?',
+      sol: 'Ruído branco: E[εₜ]=0, Var(εₜ)=σ² constante, e Cov(εₜ,εₜ₋ₖ)=0 para k≠0. Não exige normalidade nem independência (apenas não-correlação); um ruído branco i.i.d. é um caso particular.' });
+}});
+
+BANK.push({ id: 'ser08', course: SER, topic: 'AR / ARMA', skill: 'rout', diff: 2, build() {
+  const tipos = [
+    { d: 'A FAC decai exponencialmente e a FACP corta (zera) após o lag 1', a: 'AR(1)', w: ['MA(1)', 'ARMA(1,1)', 'Ruído branco'] },
+    { d: 'A FAC corta (zera) após o lag 1 e a FACP decai exponencialmente', a: 'MA(1)', w: ['AR(1)', 'AR(2)', 'Passeio aleatório'] },
+    { d: 'A FAC decai exponencialmente e a FACP corta após o lag 2', a: 'AR(2)', w: ['MA(2)', 'AR(1)', 'ARMA(2,2)'] },
+  ];
+  const t = pick(tipos);
+  return Object.assign(mcText(t.a, t.w),
+    { stem: `Na identificação de Box–Jenkins, ${t.d}. Qual modelo é sugerido?`,
+      sol: `Regra: AR(p) ⇒ FACP corta no lag p e FAC decai; MA(q) ⇒ FAC corta no lag q e FACP decai. O padrão descrito corresponde a <b>${t.a}</b>.` });
+}});
+
+BANK.push({ id: 'ser09', course: SER, topic: 'AR / ARMA', skill: 'calc', diff: 2, build() {
+  let phi1 = rf(0.2, 0.6, 2), phi2 = rf(0.1, 0.3, 2);
+  if (phi1 + phi2 > 0.95) phi2 = Number((0.9 - phi1).toFixed(2));
+  const c = rf(1, 5, 1), mu = c / (1 - phi1 - phi2);
+  return { type: 'num',
+    stem: `Para o AR(2) Yₜ = ${fmt(c,1)} + ${fmt(phi1)}·Yₜ₋₁ + ${fmt(phi2)}·Yₜ₋₂ + εₜ (estacionário), qual a média incondicional?`,
+    answer: mu, tol: 0.03, unit: '',
+    sol: `E[Y] = c/(1−φ₁−φ₂) = ${fmt(c,1)}/(1−${fmt(phi1)}−${fmt(phi2)}) = ${fmt(c,1)}/${fmt(1-phi1-phi2)} = <b>${fmt(mu)}</b>.` };
+}});
+
+BANK.push({ id: 'ser10', course: SER, topic: 'Previsão', skill: 'calc', diff: 2, build() {
+  const c = rf(1, 4, 1), phi = rf(0.4, 0.8, 2), mu = c / (1 - phi), yt = rf(mu + 2, mu + 8, 1), h = ri(1, 3);
+  const fc = mu + Math.pow(phi, h) * (yt - mu);
+  return { type: 'num',
+    stem: `Em um AR(1) com c = ${fmt(c,1)} e φ = ${fmt(phi)} (média ${fmt(mu)}), o último valor observado é Yₜ = ${fmt(yt,1)}. Qual a previsão ${h} passo(s) à frente, Ŷₜ₊${h}?`,
+    answer: fc, tol: 0.03, unit: '',
+    sol: `Ŷₜ₊ₕ = μ + φʰ·(Yₜ − μ) = ${fmt(mu)} + ${fmt(phi)}^${h}·(${fmt(yt,1)} − ${fmt(mu)}) = ${fmt(mu)} + ${fmt(Math.pow(phi,h))}·${fmt(yt-mu)} = <b>${fmt(fc)}</b>. A previsão converge para a média quando h cresce.` };
+}});
+
+BANK.push({ id: 'ser11', course: SER, topic: 'Previsão', skill: 'calc', diff: 3, build() {
+  const phi = rf(0.4, 0.8, 2), s2 = rf(1, 4, 1), h = ri(1, 3);
+  const v = s2 * (1 - Math.pow(phi, 2 * h)) / (1 - phi * phi);
+  return { type: 'num',
+    stem: `Em um AR(1) com φ = ${fmt(phi)} e Var(εₜ) = ${fmt(s2,1)}, qual a variância do erro de previsão ${h} passo(s) à frente?`,
+    answer: v, tol: 0.03, unit: '',
+    sol: `Var(eₜ₊ₕ) = σ²·(1−φ^{2h})/(1−φ²) = ${fmt(s2,1)}·(1−${fmt(phi)}^${2*h})/(1−${fmt(phi)}²) = ${fmt(s2,1)}·${fmt((1-Math.pow(phi,2*h))/(1-phi*phi))} = <b>${fmt(v)}</b>. Para h=1 reduz-se a σ².` };
+}});
+
+BANK.push({ id: 'ser12', course: SER, topic: 'Raiz Unitária / Regressão Espúria', skill: 'teo', diff: 2, build() {
+  return Object.assign(mcText(
+    'A variância cresce com o tempo e os choques têm efeito permanente; a série é não-estacionária (I(1)).',
+    ['A variância é constante e os choques se dissipam com o tempo.',
+     'A média reverte rapidamente, como em um AR(1) estacionário.',
+     'A FAC corta abruptamente após o primeiro lag.']),
+    { stem: 'Considere um passeio aleatório Yₜ = Yₜ₋₁ + εₜ. Qual afirmação é correta?',
+      sol: 'No passeio aleatório (φ=1), Yₜ = Y₀ + Σεₛ ⇒ Var(Yₜ) = t·σ² cresce com t e cada choque é permanente (sem reversão à média). É I(1): a primeira diferença ΔYₜ = εₜ é estacionária.' });
+}});
+
+BANK.push({ id: 'ser13', course: SER, topic: 'Raiz Unitária / Regressão Espúria', skill: 'rout', diff: 2, build() {
+  const cv = -2.89; const reject = Math.random() < 0.5;
+  const stat = reject ? Number((cv - rf(0.3, 1.5, 2)).toFixed(2)) : Number((cv + rf(0.3, 1.2, 2)).toFixed(2));
+  return Object.assign(mcText(
+    reject ? 'Rejeita-se H₀ de raiz unitária: a série é estacionária (a estatística é mais negativa que o valor crítico).'
+           : 'Não se rejeita H₀ de raiz unitária: há evidência de não-estacionariedade (a estatística é menos negativa que o valor crítico).',
+    reject ? ['Não se rejeita H₀: a série tem raiz unitária.',
+              'O teste é inconclusivo porque a estatística é negativa.',
+              'Rejeita-se H₀, logo a série tem raiz unitária.']
+           : ['Rejeita-se H₀: a série é estacionária.',
+              'A série é necessariamente um ruído branco.',
+              'O teste indica cointegração entre as variáveis.']),
+    { stem: `Um teste ADF retorna estatística = ${fmt(stat)}, com valor crítico de 5% = ${fmt(cv)}.` + rout(['ADF test statistic: '+fmt(stat), '5% critical value:  '+fmt(cv)]) + `Qual a conclusão?`,
+      sol: `No ADF, H₀ é "existe raiz unitária" (não-estacionária). Rejeita-se H₀ quando a estatística é MAIS negativa que o valor crítico. Aqui ${fmt(stat)} ${reject ? '<' : '>'} ${fmt(cv)} ⇒ ${reject ? 'rejeita-se H₀ (estacionária)' : 'não se rejeita H₀ (raiz unitária)'}.` });
+}});
+
+BANK.push({ id: 'ser14', course: SER, topic: 'Raiz Unitária / Regressão Espúria', skill: 'teo', diff: 2, build() {
+  return Object.assign(mcText(
+    'R² alto e estatísticas t "significativas" mesmo sem relação real, com Durbin–Watson muito baixo — sinais clássicos de regressão espúria.',
+    ['R² próximo de zero e coeficientes não significativos.',
+     'Resíduos ruído branco e Durbin–Watson próximo de 2.',
+     'Coeficientes consistentes para a verdadeira relação (nula) entre as séries.']),
+    { stem: 'Ao regredir duas séries I(1) independentes entre si, o que tipicamente se observa?',
+      sol: 'Regressão espúria: com séries I(1) independentes, tende-se a obter R² alto e t inflados sugerindo relação inexistente, acompanhados de DW baixo (resíduos fortemente autocorrelacionados, na prática I(1)). A solução é diferenciar ou testar cointegração.' });
+}});
+
+BANK.push({ id: 'ser15', course: SER, topic: 'GARCH / Volatilidade', skill: 'calc', diff: 2, build() {
+  let a = rf(0.05, 0.2, 2), b = rf(0.6, 0.85, 2);
+  if (a + b >= 0.99) b = Number((0.95 - a).toFixed(2));
+  const w = rf(0.2, 1.2, 2), uvar = w / (1 - a - b);
+  return { type: 'num',
+    stem: `Em um GARCH(1,1): σ²ₜ = ${fmt(w)} + ${fmt(a)}·ε²ₜ₋₁ + ${fmt(b)}·σ²ₜ₋₁. Qual a variância incondicional (de longo prazo)?`,
+    answer: uvar, tol: Math.max(0.02, uvar * 0.01), unit: '',
+    sol: `σ² = ω/(1−α−β) = ${fmt(w)}/(1−${fmt(a)}−${fmt(b)}) = ${fmt(w)}/${fmt(1-a-b)} = <b>${fmt(uvar)}</b>. Requer α+β<1.` };
+}});
+
+BANK.push({ id: 'ser16', course: SER, topic: 'GARCH / Volatilidade', skill: 'teo', diff: 2, build() {
+  return Object.assign(mcText(
+    'α + β < 1 garante variância incondicional finita; quanto mais próximo de 1, maior a persistência da volatilidade.',
+    ['α + β > 1 é a condição usual de estacionariedade da variância.',
+     'α + β = 0 indica máxima persistência (clustering) da volatilidade.',
+     'A persistência da volatilidade depende apenas de ω.']),
+    { stem: 'Em um GARCH(1,1), o que determina a existência de variância incondicional finita e a persistência da volatilidade?',
+      sol: 'Estacionariedade em covariância exige α+β<1, garantindo σ²=ω/(1−α−β) finita. Quanto mais α+β se aproxima de 1, mais persistente é a volatilidade (clusters de volatilidade duradouros); α+β=1 é o caso IGARCH.' });
+}});
+
+BANK.push({ id: 'ser17', course: SER, topic: 'ARDL / Multiplicadores', skill: 'calc', diff: 3, build() {
+  const a1 = rf(0.3, 0.7, 2), b0 = rf(0.1, 0.6, 2), b1 = rf(0.1, 0.5, 2);
+  const lr = (b0 + b1) / (1 - a1);
+  return { type: 'num',
+    stem: `Considere o ARDL(1,1): Yₜ = α₀ + ${fmt(a1)}·Yₜ₋₁ + ${fmt(b0)}·Xₜ + ${fmt(b1)}·Xₜ₋₁ + εₜ, com |α₁|<1. Qual o multiplicador de longo prazo de X sobre Y?`,
+    answer: lr, tol: 0.02, unit: '',
+    sol: `Multiplicador de longo prazo = (β₀+β₁)/(1−α₁) = (${fmt(b0)}+${fmt(b1)})/(1−${fmt(a1)}) = ${fmt(b0+b1)}/${fmt(1-a1)} = <b>${fmt(lr)}</b>. O multiplicador de impacto (instantâneo) é β₀ = ${fmt(b0)}.` };
+}});
+
+BANK.push({ id: 'ser18', course: SER, topic: 'ARDL / Multiplicadores', skill: 'rout', diff: 3, build() {
+  const a = rf(-0.1, 0.05, 2), b = rf(0.03, 0.09, 2), c = rf(0.65, 0.85, 2);
+  const lr = b / (1 - c);
+  return { type: 'num',
+    stem: `Estimou-se por MQO (base mensal) a equação para o crescimento do emprego (emp) em função do crescimento salarial (sal):` +
+      rout([
+        '             coef     (t)',
+        '(const)   '+fmt(a)+'   ('+fmt(rf(-2,-1,1),1)+')',
+        'sal        '+fmt(b)+'   ('+fmt(rf(1.9,3,1),1)+')',
+        'emp_{t-1}  '+fmt(c)+'   ('+fmt(rf(10,16,1),1)+')']) +
+      `Qual o multiplicador de longo prazo do salário sobre o emprego?`,
+    answer: lr, tol: 0.02, unit: '',
+    sol: `Para Yₜ = a + b·Xₜ + c·Yₜ₋₁, o multiplicador de longo prazo é b/(1−c) = ${fmt(b)}/(1−${fmt(c)}) = ${fmt(b)}/${fmt(1-c)} = <b>${fmt(lr)}</b>.` };
+}});
+
+BANK.push({ id: 'ser19', course: SER, topic: 'VAR / Granger', skill: 'teo', diff: 2, build() {
+  return Object.assign(mcText(
+    'X Granger-causa Y se valores passados de X ajudam a prever Y além do que os próprios passados de Y já preveem.',
+    ['X Granger-causa Y se X e Y são contemporaneamente correlacionados.',
+     'Granger-causalidade implica, necessariamente, causalidade estrutural/econômica.',
+     'X Granger-causa Y se Y tem raiz unitária e X é estacionário.']),
+    { stem: 'O que significa "X Granger-causa Y" em um VAR?',
+      sol: 'É um conceito preditivo: o passado de X melhora a previsão de Y dado o passado de Y. Testa-se com restrição de exclusão (F) sobre os lags de X. Atenção: Granger-causalidade ≠ causalidade estrutural; é sobre poder preditivo, não mecanismo.' });
+}});
+
+BANK.push({ id: 'ser20', course: SER, topic: 'Cointegração', skill: 'teo', diff: 3, build() {
+  return Object.assign(mcText(
+    'Duas séries I(1) são cointegradas se existe uma combinação linear delas que é estacionária (I(0)); nesse caso há um modelo de correção de erros (ECM).',
+    ['Duas séries I(1) são cointegradas se sua diferença for sempre I(1).',
+     'Cointegração exige que ambas as séries sejam estacionárias em nível.',
+     'Se há cointegração, regredir as séries em nível gera estimativa espúria e inútil.']),
+    { stem: 'O que caracteriza cointegração entre duas séries I(1)?',
+      sol: 'Cointegração: séries I(1) cuja combinação linear βʹXₜ é I(0) — há uma relação de equilíbrio de longo prazo. Pelo teorema de representação de Granger, existe um ECM. Nesse caso a regressão em nível NÃO é espúria (é super-consistente).' });
+}});
+
+/* ---------- meta ---------- */
+const COURSES = {
+  aplicada: 'Econometria Aplicada',
+  financas: 'Finanças Corporativas',
+  series: 'Econometria II — Séries Temporais',
+};
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { BANK, COURSES, SKILL, DIFF };
+}
+
+/* ============ UI ============ */
+(function () {
+  const $ = (s) => document.querySelector(s);
+  const state = { course: 'aplicada', topics: new Set(), test: [], graded: false };
+
+  const coursesEl = $('#courses'), topicsEl = $('#topics');
+  const examWrap = $('#examWrap'), examEl = $('#exam'), scoreBox = $('#scoreBox');
+
+  function topicsOf(course) {
+    const seen = []; BANK.forEach((it) => { if (it.course === course && !seen.includes(it.topic)) seen.push(it.topic); });
+    return seen;
+  }
+
+  function renderCourses() {
+    coursesEl.innerHTML = '';
+    Object.keys(COURSES).forEach((c) => {
+      const b = document.createElement('button');
+      b.className = 'pr-pill' + (c === state.course ? ' active' : '');
+      b.textContent = COURSES[c];
+      b.onclick = () => { state.course = c; state.topics = new Set(topicsOf(c)); renderCourses(); renderTopics(); };
+      coursesEl.appendChild(b);
+    });
+  }
+
+  function renderTopics() {
+    topicsEl.innerHTML = '';
+    topicsOf(state.course).forEach((t) => {
+      const id = 'tp_' + btoa(unescape(encodeURIComponent(t))).replace(/=/g, '');
+      const lab = document.createElement('label'); lab.className = 'pr-topic';
+      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = t; cb.id = id;
+      cb.checked = state.topics.has(t);
+      cb.onchange = () => { cb.checked ? state.topics.add(t) : state.topics.delete(t); };
+      lab.appendChild(cb); lab.appendChild(document.createTextNode(t));
+      topicsEl.appendChild(lab);
+    });
+  }
+
+  $('#selAll').onclick = () => { state.topics = new Set(topicsOf(state.course)); renderTopics(); };
+  $('#selNone').onclick = () => { state.topics = new Set(); renderTopics(); };
+
+  function buildTest() {
+    const n = parseInt($('#count').value, 10);
+    const pool = BANK.filter((it) => it.course === state.course && state.topics.has(it.topic));
+    if (!pool.length) return null;
+    // distinct generators first, then allow reuse (different random params)
+    const order = shuffle(pool.slice());
+    const chosen = [];
+    let i = 0;
+    while (chosen.length < n) {
+      chosen.push(order[i % order.length]);
+      i++;
+      if (i > 2000) break;
+    }
+    return chosen.map((it) => {
+      const q = it.build();
+      return { it, q, user: q.type === 'mc' ? null : '' };
+    });
+  }
+
+  function skillBadge(s) { return SKILL[s] || s; }
+
+  function renderExam() {
+    examEl.innerHTML = '';
+    state.test.forEach((entry, idx) => {
+      const { it, q } = entry;
+      const card = document.createElement('div'); card.className = 'q'; card.dataset.idx = idx;
+      let html = `<div class="q-head">
+        <span class="q-num">${idx + 1}.</span>
+        <span class="badge topic">${it.topic}</span>
+        <span class="badge skill">${skillBadge(it.skill)}</span>
+        <span class="badge d${it.diff}">${DIFF[it.diff]}</span>
+      </div>
+      <div class="q-stem">${q.stem}</div>`;
+
+      if (q.type === 'mc') {
+        html += '<div class="opts">';
+        q.choices.forEach((ch, ci) => {
+          html += `<label class="opt" data-ci="${ci}">
+            <input type="radio" name="q${idx}" value="${ci}"> <span>${ch}</span></label>`;
+        });
+        html += '</div>';
+      } else {
+        const unit = q.unit ? ` <span class="hint">(${q.unit})</span>` : '';
+        html += `<div class="num-in">
+          <input type="text" inputmode="decimal" autocomplete="off" data-num="${idx}" placeholder="sua resposta">
+          ${unit}<span class="hint">arredonde p/ 2 casas — aceita vírgula ou ponto</span></div>`;
+      }
+      html += `<div class="sol hidden"><div class="sol-title">Resolução</div>${q.sol}</div>`;
+      card.innerHTML = html;
+      examEl.appendChild(card);
+    });
+    bindInputs();
+  }
+
+  function bindInputs() {
+    examEl.querySelectorAll('input[type="radio"]').forEach((r) => {
+      r.onchange = () => { state.test[+r.name.slice(1)].user = +r.value; };
+    });
+    examEl.querySelectorAll('input[data-num]').forEach((inp) => {
+      inp.oninput = () => { state.test[+inp.dataset.num].user = inp.value; };
+    });
+  }
+
+  function parseNum(s) {
+    if (s == null) return NaN;
+    return parseFloat(String(s).trim().replace(/\s/g, '').replace(',', '.'));
+  }
+
+  function grade() {
+    let score = 0;
+    state.test.forEach((entry, idx) => {
+      const { q } = entry; const card = examEl.querySelector(`.q[data-idx="${idx}"]`);
+      let ok = false;
+      if (q.type === 'mc') {
+        ok = entry.user === q.correct;
+        card.querySelectorAll('.opt').forEach((o) => {
+          o.querySelector('input').disabled = true;
+          const ci = +o.dataset.ci;
+          if (ci === q.correct) o.classList.add('opt-correct');
+          if (ci === entry.user && !ok) o.classList.add('opt-chosen-wrong');
+        });
+      } else {
+        const v = parseNum(entry.user);
+        ok = isFinite(v) && Math.abs(v - q.answer) <= q.tol;
+        const inp = card.querySelector('input[data-num]'); if (inp) inp.disabled = true;
+      }
+      if (ok) score++;
+      card.classList.add(ok ? 'correct' : 'wrong');
+      const res = document.createElement('span');
+      res.className = 'badge res ' + (ok ? 'ok' : 'no');
+      res.textContent = ok ? '✓ certo' : '✗ errado';
+      card.querySelector('.q-head').appendChild(res);
+      // reveal solution: errors auto-open; corrects keep available
+      if (!ok) card.querySelector('.sol').classList.remove('hidden');
+    });
+    state.graded = true;
+    const n = state.test.length, pctv = Math.round((score / n) * 100);
+    scoreBox.innerHTML = `<div class="pr-score">Nota: ${score}/${n} &nbsp;(${pctv}%)
+      <small>As questões erradas já mostram a resolução. Clique em “Mostrar resoluções” para ver todas, ou em “Novos números” para refazer com outros valores.</small></div>`;
+    scoreBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function revealAll() {
+    examEl.querySelectorAll('.sol').forEach((s) => s.classList.remove('hidden'));
+  }
+
+  $('#gen').onclick = () => {
+    const t = buildTest();
+    if (!t) { alert('Selecione ao menos um tópico.'); return; }
+    state.test = t; state.graded = false;
+    scoreBox.innerHTML = '';
+    renderExam();
+    examWrap.classList.remove('hidden');
+    examWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+  $('#redo').onclick = () => {
+    // rebuild same generators with new params
+    state.test = state.test.map((e) => { const q = e.it.build(); return { it: e.it, q, user: q.type === 'mc' ? null : '' }; });
+    state.graded = false; scoreBox.innerHTML = '';
+    renderExam();
+    examWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+  $('#grade').onclick = () => { if (!state.graded) grade(); };
+  $('#reveal').onclick = revealAll;
+
+  // init
+  state.topics = new Set(topicsOf(state.course));
+  renderCourses(); renderTopics();
+})();
+</script>
+
+</body>
+</html>
