@@ -1,4 +1,5 @@
 User-agent: *
 Allow: /
+Disallow: /qrcode/
 
 Sitemap: https://ngoulart.github.io/sitemap.xml

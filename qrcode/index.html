@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QR Code Generator — Nícolas Goulart</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.ico" type="image/x-icon">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="/files/style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  /* QR page — built from the site's own design tokens */
+  .qr-wrap { max-width: 640px; }
+
+  .qr-form { display: flex; gap: 0.6rem; margin: 1.25rem 0 1.5rem; flex-wrap: wrap; }
+
+  .qr-form input[type="text"] {
+    flex: 1 1 280px;
+    font-family: var(--font-body); font-size: 0.9rem;
+    padding: 0.55rem 0.8rem;
+    border: 1px solid rgba(0,0,0,0.12);
+    border-radius: 6px;
+    color: var(--black); background: var(--white);
+    transition: border-color 0.2s ease;
+  }
+  .qr-form input[type="text"]:focus {
+    outline: none; border-color: var(--red);
+  }
+
+  /* Buttons mirror .paper-links: outlined red, uppercase, fill on hover */
+  .qr-btn {
+    font-family: var(--font-body);
+    font-size: 0.75rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--red); background: none;
+    padding: 0.5rem 0.9rem;
+    border: 1px solid var(--red); border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .qr-btn:hover { background: var(--red); color: var(--white); }
+  .qr-btn.muted { color: var(--gray-dark); border-color: var(--gray-light); }
+  .qr-btn.muted:hover { background: var(--gray-bg); color: var(--red); border-color: var(--red); }
+
+  /* Options row uses the cv-group label idiom */
+  .qr-options { display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+  .qr-options label {
+    font-size: 0.75rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--red);
+    display: flex; flex-direction: column; gap: 0.35rem;
+  }
+  .qr-options select {
+    font-family: var(--font-body); font-size: 0.82rem; font-weight: 400;
+    text-transform: none; letter-spacing: 0; color: var(--black);
+    padding: 0.35rem 0.5rem;
+    border: 1px solid rgba(0,0,0,0.12); border-radius: 6px; background: var(--white);
+  }
+
+  /* Result card mirrors .course: gray bg, red left border */
+  .qr-card {
+    margin-top: 1.75rem;
+    padding: 1.5rem;
+    background: var(--gray-bg);
+    border-radius: 6px;
+    border-left: 3px solid var(--red);
+    text-align: center;
+  }
+  .qr-card #qr {
+    display: inline-block;
+    padding: 0.85rem;
+    background: var(--white);
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+  .qr-card #qr img, .qr-card #qr canvas { display: block; }
+  .qr-actions { margin-top: 1.25rem; display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="/files/index.html" class="nav-name">Nícolas Goulart</a>
+    <div class="nav-links">
+      <a href="/files/index.html">About</a>
+      <a href="/files/cv.html">CV</a>
+      <a href="/files/research.html">Research</a>
+      <a href="/files/teaching.html">Teaching</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+
+<div class="section qr-wrap">
+  <h2>QR Code Generator</h2>
+  <p style="font-size:0.92rem; color:var(--gray-dark); max-width:560px;">
+    Paste a link, generate the QR code, and download it as a PNG.
+  </p>
+
+  <form class="qr-form" id="qr-form">
+    <input type="text" id="url" placeholder="https://ngoulart.github.io/files/research.html" autocomplete="off" spellcheck="false">
+    <button type="submit" class="qr-btn">Generate</button>
+  </form>
+
+  <div class="qr-options">
+    <label>Size
+      <select id="size">
+        <option value="256">256 px</option>
+        <option value="512" selected>512 px</option>
+        <option value="1024">1024 px</option>
+      </select>
+    </label>
+    <label>Error correction
+      <select id="ecl">
+        <option value="L">L · 7%</option>
+        <option value="M">M · 15%</option>
+        <option value="Q">Q · 25%</option>
+        <option value="H" selected>H · 30%</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="qr-card" id="output" hidden>
+    <div id="qr"></div>
+    <div class="qr-actions">
+      <button class="qr-btn" id="download">Download PNG</button>
+      <button class="qr-btn muted" id="copy">Copy image</button>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<footer>
+  © 2026 Nícolas Goulart · Built with HTML &amp; CSS
+</footer>
+
+<script>
+  const form = document.getElementById('qr-form');
+  const urlInput = document.getElementById('url');
+  const output = document.getElementById('output');
+  const qrBox = document.getElementById('qr');
+  const sizeSel = document.getElementById('size');
+  const eclSel = document.getElementById('ecl');
+  const eclMap = { L: 1, M: 0, Q: 3, H: 2 }; // QRCode.CorrectLevel values
+
+  function render() {
+    const url = urlInput.value.trim();
+    if (!url) return;
+    qrBox.innerHTML = '';
+    const size = parseInt(sizeSel.value, 10);
+    new QRCode(qrBox, {
+      text: url,
+      width: size,
+      height: size,
+      correctLevel: eclMap[eclSel.value]
+    });
+    output.hidden = false;
+  }
+
+  function getCanvas() { return qrBox.querySelector('canvas'); }
+
+  function filename() {
+    let host;
+    try { host = new URL(urlInput.value.trim()).hostname || 'qr'; } catch (e) { host = 'qr'; }
+    return 'QR-' + host.replace(/[^a-z0-9.-]/gi, '_') + '.png';
+  }
+
+  form.addEventListener('submit', e => { e.preventDefault(); render(); });
+  [sizeSel, eclSel].forEach(el => el.addEventListener('change', () => { if (!output.hidden) render(); }));
+
+  document.getElementById('download').addEventListener('click', () => {
+    const canvas = getCanvas();
+    if (!canvas) return;
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL('image/png');
+    a.download = filename();
+    a.click();
+  });
+
+  document.getElementById('copy').addEventListener('click', () => {
+    const canvas = getCanvas();
+    if (!canvas || !navigator.clipboard || !window.ClipboardItem) return;
+    canvas.toBlob(async blob => {
+      try {
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+        const btn = document.getElementById('copy');
+        const t = btn.textContent; btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = t, 1200);
+      } catch (e) {}
+    });
+  });
+
+  // Prefill from ?url= query param, e.g. /qrcode/?url=https://...
+  const param = new URLSearchParams(location.search).get('url');
+  if (param) { urlInput.value = param; render(); }
+</script>
+
+</body>
+</html>
