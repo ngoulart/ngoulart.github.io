@@ -12,58 +12,41 @@
 <link rel="stylesheet" href="/files/style.css">
 <style>
   .pr-wrap { max-width: 760px; }
-  .pr-lead { font-size: 0.92rem; color: var(--gray-dark); max-width: 620px; }
-
-  /* course pills */
+  .pr-lead { font-size: 0.92rem; color: var(--gray-dark); max-width: 640px; }
   .pr-courses { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 1.25rem 0 0.5rem; }
-  .pr-pill {
-    font-family: var(--font-body); font-size: 0.8rem; font-weight: 600;
+  .pr-pill { font-family: var(--font-body); font-size: 0.8rem; font-weight: 600;
     padding: 0.5rem 0.9rem; border: 1px solid var(--gray-light); border-radius: 999px;
-    background: var(--white); color: var(--gray-dark); cursor: pointer; transition: all 0.18s ease;
-  }
+    background: var(--white); color: var(--gray-dark); cursor: pointer; transition: all 0.18s ease; }
   .pr-pill:hover { border-color: var(--red); color: var(--red); }
   .pr-pill.active { background: var(--red); border-color: var(--red); color: var(--white); }
-
-  /* topic checkboxes */
-  .pr-section-label {
-    font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
-    color: var(--red); margin: 1.5rem 0 0.6rem;
-  }
-  .pr-topics { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.4rem 1rem; }
-  .pr-topic {
-    display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--black);
-    padding: 0.3rem 0.4rem; border-radius: 5px; cursor: pointer;
-  }
+  .pr-section-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--red); margin: 1.5rem 0 0.6rem; }
+  .pr-topics { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 0.4rem 1rem; }
+  .pr-topic { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--black);
+    padding: 0.3rem 0.4rem; border-radius: 5px; cursor: pointer; }
   .pr-topic:hover { background: var(--gray-bg); }
   .pr-topic input { accent-color: var(--red); width: 15px; height: 15px; }
   .pr-mini { background: none; border: none; color: var(--gray-mid); font-size: 0.75rem;
     cursor: pointer; text-decoration: underline; font-family: var(--font-body); padding: 0; }
   .pr-mini:hover { color: var(--red); }
-  /* filter chips (difficulty / skill) */
   .pr-filters { display: flex; gap: 0.45rem; flex-wrap: wrap; }
-  .chip {
-    font-size: 0.76rem; font-weight: 600; font-family: var(--font-body);
+  .chip { font-size: 0.76rem; font-weight: 600; font-family: var(--font-body);
     padding: 0.32rem 0.7rem; border-radius: 999px; cursor: pointer;
     border: 1px solid var(--gray-light); background: var(--white); color: var(--gray-mid);
-    transition: all 0.16s ease; user-select: none;
-  }
+    transition: all 0.16s ease; user-select: none; }
   .chip:hover { border-color: var(--red); color: var(--red); }
   .chip.on { background: rgba(204,0,0,0.08); border-color: var(--red); color: var(--red); }
-  .chip.on::before { content: '✓ '; }
+  .chip.on::before { content: '\2713 '; }
   .pr-avail { font-size: 0.78rem; color: var(--gray-mid); }
   .pr-avail.warn { color: var(--red); }
   .pr-toolbar { display: flex; gap: 1rem; align-items: center; margin-top: 0.75rem; flex-wrap: wrap; }
   .pr-toolbar label { font-size: 0.8rem; color: var(--gray-mid); display: flex; align-items: center; gap: 0.4rem; }
   .pr-toolbar select { font-family: var(--font-body); font-size: 0.8rem; padding: 0.3rem 0.45rem;
     border: 1px solid rgba(0,0,0,0.12); border-radius: 6px; }
-
-  /* primary/outline buttons (site idiom) */
-  .pr-btn {
-    font-family: var(--font-body); font-size: 0.78rem; font-weight: 600;
+  .pr-btn { font-family: var(--font-body); font-size: 0.78rem; font-weight: 600;
     text-transform: uppercase; letter-spacing: 0.04em;
     color: var(--red); background: none; padding: 0.55rem 1rem;
-    border: 1px solid var(--red); border-radius: 3px; cursor: pointer; transition: all 0.2s ease;
-  }
+    border: 1px solid var(--red); border-radius: 3px; cursor: pointer; transition: all 0.2s ease; }
   .pr-btn:hover { background: var(--red); color: var(--white); }
   .pr-btn.solid { background: var(--red); color: var(--white); }
   .pr-btn.solid:hover { background: var(--red-dark); }
@@ -71,22 +54,14 @@
   .pr-btn.muted:hover { background: var(--gray-bg); color: var(--red); border-color: var(--red); }
   .pr-btn:disabled { opacity: 0.4; cursor: default; }
   .pr-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 1.5rem; }
-
-  /* score banner */
-  .pr-score {
-    margin: 1.5rem 0; padding: 1rem 1.25rem; border-radius: 6px;
+  .pr-score { margin: 1.5rem 0; padding: 1rem 1.25rem; border-radius: 6px;
     background: var(--gray-bg); border-left: 3px solid var(--red);
-    font-family: var(--font-display); font-size: 1.05rem; font-weight: 700; color: var(--black);
-  }
+    font-family: var(--font-display); font-size: 1.05rem; font-weight: 700; color: var(--black); }
   .pr-score small { display: block; font-family: var(--font-body); font-weight: 400;
     font-size: 0.82rem; color: var(--gray-mid); margin-top: 0.25rem; }
-
-  /* question cards */
-  .q {
-    margin-bottom: 1.1rem; padding: 1.1rem 1.25rem; background: var(--white);
+  .q { margin-bottom: 1.1rem; padding: 1.1rem 1.25rem; background: var(--white);
     border: 1px solid rgba(0,0,0,0.08); border-left: 3px solid var(--gray-light);
-    border-radius: 6px; transition: border-color 0.2s ease;
-  }
+    border-radius: 6px; transition: border-color 0.2s ease; }
   .q.correct { border-left-color: #1a8f3c; }
   .q.wrong { border-left-color: var(--red); }
   .q-head { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
@@ -103,11 +78,9 @@
   .badge.res.no { background: #fdeaea; color: var(--red); }
   .q-stem { font-size: 0.92rem; color: var(--black); line-height: 1.6; margin-bottom: 0.75rem; }
   .q-stem b { color: var(--black); }
-  pre.rout {
-    font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; line-height: 1.45;
+  pre.rout { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; line-height: 1.45;
     background: #1e1e1e; color: #e6e6e6; padding: 0.7rem 0.9rem; border-radius: 5px;
-    overflow-x: auto; margin: 0.6rem 0; white-space: pre;
-  }
+    overflow-x: auto; margin: 0.6rem 0; white-space: pre; }
   .opt { display: flex; align-items: flex-start; gap: 0.55rem; font-size: 0.88rem; color: var(--black);
     padding: 0.4rem 0.5rem; border-radius: 5px; cursor: pointer; line-height: 1.45; }
   .opt:hover { background: var(--gray-bg); }
@@ -115,20 +88,15 @@
   .opt.opt-correct { background: #e8f5ec; }
   .opt.opt-chosen-wrong { background: #fdeaea; }
   .num-in { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-  .num-in input {
-    font-family: var(--font-body); font-size: 0.9rem; padding: 0.45rem 0.6rem; width: 160px;
-    border: 1px solid rgba(0,0,0,0.15); border-radius: 6px;
-  }
+  .num-in input { font-family: var(--font-body); font-size: 0.9rem; padding: 0.45rem 0.6rem; width: 160px;
+    border: 1px solid rgba(0,0,0,0.15); border-radius: 6px; }
   .num-in input:focus { outline: none; border-color: var(--red); }
   .num-in .hint { font-size: 0.78rem; color: var(--gray-mid); }
-  .sol {
-    margin-top: 0.8rem; font-size: 0.86rem; color: var(--gray-dark); line-height: 1.6;
-    padding: 0.7rem 0.9rem; background: var(--gray-bg); border-left: 2px solid var(--red); border-radius: 4px;
-  }
+  .sol { margin-top: 0.8rem; font-size: 0.86rem; color: var(--gray-dark); line-height: 1.6;
+    padding: 0.7rem 0.9rem; background: var(--gray-bg); border-left: 2px solid var(--red); border-radius: 4px; }
   .sol-title { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
     color: var(--red); margin-bottom: 0.35rem; }
   .hidden { display: none; }
-  .pr-empty { font-size: 0.86rem; color: var(--gray-mid); font-style: italic; margin-top: 1rem; }
 </style>
 </head>
 <body>
@@ -150,9 +118,8 @@
 <div class="section pr-wrap">
   <h2>Prática — Simulados</h2>
   <p class="pr-lead">
-    Escolha a disciplina e os tópicos; gere um simulado de questões com números
-    aleatórios (mudam a cada prova). Responda, corrija e veja a resolução das que errar.
-    O banco tem 60 exercícios — teoria, cálculo, leitura de output do R e interpretação.
+    Escolha a disciplina e os tópicos, ajuste dificuldade e tipo de questão, e gere um simulado
+    com números aleatórios (mudam a cada prova). Responda, corrija e veja a resolução das que errar.
   </p>
 
   <div class="pr-courses" id="courses"></div>
@@ -206,7 +173,7 @@
 
 <script>
 /* ============ BANCO (gerado e testado) ============ */
- /* =====================================================================
+/* =====================================================================
    Banco de exercícios paramétricos — Nícolas Goulart
    Cursos: Econometria Aplicada · Finanças Corporativas · Econometria II
    Cada gerador é chamado a cada prova => números mudam toda vez.
@@ -248,8 +215,36 @@ function mcNum(correct, distractors, opt = {}) {
 }
 
 // Monta múltipla escolha a partir de textos (1 correto + distratores).
+function plainLen(t) { return String(t).replace(/<[^>]+>/g, '').length; }
+// Encurta a alternativa correta (mantendo a afirmacao central) quando ela
+// e claramente a mais longa, para a extensao nao denunciar a resposta.
+// A explicacao completa permanece sempre em 'sol'.
+function shortenCorrect(s, target) {
+  const lower = s.toLowerCase();
+  const cuts = [];
+  ['; ', ': '].forEach((d) => { const i = s.indexOf(d); if (i > 22) cuts.push(i); });
+  const marks = [' \u2014 ', ' \u2013 ', ', pois ', ', porque ', ', eliminando ', ', removendo ',
+    ', assegurando ', ', garantindo ', ', indicando ', ', refletindo ', ', gerando ', ', fazendo ',
+    ', levando ', ', produzindo ', ', mantendo ', ', deixando ', ', uma vez que ', ', j\u00e1 que ',
+    ', de modo que ', ', o que ', ', tornando ', ', com ', ', e que ', ', isto \u00e9', ', ou seja'];
+  marks.forEach((m) => { const i = lower.lastIndexOf(m); if (i > 22) cuts.push(i); });
+  if (!cuts.length) return s;
+  cuts.sort((a, b) => a - b);
+  // escolhe o menor corte cujo "head" >= target (perto das outras), senao o maior corte
+  let chosen = cuts[cuts.length - 1];
+  for (const c of cuts) { if (c >= target) { chosen = c; break; } }
+  const head = s.slice(0, chosen).replace(/[\s,;:\u2013\u2014.]+$/, '') + '.';
+  return plainLen(head) >= 18 ? head : s;
+}
 function mcText(correct, distractors) {
-  const arr = [{ t: correct, c: true }].concat(distractors.map((t) => ({ t, c: false })));
+  let c = correct;
+  const others = distractors.map(plainLen);
+  const maxOther = Math.max.apply(null, others);
+  if (plainLen(c) > 1.1 * maxOther) {
+    const t = shortenCorrect(c, maxOther);
+    if (!distractors.includes(t)) c = t;
+  }
+  const arr = [{ t: c, c: true }].concat(distractors.map((t) => ({ t, c: false })));
   shuffle(arr);
   return { type: 'mc', choices: arr.map((o) => o.t), correct: arr.findIndex((o) => o.c) };
 }
@@ -301,9 +296,9 @@ BANK.push({ id: 'apl03', course: APL, topic: 'Experimentos (RCT)', skill: 'teo',
 
 BANK.push({ id: 'apl04', course: APL, topic: 'Experimentos (RCT)', skill: 'teo', diff: 2, build() {
   return Object.assign(mcText(
-    'O atrito (attrition) pode reintroduzir viés se a saída de unidades do estudo for correlacionada com tratamento e desfecho.',
-    ['O atrito sempre é inofensivo porque o tratamento já foi aleatorizado.',
-     'O atrito afeta apenas a validade externa, nunca a interna.',
+    'O atrito pode reintroduzir viés se a saída de unidades estiver ligada ao tratamento e ao desfecho.',
+    ['O atrito é sempre inofensivo, uma vez que o tratamento já foi devidamente aleatorizado no início.',
+     'O atrito compromete unicamente a validade externa do estudo, jamais a sua validade interna.',
      'O atrito aumenta mecanicamente o tamanho do efeito estimado.']),
     { stem: 'Sobre o atrito (perda de unidades) em um experimento, qual afirmação está correta?',
       sol: 'Se a probabilidade de sair do estudo depende do tratamento e/ou do desfecho potencial, a amostra remanescente deixa de ser balanceada e o estimador volta a ser viesado — uma ameaça à validade interna.' });
@@ -409,9 +404,9 @@ BANK.push({ id: 'apl14', course: APL, topic: 'Painel / Efeitos Fixos', skill: 'c
 
 BANK.push({ id: 'apl15', course: APL, topic: 'Painel / Efeitos Fixos', skill: 'teo', diff: 2, build() {
   return Object.assign(mcText(
-    'Controla simultaneamente efeitos fixos de unidade (α_i) e de tempo (λ_t), absorvendo confundidores invariantes no tempo e choques comuns a cada período.',
-    ['Controla apenas características que variam no tempo dentro de cada unidade.',
-     'Substitui a necessidade de tendências paralelas em diferença em diferenças.',
+    'Controla efeitos fixos de unidade (α_i) e de tempo (λ_t) ao mesmo tempo.',
+    ['Controla apenas as características que variam no tempo dentro de cada unidade, ignorando as fixas.',
+     'Substitui completamente a hipótese de tendências paralelas exigida em diferença em diferenças.',
      'É equivalente a MQO agrupado (pooled) quando há mais de dois períodos.']),
     { stem: 'O que o estimador de efeitos fixos bidirecionais (TWFE) controla?',
       sol: 'TWFE inclui dummies de unidade e de tempo: absorve tudo que é fixo por unidade e tudo que é comum a todas as unidades em cada período. Não é o mesmo que pooled OLS, e a leitura causal de TWFE em DiD ainda depende de hipóteses (ex.: tendências paralelas / ausência de efeitos dinâmicos heterogêneos).' });
@@ -508,10 +503,10 @@ BANK.push({ id: 'fin03', course: FIN, topic: 'TIR', skill: 'calc', diff: 2, buil
 
 BANK.push({ id: 'fin04', course: FIN, topic: 'TIR', skill: 'teo', diff: 2, build() {
   return Object.assign(mcText(
-    'Preferir o VPL: a TIR pode dar múltiplas soluções (fluxos com mudanças de sinal) e pode ordenar mal projetos mutuamente exclusivos de escalas diferentes.',
-    ['Preferir a TIR sempre, pois independe da taxa de desconto.',
-     'Os dois critérios sempre coincidem, então a escolha é irrelevante.',
-     'Preferir a TIR porque sempre existe e é única para qualquer fluxo.']),
+    'Preferir o VPL, pois a TIR pode ter múltiplas soluções e ordenar mal projetos de escalas diferentes.',
+    ['Preferir sempre a TIR, já que ela independe da taxa de desconto e resume tudo em um só número.',
+     'Os dois critérios sempre coincidem, de modo que a escolha entre VPL e TIR é irrelevante.',
+     'Preferir a TIR, porque ela sempre existe e é única para qualquer sequência de fluxos.']),
     { stem: 'Ao comparar projetos mutuamente exclusivos, por que o VPL é geralmente preferível à TIR?',
       sol: 'A TIR tem problemas: múltiplas TIRs quando há várias mudanças de sinal nos fluxos, e ranqueamento equivocado por ignorar escala/escala temporal. O VPL mede diretamente valor criado e é aditivo. Por isso, em conflito, prevalece o VPL.' });
 }});
@@ -886,9 +881,9 @@ BANK.push({ id: 'apl22', course: APL, topic: 'Experimentos (RCT)', skill: 'erro'
 BANK.push({ id: 'apl23', course: APL, topic: 'Interpretação de Coeficientes', skill: 'interp', diff: 2, build() {
   const b = rf(0.04, 0.12, 2);
   return Object.assign(mcText(
-    `Cada ano adicional de escolaridade associa-se a um salário aproximadamente ${fmt(b*100,0)}% maior, ceteris paribus.`,
-    [`Cada ano de escolaridade aumenta o salário em ${fmt(b,2)} reais.`,
-     `A escolaridade explica ${fmt(b*100,0)}% da variação do salário.`,
+    `Cada ano a mais de escolaridade associa-se a um salário cerca de ${fmt(b*100,0)}% maior, ceteris paribus.`,
+    [`Cada ano adicional de escolaridade eleva o salário em exatamente ${fmt(b,2)} reais por mês.`,
+     `A escolaridade, sozinha, explica ${fmt(b*100,0)}% de toda a variação observada nos salários.`,
      `Quem estuda tem salário ${fmt(b*100,0)}% maior no total.`]),
     { stem: `Estimou-se log(salário) = α + β·educ + ε, com β̂ = ${fmt(b,2)}. Qual a interpretação correta?`,
       sol: `Com o desfecho em log, β̂ é semielasticidade: ΔY% ≈ 100·β̂ por unidade de X. Logo, +1 ano de escolaridade ⇒ ~${fmt(b*100,0)}% no salário (aprox., ceteris paribus). Não é em reais nem é R².` });
@@ -950,9 +945,9 @@ BANK.push({ id: 'apl28', course: APL, topic: 'Diferença em Diferenças', skill:
 BANK.push({ id: 'apl29', course: APL, topic: 'Diferença em Diferenças', skill: 'interp', diff: 2, build() {
   const b = rf(2, 6, 1), p = pick(['0.004', '0.012', '0.031']);
   return Object.assign(mcText(
-    `O grupo tratado teve um aumento de ${fmt(b,1)} unidades a mais que o contrafactual (a variação que teria ocorrido sem tratamento), efeito significativo a 5%.`,
-    [`O nível do desfecho dos tratados é ${fmt(b,1)} unidades maior que o dos controles.`,
-     `O desfecho cresceu ${fmt(b,1)}% no grupo tratado.`,
+    `O tratamento elevou o desfecho em ${fmt(b,1)} unidades além do contrafactual, com efeito significativo a 5%.`,
+    [`O nível médio do desfecho dos tratados é ${fmt(b,1)} unidades maior que o dos controles no período.`,
+     `O desfecho do grupo tratado cresceu ${fmt(b,1)}% em termos percentuais ao longo do período.`,
      `Os tratados e controles partiram do mesmo nível antes do tratamento.`]),
     { stem: `Em uma regressão DiD, o coeficiente da interação Tratado×Pós foi ${fmt(b,1)} (p = ${p}). Qual a interpretação correta?`,
       sol: `O coeficiente da interação é o efeito DiD: a variação adicional dos tratados além da tendência comum (contrafactual). É um efeito sobre a mudança, não sobre o nível, e em unidades do desfecho (não %). p=${p} ⇒ significativo a 5%.` });
@@ -1041,9 +1036,9 @@ BANK.push({ id: 'apl37', course: APL, topic: 'Matching / Pareamento', skill: 'in
 
 BANK.push({ id: 'apl38', course: APL, topic: 'Matching / Pareamento', skill: 'erro', diff: 3, build() {
   return Object.assign(mcText(
-    'Controlar por uma variável afetada PELO tratamento (controle ruim / pós-tratamento) introduz viés, em vez de removê-lo.',
-    ['Está correto: quanto mais controles, menor sempre o viés.',
-     'O erro é que pareamento nunca deve usar covariáveis.',
+    'Controlar por uma variável afetada PELO tratamento (controle ruim) introduz viés, em vez de removê-lo.',
+    ['Está correto, pois quanto mais covariáveis se incluem no pareamento, menor é sempre o viés final.',
+     'O erro está em usar covariáveis: um bom pareamento nunca deveria condicionar em variável alguma.',
      'O erro é que só se pode parear por uma variável de cada vez.']),
     { stem: 'Para "melhorar" o pareamento, um analista inclui entre as covariáveis uma variável que é, ela própria, consequência do tratamento. Qual o problema?',
       sol: 'Condicionar em um "bad control" (variável pós-tratamento / mediador / colisor) viesa a estimativa: pode bloquear parte do efeito causal ou abrir caminhos espúrios. Só se deve parear por covariáveis pré-tratamento.' });
@@ -1059,10 +1054,10 @@ BANK.push({ id: 'apl39', course: APL, topic: 'Variáveis Instrumentais', skill: 
 
 BANK.push({ id: 'apl40', course: APL, topic: 'Interpretação de Coeficientes', skill: 'erro', diff: 3, build() {
   return Object.assign(mcText(
-    'Pode introduzir viés: condicionar em um colisor (variável causada por X e por Y) abre uma associação espúria entre eles.',
+    'Pode introduzir viés: condicionar em um colisor abre uma associação espúria entre X e Y.',
     ['Nunca há problema: adicionar controles só pode reduzir o viés.',
-     'O único risco é perder graus de liberdade.',
-     'O problema é apenas multicolinearidade, que não viesa estimativas.']),
+     'O único risco de incluir muitos controles é a perda de graus de liberdade na estimação.',
+     'O único problema possível é a multicolinearidade, a qual, de todo modo, não viesa as estimativas.']),
     { stem: 'Afirma-se: "para reduzir o viés, devo sempre adicionar o máximo de controles possível." Por que esse raciocínio é falho?',
       sol: 'Nem todo controle ajuda. Controlar por um colisor (ou por um mediador / variável pós-tratamento) pode CRIAR viés (viés de colisor/seleção). A escolha de controles deve seguir a estrutura causal, não "quanto mais, melhor".' });
 }});
@@ -1223,9 +1218,9 @@ BANK.push({ id: 'fin35', course: FIN, topic: 'Avaliação por Perpetuidade', ski
 
 BANK.push({ id: 'fin36', course: FIN, topic: 'Payback', skill: 'interp', diff: 2, build() {
   return Object.assign(mcText(
-    'O Projeto A: o payback ignora tudo após a recuperação, podendo descartar um projeto de maior VPL só por demorar a se pagar.',
-    ['O Projeto B sempre, pois payback menor é critério suficiente de valor.',
-     'São equivalentes, pois payback e VPL sempre coincidem.',
+    'O Projeto A: o payback ignora os fluxos após a recuperação e pode descartar o projeto de maior VPL.',
+    ['O Projeto B, sempre, pois um payback menor já é critério suficiente para indicar maior valor.',
+     'Os dois são equivalentes, uma vez que os critérios de payback e de VPL sempre coincidem na prática.',
      'Nenhum, pois projetos com payback longo nunca criam valor.']),
     { stem: 'O Projeto A tem payback de 4 anos e VPL alto (gera muitos fluxos depois); o Projeto B tem payback de 2 anos e VPL baixo. Por que escolher só pelo payback pode levar à decisão errada?',
       sol: 'O payback ignora valor do dinheiro no tempo e, sobretudo, todos os fluxos após o ponto de recuperação. Pode preferir B (recupera rápido) e perder o valor superior de A. O critério de valor é o VPL.' });
@@ -1243,9 +1238,9 @@ BANK.push({ id: 'fin37', course: FIN, topic: 'Capital de Giro', skill: 'formula'
 
 BANK.push({ id: 'fin38', course: FIN, topic: 'TIR', skill: 'erro', diff: 2, build() {
   return Object.assign(mcText(
-    'TIR positiva não basta: é preciso comparar à taxa de desconto (custo de capital). Um projeto com TIR positiva mas abaixo do custo de capital destrói valor (VPL<0).',
-    ['Está correto: TIR positiva sempre significa VPL positivo.',
-     'O erro é que projetos com TIR positiva nunca devem ser aceitos.',
+    'TIR positiva não basta: ela precisa ser comparada ao custo de capital, abaixo do qual o VPL é negativo.',
+    ['Está correto, porque uma TIR positiva sempre implica, por construção, um VPL também positivo.',
+     'O erro do raciocínio é o oposto: projetos com TIR positiva nunca deveriam, na verdade, ser aceitos.',
      'O erro é que a TIR deve ser comparada à inflação, não ao custo de capital.']),
     { stem: 'Afirmação: "a TIR deste projeto é positiva (8%), então ele deve ser aceito." Por que o raciocínio é incompleto?',
       sol: 'O critério é TIR vs. custo de capital. Se o custo de capital for, digamos, 12%, uma TIR de 8% implica VPL<0 ⇒ rejeitar. TIR positiva apenas indica que se recupera o principal com algum retorno, não que se supera o custo de oportunidade.' });
@@ -1411,10 +1406,10 @@ BANK.push({ id: 'ser33', course: SER, topic: 'ARDL / Multiplicadores', skill: 'f
 BANK.push({ id: 'ser34', course: SER, topic: 'ARDL / Multiplicadores', skill: 'interp', diff: 2, build() {
   const lr = rf(0.6, 1.6, 2);
   return Object.assign(mcText(
-    `Um aumento permanente de 1 unidade em X eleva Y, no novo equilíbrio de longo prazo, em ${fmt(lr,2)} unidades (somando todos os efeitos defasados).`,
-    [`X explica ${fmt(lr*100,0)}% da variância de Y.`,
+    `Um aumento permanente de 1 unidade em X eleva Y em ${fmt(lr,2)} unidades no novo equilíbrio de longo prazo.`,
+    [`O coeficiente de determinação indica que X explica ${fmt(lr*100,0)}% da variância total de Y.`,
      `O efeito instantâneo (no mesmo período) de X sobre Y é ${fmt(lr,2)}.`,
-     `Y converge para ${fmt(lr,2)} independentemente de X.`]),
+     `No longo prazo, Y converge para o valor ${fmt(lr,2)}, independentemente da trajetória de X.`]),
     { stem: `Em um ARDL, estimou-se um multiplicador de longo prazo de ${fmt(lr,2)}. O que ele significa?`,
       sol: `O multiplicador de longo prazo é o efeito acumulado total sobre Y de uma mudança PERMANENTE unitária em X, após todos os ajustes dinâmicos. Difere do efeito de impacto (instantâneo) e não é um R².` });
 }});
@@ -1473,12 +1468,698 @@ BANK.push({ id: 'ser39', course: SER, topic: 'Previsão', skill: 'formula', diff
 
 BANK.push({ id: 'ser40', course: SER, topic: 'Raiz Unitária / Regressão Espúria', skill: 'erro', diff: 3, build() {
   return Object.assign(mcText(
-    'Sobre-diferenciação: diferenciar uma série já estacionária introduz uma raiz unitária no componente MA (não-invertível) e infla a variância — piora o modelo.',
+    'Sobre-diferenciação: diferenciar uma série já estacionária cria uma raiz MA não-invertível e infla a variância.',
     ['Está correto: diferenciar sempre melhora qualquer série.',
-     'O problema é que diferenciar muda a média, mas nunca a variância.',
-     'O problema é que a diferença de uma série estacionária deixa de ter média zero.']),
+     'O problema é que diferenciar a série altera a sua média, embora nunca afete a variância.',
+     'O problema é que a diferença de uma série estacionária passa a ter média sistematicamente diferente de zero.']),
     { stem: 'Afirmação: "na dúvida, sempre diferencie a série — nunca faz mal." Por que isso é falho?',
       sol: 'Diferenciar uma série I(0) gera sobre-diferenciação: aparece uma raiz MA unitária (não-invertível), a estrutura de autocorrelação fica distorcida e a variância aumenta. Diferencia-se apenas quando há raiz unitária (série I(1)).' });
+}});
+
+/* ============================================================
+   PARTE 3: Financas Corporativas (fin41 a fin60)
+   TIR (computacao), mais VPL, tabelas e graficos
+   ============================================================ */
+
+/* tabela HTML com estilos inline (nao depende de CSS externo) */
+function tbl(headers, rows) {
+  const th = 'style="border:1px solid #ccc;padding:4px 11px;background:#f2f2f2;text-align:right;font-weight:600"';
+  const td = 'style="border:1px solid #ccc;padding:4px 11px;text-align:right"';
+  let h = '<table style="border-collapse:collapse;margin:0.6rem 0;font-size:0.85rem">';
+  h += '<tr>' + headers.map((x) => '<th ' + th + '>' + x + '</th>').join('') + '</tr>';
+  rows.forEach((r) => { h += '<tr>' + r.map((c) => '<td ' + td + '>' + c + '</td>').join('') + '</tr>'; });
+  return h + '</table>';
+}
+
+/* grafico de barras (fluxos de caixa), com rotulo de valor */
+function barChart(vals, labels) {
+  const W = 380, H = 170, pad = 26, n = vals.length;
+  const mx = Math.max(...vals, 0), mn = Math.min(...vals, 0), range = (mx - mn) || 1;
+  const y0 = pad + (mx / range) * (H - 2 * pad);
+  const gap = (W - 2 * pad) / n, bw = gap * 0.55;
+  let s = '<line x1="' + pad + '" y1="' + y0.toFixed(1) + '" x2="' + (W - pad) + '" y2="' + y0.toFixed(1) + '" stroke="#333"/>';
+  vals.forEach((v, i) => {
+    const x = pad + gap * i + (gap - bw) / 2;
+    const hgt = Math.abs(v) / range * (H - 2 * pad);
+    const y = v >= 0 ? y0 - hgt : y0;
+    s += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + hgt.toFixed(1) + '" fill="' + (v >= 0 ? '#CC0000' : '#888') + '"/>';
+    s += '<text x="' + (x + bw / 2).toFixed(1) + '" y="' + (v >= 0 ? y - 4 : y + hgt + 11).toFixed(1) + '" font-size="9.5" text-anchor="middle" fill="#222">' + v + '</text>';
+    s += '<text x="' + (x + bw / 2).toFixed(1) + '" y="' + (H - 6) + '" font-size="9.5" text-anchor="middle" fill="#666">' + labels[i] + '</text>';
+  });
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '" style="max-width:390px;display:block;margin:0.5rem 0">' + s + '</svg>';
+}
+
+/* perfil de VPL: linha VPL(r) cruzando o eixo zero */
+function npvProfileSVG(rates, npvs) {
+  const W = 380, H = 180, padL = 40, padR = 16, padT = 14, padB = 28;
+  const xmin = rates[0], xmax = rates[rates.length - 1];
+  const ymax = Math.max(...npvs), ymin = Math.min(...npvs), yr = (ymax - ymin) || 1;
+  const X = (r) => padL + (r - xmin) / (xmax - xmin) * (W - padL - padR);
+  const Y = (v) => padT + (ymax - v) / yr * (H - padT - padB);
+  const y0 = Y(0);
+  let pts = npvs.map((v, i) => X(rates[i]).toFixed(1) + ',' + Y(v).toFixed(1)).join(' ');
+  let s = '<line x1="' + padL + '" y1="' + y0.toFixed(1) + '" x2="' + (W - padR) + '" y2="' + y0.toFixed(1) + '" stroke="#bbb"/>';
+  s += '<line x1="' + padL + '" y1="' + padT + '" x2="' + padL + '" y2="' + (H - padB) + '" stroke="#333"/>';
+  s += '<polyline points="' + pts + '" fill="none" stroke="#CC0000" stroke-width="2"/>';
+  rates.forEach((r) => { s += '<text x="' + X(r).toFixed(1) + '" y="' + (H - 10) + '" font-size="9.5" text-anchor="middle" fill="#666">' + (r * 100).toFixed(0) + '%</text>'; });
+  s += '<text x="' + (padL - 6) + '" y="' + (y0 + 3).toFixed(1) + '" font-size="9.5" text-anchor="end" fill="#666">0</text>';
+  s += '<text x="6" y="' + (padT + 8) + '" font-size="9.5" fill="#666">VPL</text>';
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '" style="max-width:390px;display:block;margin:0.5rem 0">' + s + '</svg>';
+}
+
+/* TIR por bisseccao (para gabarito interno) */
+function irrBisect(flows) {
+  const npv = (r) => flows.reduce((a, c, t) => a + c / Math.pow(1 + r, t), 0);
+  let lo = -0.9, hi = 5;
+  if (npv(lo) * npv(hi) > 0) return null;
+  for (let k = 0; k < 100; k++) { const m = (lo + hi) / 2; (npv(lo) * npv(m) <= 0) ? hi = m : lo = m; }
+  return (lo + hi) / 2;
+}
+
+BANK.push({ id: 'fin41', course: FIN, topic: 'TIR', skill: 'calc', diff: 1, build() {
+  const c0 = ri(800, 2000), r = ri(8, 25), cf1 = Math.round(c0 * (1 + r / 100));
+  return { type: 'num',
+    stem: `Um projeto exige ${money(c0,0)} hoje e devolve um único fluxo de ${money(cf1,0)} daqui a 1 ano. Qual a TIR (em %)?`,
+    answer: r, tol: 0.15, unit: '%',
+    sol: `Com um período, VPL = −C₀ + CF₁/(1+r) = 0 ⇒ 1+r = CF₁/C₀ = ${cf1}/${c0} ⇒ TIR = ${fmt(cf1/c0-1,4)} = <b>${pct(r,0)}</b>.` };
+}});
+
+BANK.push({ id: 'fin42', course: FIN, topic: 'TIR', skill: 'calc', diff: 2, build() {
+  const c0 = ri(800, 1600), r = pick([0.1, 0.15, 0.2, 0.25]), cf2 = Math.round(c0 * Math.pow(1 + r, 2));
+  const irr = Math.sqrt(cf2 / c0) - 1;
+  return { type: 'num',
+    stem: `Um projeto custa ${money(c0,0)} hoje, não gera nada no ano 1 e devolve ${money(cf2,0)} no ano 2. Qual a TIR (em %)?`,
+    answer: irr * 100, tol: 0.2, unit: '%',
+    sol: `VPL = −C₀ + CF₂/(1+r)² = 0 ⇒ (1+r)² = CF₂/C₀ = ${cf2}/${c0} ⇒ 1+r = √(${fmt(cf2/c0,3)}) ⇒ TIR = <b>${pct(irr*100,1)}</b>.` };
+}});
+
+BANK.push({ id: 'fin43', course: FIN, topic: 'TIR', skill: 'calc', diff: 2, build() {
+  const c0 = ri(1000, 2000), g = ri(2, 5), cf1 = Math.round(c0 * (ri(8, 14) / 100));
+  const irr = cf1 / c0 * 100 + g;
+  return { type: 'num',
+    stem: `Um investimento de ${money(c0,0)} gera um fluxo de ${money(cf1,0)} no próximo ano, crescendo ${g}% ao ano perpetuamente. Qual a TIR (em %)?`,
+    answer: irr, tol: 0.15, unit: '%',
+    sol: `Perpetuidade crescente: VPL = −C₀ + CF₁/(r−g) = 0 ⇒ r − g = CF₁/C₀ ⇒ TIR = CF₁/C₀ + g = ${fmt(cf1/c0*100,2)}% + ${g}% = <b>${pct(irr,2)}</b>.` };
+}});
+
+BANK.push({ id: 'fin44', course: FIN, topic: 'TIR', skill: 'rout', diff: 2, build() {
+  const c0 = ri(900, 1300);
+  const cfs = [ri(300, 500), ri(300, 550), ri(350, 600)];
+  const flows = [-c0, ...cfs];
+  const irr = irrBisect(flows) || 0.1;
+  const rates = [0.05, 0.10, 0.15, 0.20, 0.25];
+  const npvAt = (r) => flows.reduce((a, c, t) => a + c / Math.pow(1 + r, t), 0);
+  const rows = rates.map((r) => [pct(r*100,0), money(npvAt(r),0)]);
+  const intervals = [[0.05,0.10],[0.10,0.15],[0.15,0.20],[0.20,0.25]];
+  const correctIv = intervals.find((iv) => irr >= iv[0] && irr < iv[1]) || [0.20,0.25];
+  const opt = intervals.map((iv) => `entre ${pct(iv[0]*100,0)} e ${pct(iv[1]*100,0)}`);
+  const corrStr = `entre ${pct(correctIv[0]*100,0)} e ${pct(correctIv[1]*100,0)}`;
+  const distr = opt.filter((o) => o !== corrStr);
+  return Object.assign(mcText(corrStr, distr),
+    { stem: `A tabela mostra o VPL de um projeto a várias taxas de desconto. Em qual intervalo está a TIR?` + tbl(['Taxa', 'VPL'], rows),
+      sol: `A TIR é a taxa em que o VPL = 0, ou seja, onde a coluna do VPL troca de sinal (de positivo para negativo). Pela tabela, isso ocorre <b>${corrStr}</b> (TIR ≈ ${pct(irr*100,1)}).` });
+}});
+
+BANK.push({ id: 'fin45', course: FIN, topic: 'TIR', skill: 'interp', diff: 2, build() {
+  const irr = rf(9, 16, 1), wacc = rf(10, 18, 1);
+  const accept = irr > wacc;
+  return Object.assign(mcText(
+    accept ? 'Aceitar: a TIR excede o custo de capital, logo o VPL é positivo.'
+           : 'Rejeitar: a TIR é menor que o custo de capital, logo o VPL é negativo.',
+    accept ? ['Rejeitar: TIR acima do custo de capital sinaliza risco alto demais.',
+              'Indiferente: a TIR não dialoga com o custo de capital.',
+              'Aceitar apenas se a TIR ficar abaixo do custo de capital.']
+           : ['Aceitar: TIR positiva já basta para criar valor.',
+              'Aceitar: recupera-se o capital com folga de segurança.',
+              'Indiferente: o sinal do VPL independe da TIR aqui.']),
+    { stem: `Projeto de fluxos convencionais com TIR = ${pct(irr,1)} e custo de capital de ${pct(wacc,1)}. Qual a decisão?`,
+      sol: `Fluxo convencional: aceita-se sse TIR > custo de capital (equivale a VPL>0). Como ${pct(irr,1)} ${accept ? '>' : '<'} ${pct(wacc,1)}, deve-se <b>${accept ? 'aceitar' : 'rejeitar'}</b>.` });
+}});
+
+BANK.push({ id: 'fin46', course: FIN, topic: 'VPL', skill: 'rout', diff: 2, build() {
+  const c0 = ri(900, 1500), r = ri(8, 13);
+  const cfs = [ri(300, 600), ri(300, 600), ri(300, 600), ri(300, 600)];
+  let npv = -c0; cfs.forEach((c, i) => npv += c / Math.pow(1 + r / 100, i + 1));
+  const rows = [['0', money(-c0,0)], ...cfs.map((c, i) => [String(i+1), money(c,0)])];
+  return { type: 'num',
+    stem: `A tabela traz os fluxos de caixa de um projeto. À taxa de ${r}% ao ano, qual o VPL (em R$)?` + tbl(['Ano', 'Fluxo'], rows),
+    answer: npv, tol: Math.max(1, Math.abs(npv) * 0.01), unit: 'R$',
+    sol: `VPL = Σ Fluxoₜ/(1+r)ᵗ = −${c0} + ${cfs.map((c,i)=>fmt(c/Math.pow(1+r/100,i+1),0)).join(' + ')} = <b>${money(npv)}</b>.` };
+}});
+
+BANK.push({ id: 'fin47', course: FIN, topic: 'VPL', skill: 'calc', diff: 2, build() {
+  const c0 = ri(1500, 3000), pmt = ri(400, 700), n = ri(4, 7), r = ri(8, 12) / 100;
+  const pv = pmt * (1 - Math.pow(1 + r, -n)) / r, npv = pv - c0;
+  return { type: 'num',
+    stem: `Um projeto custa ${money(c0,0)} e gera ${money(pmt,0)} por ano durante ${n} anos (anuidade). À taxa de ${pct(r*100,0)}, qual o VPL (em R$)?`,
+    answer: npv, tol: Math.max(1, Math.abs(npv) * 0.01), unit: 'R$',
+    sol: `VP da anuidade = PMT·[1−(1+r)⁻ⁿ]/r = ${pmt}·[1−${fmt(Math.pow(1+r,-n),4)}]/${fmt(r,2)} = ${money(pv)}. VPL = VP − C₀ = ${money(pv)} − ${money(c0)} = <b>${money(npv)}</b>.` };
+}});
+
+BANK.push({ id: 'fin48', course: FIN, topic: 'VPL', skill: 'rout', diff: 2, build() {
+  let a = ri(120, 320), b = ri(120, 320); if (Math.abs(a - b) < 25) b = a + 40;
+  const rows = [['A', money(a,0)], ['B', money(b,0)]];
+  const win = a > b ? 'A' : 'B';
+  return Object.assign(mcText(
+    `Escolher o Projeto ${win}, que tem o maior VPL.`,
+    [`Escolher o Projeto ${win === 'A' ? 'B' : 'A'}, de menor VPL.`,
+     'São indiferentes: o VPL não serve para ordenar projetos.',
+     'Escolher ambos, pois os dois têm VPL positivo.']),
+    { stem: `Dois projetos mutuamente exclusivos, mesmo investimento e risco, têm os VPLs abaixo. Qual escolher?` + tbl(['Projeto', 'VPL'], rows),
+      sol: `Entre projetos mutuamente exclusivos de mesma escala/risco, escolhe-se o de maior VPL: Projeto <b>${win}</b> (${money(Math.max(a,b),0)} > ${money(Math.min(a,b),0)}).` });
+}});
+
+BANK.push({ id: 'fin49', course: FIN, topic: 'VPL', skill: 'rout', diff: 2, build() {
+  const c0 = ri(700, 1100), r = ri(8, 12);
+  const cfs = [ri(300, 550), ri(300, 550), ri(300, 550)];
+  let npv = -c0; cfs.forEach((c, i) => npv += c / Math.pow(1 + r / 100, i + 1));
+  const chart = barChart([-c0, ...cfs], ['Ano 0', 'Ano 1', 'Ano 2', 'Ano 3']);
+  return { type: 'num',
+    stem: `O diagrama mostra os fluxos de caixa de um projeto (valores indicados). À taxa de ${r}%, qual o VPL (em R$)?` + chart,
+    answer: npv, tol: Math.max(1, Math.abs(npv) * 0.01), unit: 'R$',
+    sol: `VPL = −${c0} + ${cfs.map((c,i)=>fmt(c/Math.pow(1+r/100,i+1),0)).join(' + ')} = <b>${money(npv)}</b>.` };
+}});
+
+BANK.push({ id: 'fin50', course: FIN, topic: 'TIR', skill: 'interp', diff: 3, build() {
+  const c0 = ri(900, 1200);
+  const cfs = [ri(350, 500), ri(350, 520), ri(380, 560)];
+  const flows = [-c0, ...cfs];
+  const rates = [0.0, 0.05, 0.10, 0.15, 0.20, 0.25];
+  const npvAt = (r) => flows.reduce((a, c, t) => a + c / Math.pow(1 + r, t), 0);
+  const npvs = rates.map(npvAt);
+  const chart = npvProfileSVG(rates, npvs);
+  return Object.assign(mcText(
+    'A taxa em que a curva cruza o eixo zero (VPL = 0).',
+    ['A taxa em que a curva atinge seu ponto mais alto.',
+     'O valor do VPL quando a taxa de desconto é zero.',
+     'A inclinação média da curva ao longo do eixo das taxas.']),
+    { stem: `A figura é o perfil do VPL de um projeto (VPL em função da taxa de desconto). No gráfico, a TIR corresponde a quê?` + chart,
+      sol: `A TIR é, por definição, a taxa que zera o VPL — o ponto em que a curva do perfil de VPL cruza o eixo horizontal (VPL = 0). O ponto onde r=0 dá apenas a soma não-descontada dos fluxos.` });
+}});
+
+BANK.push({ id: 'fin51', course: FIN, topic: 'VPL', skill: 'calc', diff: 2, build() {
+  const c0 = ri(1000, 1800), op = ri(300, 500), n = 3, salv = ri(200, 500), r = ri(9, 13) / 100;
+  let npv = -c0;
+  for (let t = 1; t <= n; t++) npv += op / Math.pow(1 + r, t);
+  npv += salv / Math.pow(1 + r, n);
+  return { type: 'num',
+    stem: `Projeto: investimento ${money(c0,0)}; fluxo operacional de ${money(op,0)}/ano por ${n} anos; e valor residual (revenda) de ${money(salv,0)} no fim do ano ${n}. À taxa de ${pct(r*100,0)}, qual o VPL (em R$)?`,
+    answer: npv, tol: Math.max(1, Math.abs(npv) * 0.01), unit: 'R$',
+    sol: `VPL = −${c0} + Σₜ₌₁³ ${op}/(1+r)ᵗ + ${salv}/(1+r)³ = <b>${money(npv)}</b>. O valor residual é só mais um fluxo no ano ${n}.` };
+}});
+
+BANK.push({ id: 'fin52', course: FIN, topic: 'VPL', skill: 'calc', diff: 3, build() {
+  const dC = ri(300, 600), dCF = ri(120, 220), n = 4, r = ri(8, 12) / 100;
+  let npv = -dC; for (let t = 1; t <= n; t++) npv += dCF / Math.pow(1 + r, t);
+  return { type: 'num',
+    stem: `Trocar a máquina antiga pela nova custa ${money(dC,0)} a mais hoje, mas gera economia incremental de ${money(dCF,0)}/ano por ${n} anos. À taxa de ${pct(r*100,0)}, qual o VPL incremental da troca (em R$)?`,
+    answer: npv, tol: Math.max(1, Math.abs(npv) * 0.01), unit: 'R$',
+    sol: `Analisa-se o fluxo INCREMENTAL: VPL = −ΔC₀ + Σₜ ΔCF/(1+r)ᵗ = −${dC} + ${dCF}·[1−(1+r)⁻⁴]/${fmt(r,2)} = <b>${money(npv)}</b>. ${npv>0?'Vale a pena trocar.':'Não compensa trocar.'}` };
+}});
+
+BANK.push({ id: 'fin53', course: FIN, topic: 'TIR', skill: 'interp', diff: 3, build() {
+  return Object.assign(mcText(
+    'Que os fluxos intermediários são reinvestidos à própria TIR.',
+    ['Que os fluxos são reinvestidos ao custo de capital da firma.',
+     'Que não há reinvestimento dos fluxos intermediários.',
+     'Que a taxa de desconto cresce período a período.']),
+    { stem: 'Uma crítica clássica à TIR é sua hipótese implícita de reinvestimento. O que a TIR supõe sobre os fluxos intermediários?',
+      sol: 'A TIR supõe reinvestimento dos fluxos à própria TIR — irrealista quando a TIR é muito alta. O VPL (e a TIR modificada, MTIR) supõe reinvestimento ao custo de capital, hipótese mais defensável.' });
+}});
+
+BANK.push({ id: 'fin54', course: FIN, topic: 'Payback', skill: 'rout', diff: 2, build() {
+  const c0 = ri(900, 1300), r = ri(9, 12) / 100;
+  const cfs = [ri(350, 500), ri(350, 500), ri(350, 500), ri(350, 500)];
+  const disc = cfs.map((c, i) => c / Math.pow(1 + r, i + 1));
+  let cum = -c0, yr = 0, prev = -c0;
+  for (let i = 0; i < disc.length; i++) { prev = cum; cum += disc[i]; if (cum >= 0) { yr = i + (-prev) / disc[i]; break; } }
+  const rows = [['0', money(-c0,0), money(-c0,0)]];
+  let cc = -c0; disc.forEach((d, i) => { cc += d; rows.push([String(i+1), money(d,0), money(cc,0)]); });
+  return { type: 'num',
+    stem: `A tabela traz os fluxos já descontados (a ${pct(r*100,0)}) e o saldo acumulado. Qual o payback descontado (em anos)?` + tbl(['Ano', 'Fluxo desc.', 'Acumulado'], rows),
+    answer: yr, tol: 0.1, unit: 'anos',
+    sol: `O payback descontado é o instante em que o acumulado passa a ≥ 0. Interpolando no ano em que isso ocorre: ≈ <b>${fmt(yr)} anos</b>.` };
+}});
+
+BANK.push({ id: 'fin55', course: FIN, topic: 'VPL', skill: 'calc', diff: 2, build() {
+  const c0 = ri(1000, 1600), r = ri(9, 12) / 100;
+  const cfs = [ri(400, 600), ri(400, 600), ri(400, 600)];
+  let pv = 0; cfs.forEach((c, i) => pv += c / Math.pow(1 + r, i + 1));
+  const pi = pv / c0;
+  return { type: 'num',
+    stem: `Investimento de ${money(c0,0)} e VP dos fluxos futuros (a ${pct(r*100,0)}) calculado em ${money(pv,0)}. Qual o índice de lucratividade (PI)?`,
+    answer: pi, tol: 0.02, unit: '',
+    sol: `PI = VP dos fluxos / Investimento = ${money(pv,0)}/${money(c0,0)} = <b>${fmt(pi)}</b>. PI > 1 ⇔ VPL > 0.` };
+}});
+
+BANK.push({ id: 'fin56', course: FIN, topic: 'TIR', skill: 'erro', diff: 3, build() {
+  return Object.assign(mcText(
+    'Pode haver até duas TIRs, pois há duas inversões de sinal nos fluxos.',
+    ['Há sempre exatamente uma TIR, independentemente dos sinais.',
+     'Não existe TIR quando algum fluxo é negativo.',
+     'A TIR coincide com o custo de capital sempre que há dois sinais.']),
+    { stem: 'Um projeto tem fluxos com a sequência de sinais −, +, +, −. Sobre a TIR desse projeto, o que se pode afirmar?',
+      sol: 'Pela regra de sinais de Descartes, o número de TIRs reais positivas é no máximo o número de inversões de sinal. Com duas inversões (− para + e + para −), pode haver até duas TIRs — caso clássico em que o critério da TIR falha e se usa o VPL.' });
+}});
+
+BANK.push({ id: 'fin57', course: FIN, topic: 'VPL', skill: 'interp', diff: 2, build() {
+  return Object.assign(mcText(
+    'O VPL cai à medida que a taxa de desconto sobe.',
+    ['O VPL sobe à medida que a taxa de desconto sobe.',
+     'O VPL não depende da taxa de desconto.',
+     'O VPL é sempre positivo, qualquer que seja a taxa.']),
+    { stem: 'Para um projeto convencional (uma saída inicial seguida de entradas), como o VPL se comporta quando a taxa de desconto aumenta?',
+      sol: 'Entradas futuras são descontadas mais fortemente quando r sobe, então o VPL é decrescente em r. Ele cruza zero exatamente na TIR e fica negativo para taxas acima dela.' });
+}});
+
+BANK.push({ id: 'fin58', course: FIN, topic: 'TIR', skill: 'calc', diff: 3, build() {
+  const r1 = pick([0.08, 0.10, 0.12]), r2 = r1 + 0.05;
+  const npv1 = ri(40, 120), npv2 = -ri(30, 90);
+  const irr = r1 + npv1 * (r2 - r1) / (npv1 - npv2);
+  return { type: 'num',
+    stem: `Sabe-se que o VPL de um projeto é ${money(npv1,0)} à taxa de ${pct(r1*100,0)} e ${money(npv2,0)} à taxa de ${pct(r2*100,0)}. Estime a TIR por interpolação linear (em %).`,
+    answer: irr * 100, tol: 0.3, unit: '%',
+    sol: `Interpolação linear: TIR ≈ r₁ + VPL₁·(r₂−r₁)/(VPL₁−VPL₂) = ${pct(r1*100,0)} + ${npv1}·(${pct(r2*100,0)}−${pct(r1*100,0)})/(${npv1}−(${npv2})) = <b>${pct(irr*100,2)}</b>.` };
+}});
+
+BANK.push({ id: 'fin59', course: FIN, topic: 'Avaliação por Perpetuidade', skill: 'calc', diff: 1, build() {
+  const cf = ri(80, 250), r = ri(8, 14) / 100, v = cf / r;
+  return { type: 'num',
+    stem: `Uma perpetuidade paga ${money(cf,0)} ao ano, para sempre (sem crescimento). À taxa de ${pct(r*100,0)}, qual o seu valor presente (em R$)?`,
+    answer: v, tol: Math.max(1, v * 0.01), unit: 'R$',
+    sol: `Perpetuidade sem crescimento: VP = CF/r = ${cf}/${fmt(r,2)} = <b>${money(v)}</b>.` };
+}});
+
+BANK.push({ id: 'fin60', course: FIN, topic: 'TIR', skill: 'rout', diff: 3, build() {
+  const rows = [['Pequeno', 'R$ 100', '40%', 'R$ 60'], ['Grande', 'R$ 1.000', '18%', 'R$ 220']];
+  return Object.assign(mcText(
+    'O Grande, pelo VPL: a TIR ignora a escala do investimento.',
+    ['O Pequeno, pois tem a maior TIR.',
+     'O Pequeno, pois exige menos capital.',
+     'Indiferente, já que ambos têm VPL positivo.']),
+    { stem: `Dois projetos mutuamente exclusivos (mesmo custo de capital). Qual escolher e por quê?` + tbl(['Projeto', 'Investimento', 'TIR', 'VPL'], rows),
+      sol: `Em projetos mutuamente exclusivos de escalas diferentes, TIR e VPL podem conflitar. A TIR favorece o Pequeno (40%), mas ela ignora o tamanho; o VPL mede valor absoluto criado e favorece o <b>Grande</b> (R$ 220 > R$ 60). Decide-se pelo VPL.` });
+}});
+
+/* ============================================================
+   PARTE 4: Econometria II - 2a parte (ser41 a ser80)
+   GARCH, ARDL/ECM, VAR/Granger, SVAR, Cointegracao/VECM, Kalman, PCA/Fatores
+   Interpretacao mais dificil; opcoes com comprimento equilibrado.
+   ============================================================ */
+
+/* ---- GARCH / Volatilidade (ser41-ser50) ---- */
+BANK.push({ id: 'ser41', course: SER, topic: 'GARCH / Volatilidade', skill: 'calc', diff: 2, build() {
+  const w = rf(0.3, 1.2, 2), a = rf(0.2, 0.6, 2), v = w / (1 - a);
+  return { type: 'num',
+    stem: `Em um ARCH(1): σ²ₜ = ${fmt(w)} + ${fmt(a)}·ε²ₜ₋₁. Qual a variância incondicional?`,
+    answer: v, tol: Math.max(0.02, v * 0.01), unit: '',
+    sol: `σ² = ω/(1−α) = ${fmt(w)}/(1−${fmt(a)}) = <b>${fmt(v)}</b>. Requer α<1.` };
+}});
+
+BANK.push({ id: 'ser42', course: SER, topic: 'GARCH / Volatilidade', skill: 'calc', diff: 3, build() {
+  const p = pick([0.85, 0.9, 0.92, 0.95]), hl = Math.log(0.5) / Math.log(p);
+  return { type: 'num',
+    stem: `Em um GARCH(1,1) a persistência é α+β = ${fmt(p)}. Qual a meia-vida de um choque de volatilidade (em períodos)?`,
+    answer: hl, tol: 0.3, unit: 'períodos',
+    sol: `A meia-vida resolve (α+β)^h = 1/2 ⇒ h = ln(0,5)/ln(α+β) = ln(0,5)/ln(${fmt(p)}) = <b>${fmt(hl)}</b> períodos.` };
+}});
+
+BANK.push({ id: 'ser43', course: SER, topic: 'GARCH / Volatilidade', skill: 'interp', diff: 2, build() {
+  return Object.assign(mcText(
+    'Choques de volatilidade são muito persistentes.',
+    ['A volatilidade reverte quase instantaneamente à média.',
+     'A variância incondicional não existe (é infinita).',
+     'A série do retorno em nível é não-estacionária e explosiva.']),
+    { stem: 'Em um GARCH(1,1) estima-se α+β = 0,98. Qual a interpretação mais adequada?',
+      sol: 'α+β perto de 1 indica alta persistência: choques na variância decaem devagar (clusters de volatilidade duradouros). Como ainda é <1, a variância incondicional existe; e GARCH modela a variância, não torna o nível do retorno explosivo.' });
+}});
+
+BANK.push({ id: 'ser44', course: SER, topic: 'GARCH / Volatilidade', skill: 'rout', diff: 2, build() {
+  const p = pick(['0.001', '0.004', '0.012']);
+  return Object.assign(mcText(
+    'Há efeitos ARCH: rejeita-se a ausência de heterocedasticidade condicional.',
+    ['Os resíduos são homocedásticos; não há efeitos ARCH.',
+     'A série tem raiz unitária e precisa ser diferenciada.',
+     'O modelo da média está mal especificado e deve ganhar defasagens.']),
+    { stem: `Aplicou-se o teste ARCH-LM aos resíduos de um modelo:` + rout(['ARCH-LM test', 'LM stat = 18.7', 'p-value = ' + p]) + `Com 5% de significância, o que se conclui?`,
+      sol: `No ARCH-LM, H₀ é "sem efeitos ARCH" (homocedasticidade condicional). Com p = ${p} < 0,05, rejeita-se H₀: há heterocedasticidade condicional (efeitos ARCH), justificando um modelo GARCH para a variância.` });
+}});
+
+BANK.push({ id: 'ser45', course: SER, topic: 'GARCH / Volatilidade', skill: 'interp', diff: 3, build() {
+  return Object.assign(mcText(
+    'Notícias negativas elevam mais a volatilidade que notícias positivas de mesmo tamanho.',
+    ['Notícias positivas e negativas afetam a volatilidade de forma idêntica.',
+     'Apenas o tamanho do choque importa, nunca o seu sinal.',
+     'A volatilidade responde só a choques positivos, ignorando os negativos.']),
+    { stem: 'Modelos EGARCH/GJR capturam o chamado "efeito alavancagem" em retornos de ações. Em que ele consiste?',
+      sol: 'Efeito alavancagem/assimetria: choques negativos (más notícias) aumentam a volatilidade futura mais do que choques positivos de igual magnitude. O GARCH simétrico não captura isso; EGARCH e GJR-GARCH sim.' });
+}});
+
+BANK.push({ id: 'ser46', course: SER, topic: 'GARCH / Volatilidade', skill: 'calc', diff: 2, build() {
+  const w = rf(0.2, 0.6, 2), a = rf(0.08, 0.15, 2), b = rf(0.7, 0.85, 2);
+  const e2 = rf(1, 4, 2), s2 = rf(1, 3, 2);
+  const f = w + a * e2 + b * s2;
+  return { type: 'num',
+    stem: `GARCH(1,1): σ²ₜ = ${fmt(w)} + ${fmt(a)}·ε²ₜ₋₁ + ${fmt(b)}·σ²ₜ₋₁. Hoje, ε²ₜ = ${fmt(e2)} e σ²ₜ = ${fmt(s2)}. Qual a previsão da variância para amanhã, σ²ₜ₊₁?`,
+    answer: f, tol: 0.03, unit: '',
+    sol: `σ²ₜ₊₁ = ω + α·ε²ₜ + β·σ²ₜ = ${fmt(w)} + ${fmt(a)}·${fmt(e2)} + ${fmt(b)}·${fmt(s2)} = <b>${fmt(f)}</b>.` };
+}});
+
+BANK.push({ id: 'ser47', course: SER, topic: 'GARCH / Volatilidade', skill: 'interp', diff: 3, build() {
+  return Object.assign(mcText(
+    'Um choque na variância nunca se dissipa (efeito permanente).',
+    ['A variância condicional passa a ser constante no tempo.',
+     'A volatilidade reverte mais rápido para a média de longo prazo.',
+     'O modelo deixa de ter qualquer dependência temporal na variância.']),
+    { stem: 'Em um IGARCH, estima-se α+β = 1. Qual a principal implicação?',
+      sol: 'Com α+β=1 (IGARCH), a variância incondicional não é finita e choques de volatilidade têm efeito permanente — não há reversão à média na variância. É o análogo da raiz unitária para a volatilidade.' });
+}});
+
+BANK.push({ id: 'ser48', course: SER, topic: 'GARCH / Volatilidade', skill: 'interp', diff: 2, build() {
+  return Object.assign(mcText(
+    'A variância condicional muda no tempo; a incondicional é uma constante.',
+    ['As duas são iguais e constantes em todos os instantes.',
+     'A incondicional varia no tempo; a condicional é fixa.',
+     'Ambas variam livremente sem qualquer relação entre si.']),
+    { stem: 'Qual a diferença entre variância condicional e incondicional em um GARCH?',
+      sol: 'A variância condicional σ²ₜ depende da informação passada e varia a cada período; a incondicional é o valor médio de longo prazo (ω/(1−α−β)), uma constante para a qual σ²ₜ tende a reverter.' });
+}});
+
+BANK.push({ id: 'ser49', course: SER, topic: 'GARCH / Volatilidade', skill: 'interp', diff: 2, build() {
+  return Object.assign(mcText(
+    'Converge para a variância incondicional de longo prazo.',
+    ['Cresce sem limite com o horizonte de previsão.',
+     'Permanece igual à variância condicional de hoje.',
+     'Oscila periodicamente sem nunca se estabilizar.']),
+    { stem: 'Em um GARCH(1,1) estacionário (α+β<1), o que acontece com a previsão da variância à medida que o horizonte aumenta?',
+      sol: 'A previsão de variância h passos à frente reverte geometricamente à variância incondicional ω/(1−α−β) quando h cresce, a uma velocidade governada por (α+β).' });
+}});
+
+BANK.push({ id: 'ser50', course: SER, topic: 'GARCH / Volatilidade', skill: 'interp', diff: 1, build() {
+  return Object.assign(mcText(
+    'Períodos calmos e turbulentos tendem a se agrupar no tempo.',
+    ['Os retornos seguem uma tendência crescente determinística.',
+     'A média dos retornos muda lentamente período a período.',
+     'Os retornos são perfeitamente previsíveis a partir do passado.']),
+    { stem: 'O que significa "clustering de volatilidade", motivação central dos modelos ARCH/GARCH?',
+      sol: 'Clustering: grandes variações tendem a ser seguidas por grandes variações (e pequenas por pequenas) — a volatilidade se agrupa no tempo. É sobre a variância, não sobre a média ou previsibilidade do nível.' });
+}});
+
+/* ---- ARDL / ECM (ser51-ser55) ---- */
+BANK.push({ id: 'ser51', course: SER, topic: 'ARDL / Multiplicadores', skill: 'calc', diff: 2, build() {
+  const a1 = rf(0.3, 0.7, 2), b0 = rf(0.2, 0.6, 2), b1 = rf(0.1, 0.5, 2);
+  return { type: 'num',
+    stem: `No ARDL(1,1) Yₜ = α₀ + ${fmt(a1)}Yₜ₋₁ + ${fmt(b0)}Xₜ + ${fmt(b1)}Xₜ₋₁ + εₜ, qual o multiplicador de impacto (efeito contemporâneo) de X sobre Y?`,
+    answer: b0, tol: 0.01, unit: '',
+    sol: `O multiplicador de impacto é o coeficiente contemporâneo: ∂Yₜ/∂Xₜ = β₀ = <b>${fmt(b0)}</b>. (O de longo prazo seria (β₀+β₁)/(1−α₁).)` };
+}});
+
+BANK.push({ id: 'ser52', course: SER, topic: 'ARDL / Multiplicadores', skill: 'calc', diff: 3, build() {
+  const a1 = rf(0.3, 0.7, 2), b0 = rf(0.2, 0.5, 2), b1 = rf(0.1, 0.4, 2);
+  const m1 = a1 * b0 + b1, cum = b0 + m1;
+  return { type: 'num',
+    stem: `No ARDL(1,1) com α₁ = ${fmt(a1)}, β₀ = ${fmt(b0)}, β₁ = ${fmt(b1)}, qual o multiplicador dinâmico acumulado após 1 período (efeito sobre Yₜ e Yₜ₊₁ de uma mudança permanente unitária em X)?`,
+    answer: cum, tol: 0.02, unit: '',
+    sol: `Multiplicadores: m₀ = β₀ = ${fmt(b0)}; m₁ = α₁·m₀ + β₁ = ${fmt(a1)}·${fmt(b0)} + ${fmt(b1)} = ${fmt(m1)}. Acumulado em 1 período = m₀ + m₁ = <b>${fmt(cum)}</b>.` };
+}});
+
+BANK.push({ id: 'ser53', course: SER, topic: 'ARDL / Multiplicadores', skill: 'interp', diff: 2, build() {
+  return Object.assign(mcText(
+    'A fração do desequilíbrio de longo prazo corrigida a cada período.',
+    ['O efeito contemporâneo de X sobre Y no curto prazo.',
+     'A variância dos resíduos do modelo de correção de erros.',
+     'A tendência determinística embutida na relação de equilíbrio.']),
+    { stem: 'Em um modelo de correção de erros (ECM), o que mede o coeficiente do termo de correção de erro (a "velocidade de ajuste")?',
+      sol: 'O coeficiente do termo de correção (negativo, entre −1 e 0) indica que fração do afastamento do equilíbrio de longo prazo é corrigida em cada período. Ex.: −0,3 ⇒ 30% do desequilíbrio é eliminado por período.' });
+}});
+
+BANK.push({ id: 'ser54', course: SER, topic: 'ARDL / Multiplicadores', skill: 'calc', diff: 2, build() {
+  const g = -rf(0.2, 0.6, 2), frac = -g * 100;
+  return { type: 'num',
+    stem: `Em um ECM, o coeficiente do termo de correção de erro foi estimado em ${fmt(g)}. Que percentual do desequilíbrio é corrigido a cada período (em %)?`,
+    answer: frac, tol: 0.5, unit: '%',
+    sol: `A velocidade de ajuste é |γ|: |${fmt(g)}| = ${fmt(-g,2)} ⇒ <b>${pct(frac,0)}</b> do desequilíbrio corrigido por período. O sinal negativo garante a reversão ao equilíbrio.` };
+}});
+
+BANK.push({ id: 'ser55', course: SER, topic: 'ARDL / Multiplicadores', skill: 'erro', diff: 3, build() {
+  return Object.assign(mcText(
+    'O termo de correção deveria ter coeficiente negativo; positivo implica afastamento do equilíbrio.',
+    ['Não há erro: qualquer sinal do termo de correção é admissível.',
+     'O erro é usar variáveis em diferença no modelo de correção.',
+     'O erro é incluir um termo de correção quando há cointegração.']),
+    { stem: 'Um aluno estima um ECM e encontra coeficiente +0,4 no termo de correção de erro, concluindo que "o sistema converge rápido". Qual o problema?',
+      sol: 'Para haver correção (reversão ao equilíbrio), o coeficiente deve ser negativo. Um valor positivo indicaria que desvios se ampliam — sistema explosivo/sem cointegração estável. O sinal positivo contradiz a conclusão de convergência.' });
+}});
+
+/* ---- VAR / Granger (ser56-ser64) ---- */
+BANK.push({ id: 'ser56', course: SER, topic: 'VAR / Granger', skill: 'calc', diff: 2, build() {
+  const k = ri(2, 4), p = ri(1, 3), per = k * p + 1;
+  return { type: 'num',
+    stem: `Em um VAR(${p}) com ${k} variáveis (e intercepto), quantos parâmetros há em CADA equação?`,
+    answer: per, tol: 0.01, unit: '',
+    sol: `Cada equação tem k·p coeficientes de defasagens + 1 intercepto = ${k}·${p} + 1 = <b>${per}</b>.` };
+}});
+
+BANK.push({ id: 'ser57', course: SER, topic: 'VAR / Granger', skill: 'calc', diff: 2, build() {
+  const k = ri(2, 4), p = ri(1, 3), tot = k * (k * p + 1);
+  return { type: 'num',
+    stem: `Em um VAR(${p}) com ${k} variáveis (e intercepto em cada equação), quantos parâmetros há no TOTAL no sistema?`,
+    answer: tot, tol: 0.01, unit: '',
+    sol: `São k equações, cada uma com (k·p + 1) parâmetros: k·(k·p+1) = ${k}·(${k*p}+1) = <b>${tot}</b>.` };
+}});
+
+BANK.push({ id: 'ser58', course: SER, topic: 'VAR / Granger', skill: 'rout', diff: 2, build() {
+  const p = pick(['0.002', '0.009', '0.031']);
+  return Object.assign(mcText(
+    'X Granger-causa Y: os lags de X ajudam a prever Y.',
+    ['Y Granger-causa X, mas X não Granger-causa Y.',
+     'Não há relação preditiva alguma entre X e Y.',
+     'X é a causa estrutural de Y, comprovadamente.']),
+    { stem: `Teste de Granger no VAR (H₀: lags de X não entram na equação de Y):` + rout(['F-test (lags de X em eq. Y)', 'F = 6.4   p-value = ' + p]) + `Conclusão a 5%?`,
+      sol: `H₀: X não Granger-causa Y. Com p = ${p} < 0,05, rejeita-se H₀: os lags de X melhoram a previsão de Y, isto é, X Granger-causa Y. Isso é poder preditivo, não prova de causalidade estrutural.` });
+}});
+
+BANK.push({ id: 'ser59', course: SER, topic: 'VAR / Granger', skill: 'interp', diff: 2, build() {
+  return Object.assign(mcText(
+    'A resposta de uma variável ao longo do tempo a um choque em outra.',
+    ['A correlação contemporânea entre todas as variáveis do sistema.',
+     'A fração da variância do erro explicada por cada choque.',
+     'O número ótimo de defasagens segundo o critério de informação.']),
+    { stem: 'O que representa uma função de resposta ao impulso (IRF) em um VAR?',
+      sol: 'A IRF traça a trajetória temporal da resposta de uma variável a um choque (tipicamente de 1 desvio-padrão) em outra. Difere da decomposição da variância (FEVD), que reparte a variância do erro de previsão.' });
+}});
+
+BANK.push({ id: 'ser60', course: SER, topic: 'VAR / Granger', skill: 'interp', diff: 2, build() {
+  return Object.assign(mcText(
+    'A parcela da variância do erro de previsão atribuída a cada choque.',
+    ['A trajetória da resposta a um choque unitário ao longo do tempo.',
+     'O teste de exclusão dos lags de uma variável na equação de outra.',
+     'A correlação de longo prazo entre as variáveis cointegradas.']),
+    { stem: 'O que a decomposição da variância do erro de previsão (FEVD) informa?',
+      sol: 'A FEVD reparte a variância do erro de previsão de cada variável, em cada horizonte, entre os choques estruturais do sistema — quanto cada choque "explica". A trajetória de resposta é a IRF; exclusão de lags é o teste de Granger.' });
+}});
+
+BANK.push({ id: 'ser61', course: SER, topic: 'VAR / Granger', skill: 'interp', diff: 3, build() {
+  return Object.assign(mcText(
+    'O BIC penaliza mais o número de parâmetros e tende a escolher modelos menores.',
+    ['O AIC sempre seleciona um modelo com menos defasagens que o BIC.',
+     'AIC e BIC selecionam exatamente a mesma ordem em qualquer amostra.',
+     'O BIC ignora o ajuste e olha só para o número de parâmetros.']),
+    { stem: 'Ao escolher a ordem de defasagens de um VAR por AIC vs. BIC, qual afirmação está correta?',
+      sol: 'O BIC tem penalidade ln(T)·k, maior que a do AIC (2k) para T>7, então tende a escolher modelos mais parcimoniosos. Ambos equilibram ajuste e parcimônia; não coincidem sempre, e o BIC não ignora o ajuste.' });
+}});
+
+BANK.push({ id: 'ser62', course: SER, topic: 'VAR / Granger', skill: 'interp', diff: 2, build() {
+  return Object.assign(mcText(
+    'As raízes do polinômio característico devem estar fora do círculo unitário.',
+    ['Todas as variáveis precisam ter média zero e variância um.',
+     'O determinante da matriz de covariância tem de ser positivo.',
+     'O número de defasagens precisa ser igual ao número de variáveis.']),
+    { stem: 'Qual condição garante a estacionariedade (estabilidade) de um VAR?',
+      sol: 'O VAR é estável se as raízes do polinômio det(I − A₁z − … − A_pz^p)=0 estão fora do círculo unitário (equivalente: autovalores da companion matrix dentro do círculo). As demais opções não governam a estabilidade.' });
+}});
+
+BANK.push({ id: 'ser63', course: SER, topic: 'VAR / Granger', skill: 'interp', diff: 3, build() {
+  return Object.assign(mcText(
+    'A ordem das variáveis altera as IRFs, pois define quem responde a quem contemporaneamente.',
+    ['A ordem das variáveis é irrelevante para as IRFs obtidas.',
+     'A decomposição de Cholesky elimina a necessidade de qualquer hipótese.',
+     'Trocar a ordem só afeta os interceptos, não as respostas dinâmicas.']),
+    { stem: 'Usando a decomposição de Cholesky para identificar choques em um VAR, qual afirmação é correta?',
+      sol: 'A Cholesky impõe uma estrutura recursiva: a 1ª variável afeta as demais contemporaneamente, mas não o contrário. Logo, a ordem importa — IRFs/FEVD mudam com a ordenação. É uma hipótese de identificação, não a ausência de uma.' });
+}});
+
+BANK.push({ id: 'ser64', course: SER, topic: 'VAR / Granger', skill: 'interp', diff: 2, build() {
+  return Object.assign(mcText(
+    'Os resíduos do VAR de forma reduzida são combinações dos choques estruturais.',
+    ['Os resíduos de forma reduzida já são os próprios choques estruturais.',
+     'A forma estrutural tem menos parâmetros que a reduzida.',
+     'A forma reduzida não pode ser estimada por MQO equação a equação.']),
+    { stem: 'Sobre a relação entre a forma reduzida e a forma estrutural de um VAR, o que é correto?',
+      sol: 'Os resíduos da forma reduzida são misturas (correlacionadas) dos choques estruturais ortogonais: u_t = B⁻¹ε_t. Por isso é preciso identificação (restrições) para recuperar os choques estruturais. A forma reduzida estima-se por MQO equação a equação.' });
+}});
+
+/* ---- SVAR (ser65-ser69) ---- */
+BANK.push({ id: 'ser65', course: SER, topic: 'SVAR', skill: 'calc', diff: 3, build() {
+  const k = ri(2, 4), r = k * (k - 1) / 2;
+  return { type: 'num',
+    stem: `Em um SVAR com ${k} variáveis, quantas restrições são necessárias para identificar os choques estruturais por um esquema recursivo (Cholesky)?`,
+    answer: r, tol: 0.01, unit: '',
+    sol: `São necessárias k(k−1)/2 restrições = ${k}·${k-1}/2 = <b>${r}</b> (zeros acima da diagonal da matriz de impacto contemporâneo).` };
+}});
+
+BANK.push({ id: 'ser66', course: SER, topic: 'SVAR', skill: 'interp', diff: 3, build() {
+  return Object.assign(mcText(
+    'A forma reduzida não identifica os choques estruturais sem restrições adicionais.',
+    ['A forma reduzida já entrega os choques estruturais diretamente.',
+     'Os choques estruturais são sempre observáveis nos dados brutos.',
+     'Basta aumentar o número de defasagens para identificá-los.']),
+    { stem: 'Por que um SVAR precisa de hipóteses de identificação além de estimar o VAR de forma reduzida?',
+      sol: 'A forma reduzida tem menos informação que a estrutural: a matriz de covariância dos resíduos não basta para recuperar a matriz de impacto contemporâneo. Impõem-se restrições (recursivas, de sinal, de longo prazo) para identificar os choques.' });
+}});
+
+BANK.push({ id: 'ser67', course: SER, topic: 'SVAR', skill: 'interp', diff: 2, build() {
+  return Object.assign(mcText(
+    'A 1ª variável afeta as demais no mesmo período, mas não o inverso.',
+    ['Todas as variáveis se afetam mutuamente no mesmo período.',
+     'Nenhuma variável tem efeito contemporâneo sobre as outras.',
+     'As variáveis só interagem com defasagem de dois períodos.']),
+    { stem: 'Em uma identificação recursiva (Cholesky) com matriz triangular inferior, qual a hipótese sobre os efeitos contemporâneos?',
+      sol: 'A estrutura triangular inferior impõe uma ordem causal contemporânea: a 1ª variável afeta as seguintes no mesmo período, a 2ª afeta da 3ª em diante, etc., mas não há efeito contemporâneo "para cima". A ordem das variáveis é, portanto, uma escolha de identificação.' });
+}});
+
+BANK.push({ id: 'ser68', course: SER, topic: 'SVAR', skill: 'interp', diff: 3, build() {
+  return Object.assign(mcText(
+    'Um choque tem efeito nulo sobre uma variável no longo prazo.',
+    ['Um choque não tem nenhum efeito contemporâneo sobre as variáveis.',
+     'Todos os choques têm o mesmo efeito de longo prazo.',
+     'As variáveis são independentes em todos os horizontes.']),
+    { stem: 'A identificação de Blanchard–Quah usa restrições de LONGO PRAZO. Em que consiste tipicamente uma dessas restrições?',
+      sol: 'Blanchard–Quah impõe que certos choques (ex.: de demanda) tenham efeito de longo prazo NULO sobre uma variável (ex.: o produto), enquanto choques de oferta podem ter efeito permanente. São restrições sobre o impacto acumulado (longo prazo), não sobre o impacto contemporâneo.' });
+}});
+
+BANK.push({ id: 'ser69', course: SER, topic: 'SVAR', skill: 'interp', diff: 2, build() {
+  return Object.assign(mcText(
+    'Serem ortogonais entre si (não-correlacionados) e ter interpretação econômica.',
+    ['Serem necessariamente normais e de variância unitária sempre.',
+     'Serem idênticos aos resíduos da forma reduzida do VAR.',
+     'Terem média que cresce linearmente com o tempo.']),
+    { stem: 'Quais propriedades se espera dos choques estruturais em um SVAR?',
+      sol: 'Os choques estruturais são construídos para serem ortogonais (não-correlacionados entre si) e economicamente interpretáveis (choque de oferta, de demanda, de política, etc.). Eles diferem dos resíduos de forma reduzida, que são correlacionados.' });
+}});
+
+/* ---- Cointegracao / VECM (ser70-ser76) ---- */
+BANK.push({ id: 'ser70', course: SER, topic: 'Cointegração', skill: 'erro', diff: 2, build() {
+  return Object.assign(mcText(
+    'O 1º passo deveria estimar a relação em NÍVEL e testar a estacionariedade do resíduo.',
+    ['O procedimento está correto como descrito.',
+     'O 1º passo deve usar as variáveis em primeira diferença.',
+     'Engle–Granger não envolve teste de raiz unitária em nenhuma etapa.']),
+    { stem: 'Um aluno descreve Engle–Granger assim: "1) regredir ΔY em ΔX; 2) testar se o resíduo é I(1)." Qual o problema?',
+      sol: 'Engle–Granger: 1) estimar a relação de longo prazo em NÍVEL (Y em X); 2) aplicar teste de raiz unitária ao resíduo — se ele for I(0) (estacionário), há cointegração. Usar diferenças no 1º passo destrói a relação de longo prazo.' });
+}});
+
+BANK.push({ id: 'ser71', course: SER, topic: 'Cointegração', skill: 'interp', diff: 2, build() {
+  return Object.assign(mcText(
+    'O número de relações de cointegração entre as variáveis.',
+    ['O número de variáveis não-estacionárias do sistema.',
+     'A ordem de integração mais alta presente nos dados.',
+     'O número de defasagens ótimo do VAR subjacente.']),
+    { stem: 'No teste de Johansen, o que indica o "rank" (posto) da matriz de longo prazo Π?',
+      sol: 'O posto r de Π é o número de vetores (relações) de cointegração. r=0 ⇒ sem cointegração; 0<r<k ⇒ r relações de equilíbrio; r=k ⇒ as variáveis já são estacionárias em nível.' });
+}});
+
+BANK.push({ id: 'ser72', course: SER, topic: 'Cointegração', skill: 'calc', diff: 2, build() {
+  const k = ri(3, 6), mx = k - 1;
+  return { type: 'num',
+    stem: `Em um sistema com ${k} variáveis I(1), qual o número MÁXIMO possível de relações de cointegração linearmente independentes?`,
+    answer: mx, tol: 0.01, unit: '',
+    sol: `Com k variáveis I(1), há no máximo k−1 vetores de cointegração (se fossem k, as séries seriam I(0)). Aqui: ${k}−1 = <b>${mx}</b>.` };
+}});
+
+BANK.push({ id: 'ser73', course: SER, topic: 'Cointegração', skill: 'calc', diff: 3, build() {
+  const k = ri(3, 6), r = ri(1, 2), ct = k - r;
+  return { type: 'num',
+    stem: `Em um sistema com ${k} variáveis I(1) e ${r} relação(ões) de cointegração (rank = ${r}), quantas tendências estocásticas comuns existem?`,
+    answer: ct, tol: 0.01, unit: '',
+    sol: `Número de tendências comuns = k − r = ${k} − ${r} = <b>${ct}</b>. Cada relação de cointegração "elimina" uma tendência estocástica do sistema.` };
+}});
+
+BANK.push({ id: 'ser74', course: SER, topic: 'Cointegração', skill: 'interp', diff: 3, build() {
+  return Object.assign(mcText(
+    'Existe um modelo de correção de erros (VECM) representando o sistema.',
+    ['As variáveis deixam de ter qualquer tendência estocástica.',
+     'A regressão em nível passa a ser espúria e inutilizável.',
+     'As séries tornam-se ruído branco após a cointegração.']),
+    { stem: 'Pelo teorema da representação de Granger, o que decorre de haver cointegração entre variáveis I(1)?',
+      sol: 'Se há cointegração, existe uma representação em correção de erros (VECM): as variações são explicadas por dinâmica de curto prazo mais um termo que corrige desvios do equilíbrio de longo prazo. A regressão em nível, aqui, é super-consistente (não espúria).' });
+}});
+
+BANK.push({ id: 'ser75', course: SER, topic: 'Cointegração', skill: 'rout', diff: 2, build() {
+  const cv = -3.34, reject = Math.random() < 0.5;
+  const stat = reject ? Number((cv - rf(0.3, 1.2, 2)).toFixed(2)) : Number((cv + rf(0.3, 1.0, 2)).toFixed(2));
+  return Object.assign(mcText(
+    reject ? 'O resíduo é estacionário: há cointegração.'
+           : 'O resíduo tem raiz unitária: não há cointegração.',
+    reject ? ['O resíduo é I(1): não há cointegração.',
+              'O resíduo é explosivo, indicando má especificação.',
+              'O teste é inconclusivo por o resíduo ter média não nula.']
+           : ['O resíduo é I(0): há cointegração.',
+              'As variáveis são estacionárias em nível.',
+              'O teste indica causalidade de Granger entre as séries.']),
+    { stem: `Após regredir duas séries I(1) em nível, aplica-se ADF ao resíduo:` + rout(['ADF no residuo: ' + fmt(stat), 'valor critico 5%: ' + fmt(cv)]) + `Conclusão?`,
+      sol: `Cointegração exige resíduo estacionário. Rejeita-se a raiz unitária do resíduo quando a estatística é mais negativa que o valor crítico. Aqui ${fmt(stat)} ${reject ? '<' : '>'} ${fmt(cv)} ⇒ ${reject ? 'resíduo I(0): há cointegração' : 'resíduo I(1): não há cointegração'}.` });
+}});
+
+BANK.push({ id: 'ser76', course: SER, topic: 'Cointegração', skill: 'interp', diff: 3, build() {
+  return Object.assign(mcText(
+    'É super-consistente: converge ao verdadeiro valor mais rápido que o usual.',
+    ['É viesado e inconsistente, como na regressão espúria.',
+     'Tem distribuição exatamente normal em amostras pequenas.',
+     'Coincide numericamente com o estimador em diferenças.']),
+    { stem: 'Sob cointegração, qual a propriedade do estimador de MQO da relação de longo prazo (em nível)?',
+      sol: 'Sob cointegração o MQO em nível é super-consistente: converge ao parâmetro verdadeiro à taxa T (em vez de √T). Sua distribuição, porém, é não-padrão (daí estimadores como DOLS/FMOLS para inferência). Não é o caso espúrio.' });
+}});
+
+/* ---- Filtro de Kalman (ser77-ser78) ---- */
+BANK.push({ id: 'ser77', course: SER, topic: 'Filtro de Kalman', skill: 'interp', diff: 2, build() {
+  return Object.assign(mcText(
+    'A equação de estado descreve a dinâmica do estado não-observado; a de medida liga o estado aos dados observados.',
+    ['As duas equações descrevem apenas variáveis observáveis.',
+     'A equação de medida gera previsões; a de estado, resíduos.',
+     'Ambas equações são idênticas, mudando só o nome.']),
+    { stem: 'Na representação em espaço de estados, qual o papel das equações de estado (transição) e de medida (observação)?',
+      sol: 'A equação de estado governa a evolução do vetor de estado latente (não-observado); a de medida relaciona esse estado às variáveis efetivamente observadas (com possível ruído). O filtro de Kalman combina as duas para estimar o estado.' });
+}});
+
+BANK.push({ id: 'ser78', course: SER, topic: 'Filtro de Kalman', skill: 'interp', diff: 3, build() {
+  return Object.assign(mcText(
+    'Previsão do estado e, depois, atualização com a nova observação.',
+    ['Apenas uma regressão de MQO entre as variáveis observadas.',
+     'Diferenciação sucessiva até a série ficar estacionária.',
+     'Suavização exponencial com peso fixo e arbitrário.']),
+    { stem: 'O filtro de Kalman opera recursivamente em duas etapas a cada período. Quais são elas?',
+      sol: 'A cada período: (1) previsão (predict) — projeta-se o estado e sua incerteza usando a equação de transição; (2) atualização (update) — corrige-se a previsão ao observar o novo dado, ponderando pelo ganho de Kalman conforme as incertezas relativas.' });
+}});
+
+/* ---- Componentes Principais / Fatores (ser79-ser80) ---- */
+BANK.push({ id: 'ser79', course: SER, topic: 'Componentes Principais / Fatores', skill: 'calc', diff: 2, build() {
+  const l = [rf(3, 6, 2), rf(1.5, 2.8, 2), rf(0.5, 1.2, 2), rf(0.2, 0.6, 2)];
+  const tot = l.reduce((a, b) => a + b, 0), share = l[0] / tot * 100;
+  return { type: 'num',
+    stem: `Uma ACP (PCA) sobre 4 séries tem autovalores ${l.map((x)=>fmt(x)).join(', ')}. Que percentual da variância total é explicado pelo 1º componente principal (em %)?`,
+    answer: share, tol: 0.5, unit: '%',
+    sol: `Proporção = λ₁ / Σλ = ${fmt(l[0])}/${fmt(tot)} = <b>${pct(share,1)}</b>. Cada autovalor mede a variância capturada pelo respectivo componente.` };
+}});
+
+BANK.push({ id: 'ser80', course: SER, topic: 'Componentes Principais / Fatores', skill: 'interp', diff: 3, build() {
+  return Object.assign(mcText(
+    'Poucos fatores comuns resumem a variação conjunta de muitas séries.',
+    ['Cada série depende somente do seu próprio passado, sem fatores comuns.',
+     'O número de fatores precisa ser igual ao número de séries.',
+     'Os fatores são sempre observáveis diretamente nos dados.']),
+    { stem: 'Em modelos de fatores para grandes painéis de séries macroeconômicas, qual a ideia central?',
+      sol: 'Um pequeno número de fatores comuns latentes (estimados, p.ex., por componentes principais) capta o grosso da covariação de muitas variáveis; o restante é idiossincrático. Permite reduzir dimensionalidade (FAVAR, difusão de índices).' });
 }});
 
 /* ---------- meta ---------- */
