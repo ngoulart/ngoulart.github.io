@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Join NightStand | Nícolas Goulart</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.ico" type="image/x-icon">
+<link rel="stylesheet" href="/files/style.css">
+<style>
+  /* NightStand page: built from the site's own design tokens */
+  .ns-wrap { max-width: 640px; }
+
+  .ns-step {
+    display: grid; grid-template-columns: 2.1rem 1fr; column-gap: 0.9rem;
+    padding: 1.35rem 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .ns-step:last-of-type { border-bottom: none; }
+  .ns-num {
+    width: 2.1rem; height: 2.1rem; border-radius: 50%;
+    background: var(--red); color: var(--white);
+    font-weight: 700; font-size: 0.95rem;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ns-step h3 { font-size: 1.05rem; font-weight: 700; color: var(--ink); line-height: 2.1rem; }
+  .ns-step p { font-size: 0.92rem; color: var(--gray-dark); margin-top: 0.15rem; }
+
+  .ns-btn {
+    display: inline-block; margin-top: 0.85rem;
+    font-family: var(--font-body);
+    font-size: 0.78rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.05em; text-decoration: none;
+    color: var(--white); background: var(--red);
+    padding: 0.7rem 1.1rem;
+    border: 1px solid var(--red); border-radius: 3px;
+    transition: all 0.2s ease;
+  }
+  .ns-btn:hover { background: var(--red-dark); border-color: var(--red-dark); }
+
+  .ns-ids { grid-column: 1 / -1; margin-top: 1rem; display: grid; gap: 0.5rem; }
+  .ns-id {
+    width: 100%;
+    display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+    font-family: var(--font-body); text-align: left;
+    padding: 0.7rem 0.85rem;
+    background: var(--soft); color: var(--ink);
+    border: none; border-left: 3px solid var(--steel);
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+  .ns-id:hover { background: var(--steel-soft); }
+  .ns-id .who { min-width: 0; }
+  .ns-id .name { display: block; font-size: 0.95rem; font-weight: 700; }
+  .ns-id .code {
+    display: block;
+    font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.72rem;
+    color: var(--gray-mid);
+    overflow-wrap: anywhere;
+  }
+  .ns-id .act {
+    flex: none;
+    font-size: 0.72rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--steel);
+    padding: 0.4rem 0.7rem;
+    border: 1px solid var(--steel); border-radius: 3px;
+    background: var(--white);
+    min-width: 4.6rem; text-align: center;
+  }
+  .ns-id.copied { background: var(--steel-soft); }
+  .ns-id.copied .act { background: var(--steel); color: var(--white); }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="/files/index.html" class="nav-name">Nícolas Goulart</a>
+    <div class="nav-links">
+      <a href="/files/index.html">About</a>
+      <a href="/files/cv.html">CV</a>
+      <a href="/files/research.html">Research</a>
+      <a href="/files/teaching.html">Teaching</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+
+<div class="section ns-wrap">
+  <h2>Join NightStand</h2>
+  <p class="lede">Three steps, all on your iPhone.</p>
+
+  <div class="ns-step">
+    <div class="ns-num">1</div>
+    <div>
+      <h3>Install TestFlight</h3>
+      <p>TestFlight is Apple's app for installing test versions of apps.</p>
+      <a class="ns-btn" href="https://apps.apple.com/app/testflight/id899247664">Get TestFlight</a>
+    </div>
+  </div>
+
+  <div class="ns-step">
+    <div class="ns-num">2</div>
+    <div>
+      <h3>Install NightStand</h3>
+      <p>Open the invite, tap <strong>Accept</strong>, then <strong>Install</strong>.</p>
+      <a class="ns-btn" href="https://testflight.apple.com/join/fPsaZY5A">Open the invite</a>
+    </div>
+  </div>
+
+  <div class="ns-step">
+    <div class="ns-num">3</div>
+    <div>
+      <h3>Paste your ID</h3>
+      <p>Tap your name to copy your ID. Open NightStand, paste it in the <strong>Prolific ID</strong> field and tap <strong>Start</strong>. Then tap <strong>Allow</strong> for Health and for Motion &amp; Fitness.</p>
+    </div>
+    <div class="ns-ids">
+      <button type="button" class="ns-id" data-id="ADA0000000000000000000000">
+        <span class="who"><span class="name">Ada</span><span class="code">ADA0000000000000000000000</span></span>
+        <span class="act">Copy</span>
+      </button>
+      <button type="button" class="ns-id" data-id="ANDREI000000000000000000">
+        <span class="who"><span class="name">Andrei</span><span class="code">ANDREI000000000000000000</span></span>
+        <span class="act">Copy</span>
+      </button>
+      <button type="button" class="ns-id" data-id="GEORGE000000000000000000">
+        <span class="who"><span class="name">George</span><span class="code">GEORGE000000000000000000</span></span>
+        <span class="act">Copy</span>
+      </button>
+      <button type="button" class="ns-id" data-id="JEROME000000000000000000">
+        <span class="who"><span class="name">Jerome</span><span class="code">JEROME000000000000000000</span></span>
+        <span class="act">Copy</span>
+      </button>
+      <button type="button" class="ns-id" data-id="LEON00000000000000000000">
+        <span class="who"><span class="name">Leon</span><span class="code">LEON00000000000000000000</span></span>
+        <span class="act">Copy</span>
+      </button>
+      <button type="button" class="ns-id" data-id="MARGARITA0000000000000000">
+        <span class="who"><span class="name">Margarita</span><span class="code">MARGARITA0000000000000000</span></span>
+        <span class="act">Copy</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<footer>
+  © 2026 Nícolas Goulart · Built with HTML &amp; CSS
+</footer>
+
+<script>
+  // In-app browsers can refuse the Clipboard API, so a refused write goes through a hidden field.
+  function copyText(text) {
+    return navigator.clipboard.writeText(text).catch(() => {
+      const field = document.createElement('textarea');
+      field.value = text;
+      field.readOnly = true;
+      field.style.position = 'fixed';
+      field.style.opacity = '0';
+      document.body.appendChild(field);
+      field.select();
+      field.setSelectionRange(0, text.length);
+      const copied = document.execCommand('copy');
+      field.remove();
+      if (!copied) throw new Error('Copy refused');
+    });
+  }
+
+  document.querySelectorAll('.ns-id').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      await copyText(btn.dataset.id);
+      document.querySelectorAll('.ns-id.copied').forEach(other => {
+        other.classList.remove('copied');
+        other.querySelector('.act').textContent = 'Copy';
+      });
+      btn.classList.add('copied');
+      btn.querySelector('.act').textContent = 'Copied';
+    });
+  });
+</script>
+
+</body>
+</html>

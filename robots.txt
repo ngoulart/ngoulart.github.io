@@ -2,5 +2,6 @@ User-agent: *
 Allow: /
 Disallow: /qrcode/
 Disallow: /pratica/
+Disallow: /nightstand/
 
 Sitemap: https://ngoulart.github.io/sitemap.xml
